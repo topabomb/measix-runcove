@@ -1,30 +1,107 @@
-# Measix Runcove
+# Measix Runcove · 工舱
 
-Runcove 为 MCP 客户端提供持久工作空间，包含命令与文件工具、浏览器、云桌面、文件交换和临时 Web 发布。同一 Rust 核心支持两种部署方式：
+![Runcove：给 Agent 一台带桌面的持久云电脑](docs/assets/runcove-hero.svg)
 
-| 部署方式 | 适用场景 | 隔离与管理 |
+**Runcove 是供 Agent 使用、也能由你随时接管的持久化云空间。** 浏览器、桌面、程序和工作文件放在一起，部署在你自己的服务器上，通过 MCP 连接 Tuck 或其他 Agent 客户端。
+
+[看真实桌面](#你和-agent-共用一个工作空间) · [与 Tuck 搭配](#与-tuck-搭配从交办到交付) · [开始使用](#开始使用) · [Measix 七产品](#在-measix-中的位置) · [文档](#文档)
+
+## 一项工作，应该有自己的地方
+
+个人 Agent 要持续做事，需要能够反复回到同一个环境：上次整理的文件还在，浏览器资料可以继续使用，程序能在明确的工作目录里运行，你也能打开桌面检查进度、补充信息或接手操作。
+
+Runcove 为这些工作提供一个长期保留的空间。你可以把它用于个人助理的云电脑，也可以为团队的 Agent 分配各自的工作环境。
+
+| 你想完成的事 | Runcove 提供的工作环境 |
+|---|---|
+| 查阅网页、整理资料、生成报告 | 浏览器、命令执行与文件工具共用工作区，输入和交付文件保存在一起 |
+| 遇到登录、人工确认或需要接手的步骤 | 打开同一个可见桌面，接管鼠标键盘，完成后交还 Agent |
+| 下次继续处理同一项目 | 保留工作目录；Server 还持久化空间根盘，按需唤醒空间 |
+| 把成果带回自己的工具和流程 | 从工作台下载，使用 WebDAV 交换文件，或临时发布网页与应用 |
+| 自己掌握运行环境和文件落点 | 在自己的 Docker 主机部署，选择单空间容器或多空间 microVM |
+
+模型调用、任务规划、长期记忆和调度由接入的 Agent 负责；Runcove 负责它工作的地方、使用的工具和留下的文件。空间持久化保留数据，任务是否自动续跑取决于 Agent 本身。
+
+## 你和 Agent 共用一个工作空间
+
+下面是隔离演示空间的实际界面：通过 MCP 写入工作文件、打开浏览器，再从 Runcove 工作台查看报告。报告和记录均为演示资料。
+
+![Runcove 真实云桌面：在工作空间的浏览器中查看巡检周报，可随时接管操作](docs/assets/workspace-desktop.jpg)
+
+*同一个浏览器、同一份资料。工具栏可以切换观看与人工控制，Agent 与人共用这台工作电脑。*
+
+![Runcove 文件与产物面板：查看已交付的报告、原始记录与复核清单](docs/assets/workspace-files.jpg)
+
+*工作资料保存在 `/workspace/inspection-weekly`，交付副本集中在产物面板；其他工作区文件可按路径下载。*
+
+<details>
+<summary>查看操作片段：观看 → 接管 → 文件面板 → 交还 AI</summary>
+
+![Runcove 真实操作关键帧：接管桌面、查看文件并交还控制权](docs/assets/workspace-walkthrough.gif)
+
+实机关键帧动图；展示桌面与文件交互，不代表一段完整模型自主执行。截图来源和更新方式见[媒体维护](docs/development.md#readme-媒体维护)。
+
+</details>
+
+## 与 Tuck 搭配：从交办到交付
+
+[**Measix Tuck · 松子**](https://github.com/topabomb/measix-tuck) 是我们已经公开的自托管 Agent 工作台，承接对话、任务、工作文件和交付成果。**Tuck 接住你交办的工作，Runcove 提供浏览器、桌面与持久工作空间。**
+
+例如，把一组巡检记录交给 Tuck：它通过 MCP 在 Runcove 中整理文件、运行脚本、查阅网页并生成报告；你可以打开 Runcove 桌面检查过程，需要时接管，再从同一工作区取回成果。
+
+接入时，将 Runcove 的 MCP 地址和凭据配置到客户端。Standalone 使用 `/mcp`，Server 使用 `/u/{username}/mcp`；桌面凭据及文件访问方式见[部署指南](docs/deployment.md)和[Server 接入参考](docs/server-api.md)。其他支持相应 HTTP MCP 传输与认证方式的客户端也可接入。
+
+## 开始使用
+
+两种部署共用 Rust 核心、浏览器工具和桌面工作台：
+
+| | **Standalone：个人单空间** | **Server：托管多空间** |
 |---|---|---|
-| **Runcove Server** | 企业或外部平台管理多用户空间 | microsandbox VM 隔离；提供管理 API，Docker 宿主需要 KVM |
-| **Runcove Standalone** | 个人、自托管单空间 | 一个使用者、一个 Docker 容器、一个空间；直接运行本地进程，无 MSB/KVM 或管理 API |
+| 适合谁 | 为自己或一个 Agent 准备工作电脑 | 为团队、用户或外部平台分配空间 |
+| 运行方式 | 一个 Docker 容器直接运行一个空间 | microsandbox 为各空间提供 microVM |
+| 持久内容 | `/workspace`，包含工作文件与浏览器资料 | 用户状态、空间根盘与工作卷 |
+| 主机要求 | Linux Docker，无需 KVM | Linux Docker，需 `/dev/kvm` |
+| 管理方式 | 单份配置和访问凭据 | 用户、凭据、资源及空间生命周期管理 API |
+| 部署入口 | [单空间构建与启动](docs/deployment.md#独立单空间构建与启动) | [Server 构建与部署](docs/deployment.md) |
 
-**Runcove Workspace** 是 Server 的桌面 VM rootfs，包含浏览器和工具依赖，自身不包含 MSB。它与 Standalone 共用依赖构建来源；两种入口共用工具、任务、控制权和文件实现。
+先体验个人单空间，从源码构建：
 
-一个空间可连接多个已认证客户端和桌面观看者，人工输入使用同一控制租约。当前镜像资格平台为 Linux/amd64；ARM 和目标 NAS 需单独验证。
+```bash
+git clone https://github.com/topabomb/measix-runcove.git
+cd measix-runcove/agent-space
+bash docker/build-standalone.sh
+```
+
+构建完成后，按[部署指南](docs/deployment.md#独立单空间构建与启动)设置镜像标签、访问凭据和持久卷，再用仓库 Compose 启动。桌面入口是 `/desktop/`，外部 WebDAV 默认关闭。
+
+当前镜像验证范围为 **Linux/amd64**。ARM 与具体 NAS 型号需要单独验收。自托管决定执行环境和文件的位置；若客户端调用外部模型，发送给模型的内容仍由客户端和模型配置决定。
+
+## 在 Measix 中的位置
+
+Measix 围绕“可信业务事实、专业能力、人的入口、Agent 工作与企业治理”组织七个产品。Runcove 承担其中的**持久化工作空间**，也可以独立部署使用。
+
+![Measix 七产品协作图：Pilot 和 Tuck 按需使用 Runcove，Orchelm 提供治理，Metrivon、Tracelle、Noetral 提供专业能力](docs/assets/measix-ecosystem.svg)
+
+| 产品 | 主要职责 |
+|---|---|
+| **衡准 Metrivon** | 精密测量、设备协同与确定性计算，形成可信的业务事实 |
+| **溯原 Tracelle** | 保存、查询与分析测量数据，保留原始依据和上下文 |
+| **知衡 Noetral** | 面向工业任务的领域模型能力 |
+| **领航 Pilot** | 原生移动 Agent 入口，承接现场交互、工具使用与人工确认 |
+| [**松子 Tuck**](https://github.com/topabomb/measix-tuck) | 员工专属的自主工作伙伴，组织对话、任务、进展与成果 |
+| **工舱 Runcove** | 带浏览器和桌面的持久空间，提供程序运行与文件环境 |
+| **枢策 Orchelm** | 企业身份、模型、工具、助手与策略的供给和治理 |
+
+这张图描述产品职责与演进方向；各产品按任务需要组合，具体集成以对应版本为准。
 
 ## microsandbox 与项目定位
 
-[microsandbox](https://github.com/superradcompany/microsandbox) 是面向不可信代码、Agent 和自动化任务的本地优先 microVM 运行时，提供 CLI、SDK 和 VM 生命周期、命令、文件及存储能力。项目介绍与使用方式见[官方网站](https://microsandbox.dev/)和[官方文档](https://docs.microsandbox.dev/getting-started/introduction)。
+[microsandbox](https://github.com/superradcompany/microsandbox) 提供本地优先的 microVM 运行时。**Runcove Server 以它作为空间托管引擎**，在其上提供用户空间、远程 MCP、桌面工作台与文件交付。Runcove Workspace 是 Server 使用的桌面 VM rootfs；Standalone 共用应用核心，在单容器中直接运行。
 
-Runcove Server 使用 microsandbox 作为空间托管引擎，在其上提供持久用户空间、远程访问与桌面工作台。Tuck 等 MCP 客户端使用这些空间时，VM 由 Server 层管理；平台接入关系见[接入参考](docs/server-api.md#5-measix-control-hub-接入)。Standalone 则复用本项目能力，直接运行在单个容器中，不使用 microsandbox。Server 当前锁定的版本、临时补丁及升级门槛见[运行时维护](docs/runtime.md)。
+当前 Server 锁定的版本、临时补丁及升级条件见[运行时维护](docs/runtime.md)。microsandbox 的入门与运行时能力见[官方文档](https://docs.microsandbox.dev/getting-started/introduction)。
 
-本项目侧重把运行时能力组织成可直接交付的工作空间：
-
-- **持久空间与用户管理**：固定空间身份、根盘和工作卷，统一管理 MCP/DAV 凭据、禁用、删除及资源回收；客户端无需自行编排 VM。见[管理 API](docs/server-api.md)。
-- **浏览器、桌面与人工协作**：自动化和远程桌面共用一个可见浏览器，配合任务期限、取消清理、人工接管及休眠恢复；工作台文件传输与基础工具可独立使用。见[浏览器与云桌面](docs/browser-desktop.md)。
-- **直接交换工作文件**：MCP、工作台、DAV 与发布读取同一工作区；大文件走 HTTP 流，DAV 有独立凭据与原子上传保护。4 GiB 完整读取、Range、取消及写满验证的范围见[验证记录](docs/validation-records.md)。
-- **可核对的部署与维护**：提供 Server/Standalone 两种入口、Compose 和离线包；固定构建来源、补丁及实际程序身份，并保留升级、冷备恢复和真实桌面/文件验收。见[部署](docs/deployment.md)与[运维](docs/operations.md)。
-
-### 相关项目
+<details>
+<summary>相关项目与定位参考</summary>
 
 以下按 **2026-10-16** 核对的项目文档概括定位，链接固定到当时版本；没有做跨项目运行测试或性能排名。
 
@@ -36,42 +113,26 @@ Runcove Server 使用 microsandbox 作为空间托管引擎，在其上提供持
 
 选型取决于需要运行时工具、跨后端适配，还是完整的托管工作空间。上面的能力组合是本项目的产品取舍，不表示相关能力为本项目独有，也不表示其他项目缺少相应扩展。
 
-## 开始使用
-
-准备 Linux Docker；Server 另需 `/dev/kvm`。从源码构建个人单空间版本：
-
-```bash
-cd agent-space
-bash docker/build-standalone.sh
-```
-
-随后按[部署指南](docs/deployment.md#独立单空间构建与启动)设置构建输出的镜像标签和访问凭据，使用仓库 Compose 启动。桌面入口为 `/desktop/`，MCP 地址为 `/mcp`；外部 DAV 默认关闭。Server 的构建、首次状态初始化及多用户接入也从[部署指南](docs/deployment.md)开始。
-
-每次部署只使用一份 TOML 配置。Server 持久卷保存账号状态、MSB 数据库及空间双盘；Standalone 持久化 `/workspace`，用户数据使用 UID/GID1001。既有服务升级、回滚及工作区转移见[运维手册](docs/operations.md)。
+</details>
 
 ## 文档
 
-| 阅读目的 | 文档 |
+| 想了解什么 | 阅读入口 |
 |---|---|
-| 安装、配置、Compose 和离线包 | [部署指南](docs/deployment.md) |
-| 升级、备份、迁移及故障恢复 | [运维手册](docs/operations.md) |
-| Server 用户、管理 API 和平台集成 | [Server 接入参考](docs/server-api.md) |
-| 浏览器工具、任务、桌面控制和文件面板 | [浏览器与云桌面](docs/browser-desktop.md) |
-| 外部文件客户端、认证及文件语义 | [WebDAV](docs/webdav.md) |
-| 临时文件、网站和端口发布 | [Web 发布](docs/web-publish.md) |
-| 共享核心、状态、生命周期与受管进程 | [架构](docs/architecture.md) |
-| 源码开发、测试、发布及文档维护 | [开发指南](docs/development.md) |
-| Server 的 MSB 来源、补丁及升级门槛 | [运行时维护](docs/runtime.md) |
-| 固定版本实测和未验证边界 | [验证记录](docs/validation-records.md) |
-
-文档描述当前实现；验证记录绑定自己的源码、镜像及日期，不代表实时服务状态。公开 Git 历史从整理后的首次提交开始，不包含此前的私有开发记录；仍有效的结论已并入现行手册。
+| 安装、配置、Compose 与离线包 | [部署指南](docs/deployment.md) |
+| 升级、备份、迁移与恢复 | [运维手册](docs/operations.md) |
+| 接入用户、凭据和空间管理 | [Server API](docs/server-api.md) |
+| 浏览器、桌面、控制权与工作台 | [浏览器与云桌面](docs/browser-desktop.md) |
+| 文件交换与成果发布 | [WebDAV](docs/webdav.md) · [Web 发布](docs/web-publish.md) |
+| 代码职责、共享核心与贡献方式 | [架构](docs/architecture.md) · [开发指南](docs/development.md) |
+| 运行时来源与已验证范围 | [运行时维护](docs/runtime.md) · [验证记录](docs/validation-records.md) |
 
 ## 参与开发
 
-Rust workspace 位于 `agent-space/`，代码职责与检查命令见[开发指南](docs/development.md)，Agent 工作约束见 [AGENTS.md](AGENTS.md)。提交问题时注明部署目标、平台、源码或镜像身份、复现步骤和脱敏错误；行为变更同步对应参考文档及验证范围。
+源码位于 `agent-space/`。提交问题时请注明部署方式、平台、源码或镜像版本、复现步骤和脱敏错误。开发约定见 [AGENTS.md](AGENTS.md)，构建与回归命令见[开发指南](docs/development.md)。
 
-目前提供中文文档；后续双语入口及目录约定见[文档维护](docs/development.md#文档维护)。
+目前维护中文文档；英文入口与目录结构已有[规划](docs/development.md#双语结构规划)。公开 Git 历史从整理后的首次提交开始，历史验证记录仅适用于各自注明的输入与范围。
 
 ## 致谢
 
-感谢 [microsandbox](https://github.com/superradcompany/microsandbox) 的维护者和贡献者提供 Server 的 microVM 基础，以及对问题复现、反馈和修复的持续投入。感谢其依赖的 [libkrun](https://github.com/containers/libkrun) 与 [smoltcp](https://github.com/smoltcp-rs/smoltcp) 社区。本项目维护空间服务与集成层，底层虚拟化和网络基础来自这些上游项目；本地补丁、已反馈问题与撤销条件公开记录在[运行时维护](docs/runtime.md)。
+感谢 [microsandbox](https://github.com/superradcompany/microsandbox) 的维护者和贡献者提供 microVM 基础，并持续处理社区反馈。也感谢 [libkrun](https://github.com/containers/libkrun)、[smoltcp](https://github.com/smoltcp-rs/smoltcp) 以及本项目所依赖的开源工具。Runcove 的空间服务、桌面和集成建立在这些工作的基础上。

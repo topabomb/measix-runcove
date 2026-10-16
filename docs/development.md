@@ -94,6 +94,15 @@ python3 docker/verify-workspace-import.py --image "$STANDALONE_IMAGE" --old-imag
 - 发布前扫描 Git 跟踪文件中的真实 Token/私钥、凭据摘要、生产域名/IP、本机路径、账号/空间标识、业务文件清单及截图。私人部署记录留在受控运维存储，不随仓库或离线包发布；Git ignore 与 Docker ignore 分别排除本机配置和密钥，不能将未入 Git 等同于不会进入构建上下文；只保留必要的脱敏验证结果和产物身份，标明投影及原始日志摘要的范围。
 - 不把本机地址、私有备份路径或个人实验数据写成通用安装要求。配置模板仍位于 `agent-space/docker/configs.example/`，运行时给 Agent 的说明仍由 `agent-space/guest/README.md` 维护；不为双语规划修改这些运行资产。
 
+### README 媒体维护
+
+首页媒体集中在 `docs/assets/`：
+
+- [首屏插图](assets/runcove-hero.svg)与[七产品协作图](assets/measix-ecosystem.svg)是可编辑、自包含的 SVG，沿用 Measix 的产品标识与配色；插图是概念表达，协作图是产品职责与演进方向，不作为运行截图或全部集成已交付的证明。
+- [桌面截图](assets/workspace-desktop.jpg)、[产物面板](assets/workspace-files.jpg)和[操作关键帧动图](assets/workspace-walkthrough.gif)拍摄于 2026-10-16 的独立 Standalone 演示容器。使用已有验证镜像 `sha256:b13c172f4e8a21c42d256dbbea21ecb6fcd4a578847851c85e98fd47a25c2993` 作为后端基底，前端使用本次源码构建并统一“工舱”名称。它们不是当前源码的新发布资格记录。
+- 演示资料为虚构的巡检 CSV、复核清单与网页报告，通过 MCP 写入 `/workspace/inspection-weekly` 并打开浏览器，交付副本放入 `/workspace/agent-space/artifacts`。画面中的报告是工作区文件，外层工作台、文件面板和控制状态来自真实产品；动图是观看、接管、文件面板、交还控制的实机关键帧，不是完整模型执行录像。
+- 更新时使用独立容器和新建数据卷，仅放入示例资料；以当前前端构建捕获实际页面，核对所有文字、文件名、地址和图片元数据。凭据不进入 URL、截图或入库文件。检查桌面与窄屏布局，并确认离线包带齐媒体；完成后清理本次演示容器和卷。
+
 ### 双语结构规划
 
 英文结构目前仅为规划，中文仍是当前维护版本，不创建英文译文、空目录、占位页或不可用的语言切换链接。后续有实际译文时：

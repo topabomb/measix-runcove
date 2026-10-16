@@ -93,7 +93,7 @@
   "refresh_files": "刷新文件列表",
   "send_esc_to_remote_desktop": "向远程桌面发送 Esc",
   "focus_remote_browser_address_bar": "聚焦远程浏览器地址栏",
-  "runcove": "Runcove 工仓",
+  "runcove": "Runcove 工舱",
   "cloud_desktop": "云桌面",
   "return_to_ai": "交还 AI",
   "access_token_2": "访问 Token",
@@ -130,6 +130,6 @@
   "sign_out": "退出桌面登录",
   "control_returns_to_ai_after_60_seconds": "人工接管后，{{seconds}} 秒无远程键鼠操作会自动交还 AI。观看画面和编辑本机剪贴板草稿不续期。",
   "returning_control_enables_ai_operations_interrupted_scripts": "交还 AI 会开放操作权限；被中断的任务由 Agent 决定后续执行。",
-  "runcove_cloud_desktop": "Runcove 工仓 · 云桌面",
+  "runcove_cloud_desktop": "Runcove 工舱 · 云桌面",
   "desktop_user": "用户"
 }
