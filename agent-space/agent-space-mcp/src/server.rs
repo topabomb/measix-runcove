@@ -35,7 +35,7 @@ struct BashParams {
 
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 struct ReadParams {
-    #[schemars(description = "Path of the text file to read.")]
+    #[schemars(description = "Path of the text file to read in Runcove's remote workspace.")]
     path: String,
     #[schemars(
         description = "First line to return, counting from 1. Defaults to 1; use a positive integer."
@@ -53,7 +53,7 @@ struct ReadParams {
 
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 struct WriteParams {
-    #[schemars(description = "Destination file path.")]
+    #[schemars(description = "Destination file path in Runcove's remote workspace.")]
     path: String,
     #[schemars(description = "Complete text contents to save as UTF-8.")]
     content: String,
@@ -61,7 +61,7 @@ struct WriteParams {
 
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 struct EditParams {
-    #[schemars(description = "Path of the text file to edit.")]
+    #[schemars(description = "Path of the text file to edit in Runcove's remote workspace.")]
     path: String,
     #[schemars(
         description = "Exact text to replace, including whitespace and line breaks; must occur once."
@@ -102,7 +102,7 @@ struct ObserveParams {
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 struct RunParams {
     #[schemars(
-        description = "JavaScript async function body or async function, up to 65,536 UTF-8 bytes. The script receives page, context, desktop, output, and artifacts. artifacts is the default artifact directory path; use it to construct file paths. Import Node.js modules with await import(...), await asynchronous operations, and return a JSON-serializable value."
+        description = "JavaScript async function body or async function to run in Runcove's remote workspace, up to 65,536 UTF-8 bytes. The script receives page, context, desktop, output, and artifacts. artifacts is the default artifact directory path; use it to construct file paths. Import Node.js modules with await import(...), await asynchronous operations, and return a JSON-serializable value."
     )]
     code: String,
     #[serde(default)]
@@ -126,7 +126,9 @@ enum TaskAction {
 }
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 struct TaskParams {
-    #[schemars(description = "ID returned when the browser task was accepted.")]
+    #[schemars(
+        description = "ID returned when a browser task was accepted in Runcove's remote workspace."
+    )]
     task_id: String,
     #[serde(default)]
     #[schemars(
@@ -452,7 +454,7 @@ impl AgentSpaceMcpServer {
         ))
     }
     #[tool(
-        description = "Publish a file, directory, or running HTTP service through an authenticated web URL. Publishing under an existing name updates its target while preserving the URL and credentials. Share the returned URL and HTTP Basic username and password with the user. Access remains available while the publication exists and the workspace is running."
+        description = "Publish a file, directory, or running HTTP service from Runcove's remote workspace through an authenticated web URL. Publishing under an existing name updates its target while preserving the URL and credentials. Share the returned URL and HTTP Basic username and password with the user. Access remains available while the publication exists and the workspace is running."
     )]
     async fn web_publish(
         &self,

@@ -332,9 +332,13 @@ async fn desktop_catalog_and_permissive_arguments_reach_the_mcp_handlers() {
     assert_eq!(tools.len(), 8);
     for tool in &tools {
         let description = tool.description.as_deref().unwrap();
+        let schema_json = serde_json::to_string(&tool.input_schema).unwrap();
         assert_eq!(
-            description.contains("Runcove's remote workspace"),
-            matches!(tool.name.as_ref(), "bash" | "browser_observe")
+            description.matches("Runcove's remote workspace").count()
+                + schema_json.matches("Runcove's remote workspace").count(),
+            1,
+            "tool {} must mention the remote workspace exactly once",
+            tool.name
         );
         assert!(!description.contains("README.md"));
         assert_ne!(
