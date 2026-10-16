@@ -1,0 +1,24 @@
+{
+  "target": "server",
+  "image": "sha256:e5913326b6f3bac140e4524ffd8468bb0d77aac353c674430308877481e94105",
+  "image_id": "sha256:e5913326b6f3bac140e4524ffd8468bb0d77aac353c674430308877481e94105",
+  "scope": "final image",
+  "full": true,
+  "checks": [
+    "shared_test_browser_vm.py",
+    "shared_test_desktop_files_vm.py",
+    "shared_test_browser_lifecycle_vm.py",
+    "shared_real_vnc_keyboard_clipboard_viewers_responsive_and_idle"
+  ],
+  "passed": true,
+  "idle_seconds": 310,
+  "lifecycle_report_sha256": "8d1b430d2498769e264939c924a1f0c044b82e7ec8ece8ef2d4b17309ac557ea",
+  "cleanup_passed": true,
+  "original_suite_log_sha256": {
+    "test_browser_lifecycle_vm.py.log": "d33addfa5332c0df72286dc5a520fb277aa40e5c9dd2816985cae1d0c3435634",
+    "test_browser_vm.py.log": "133b33a64c4e58095ed5c85dc736f26978e0626c5ed7ef62d4ab9eba1dcd98b2",
+    "test_desktop_files_vm.py.log": "88243ca3eb9ff5bd843b7abc2b663fce1d46ce3736fcb2d4c0c5f71135ae5562",
+    "ui.log": "77f68ac6deff1b412a5b350fa46fb58ee1f0a408c4a06008ffe2266e8e039f91"
+  },
+  "publication": "Log digests identify original test output; published logs may have operator paths redacted."
+}

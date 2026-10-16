@@ -1,0 +1,32 @@
+[package]
+name = "agent-space-webdav"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dav-server = { version = "=0.11.0", default-features = false }
+bytes = "1"
+futures = "0.3"
+http = "1"
+httpdate = "1"
+xmltree = "=0.12.0"
+http-body = "1"
+http-body-util = "0.1"
+hyper = { version = "1", features = ["http1", "server"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+libc = "0.2"
+percent-encoding = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+agent-engine = { path = ".." }
+microsandbox = "=0.7.2"
+tempfile = "3"
+sha2 = "0.10"
+
+[build-dependencies]
+sha2 = "0.10"

@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "image_id": "sha256:37a03330305e00c11bc14f1431b2d1a649a0b58f420f3db27c1d9e60ca04e7ec",
+  "connected_layouts": 6,
+  "http_status": 200,
+  "bytes": 65536,
+  "sha256": "f4b7ab03ca2a956dda958b18eebb61b890566681f04a911b014201c79f493740",
+  "page_errors": [],
+  "scope": "Earlier candidate 37a033 / source 59f; unchanged shared MCP/UI workflow component evidence, not final-image qualification",
+  "workflow": "Formal MCP observe, write CSV, browser upload, browser download, MCP SHA-256 and authenticated workbench HTTP download agree",
+  "cleanup_passed": true
+}

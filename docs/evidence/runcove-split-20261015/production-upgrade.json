@@ -1,0 +1,17 @@
+{
+  "target": "server",
+  "image": "sha256:e5913326b6f3bac140e4524ffd8468bb0d77aac353c674430308877481e94105",
+  "image_id": "sha256:e5913326b6f3bac140e4524ffd8468bb0d77aac353c674430308877481e94105",
+  "old_image_id": "sha256:9ee5cd5fd3998d5defc005b90b1ace906f48484f8fbb680a50a0e6ab7e76ce06",
+  "checks": [
+    "original_credentials_and_identity",
+    "workspace_profile_and_files",
+    "new_server_tools_desktop_dav_publish",
+    "restart_persistence",
+    "isolated_complete_backup_rollback"
+  ],
+  "passed": true,
+  "backup_sha256": "122c38f8263cc6c825a13ee2329d1ad6c755fa77791bb026be4599cf73b0209f",
+  "original_state_sha256": "9d4845a0dd06c2098cb314fda4fb97f70920a6643be8a83c2ed41c47d30ecbac",
+  "cleanup_passed": true
+}

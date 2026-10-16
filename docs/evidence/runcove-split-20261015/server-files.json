@@ -1,0 +1,156 @@
+{
+  "passed": true,
+  "checks": [
+    "image, cached and running real VM executables match the runtime manifest",
+    "4 GiB sparse file HEAD, length and ETag through public DAV",
+    "cross-2-GiB, final byte/tail, open/suffix/huge-end ranges and current If-Match",
+    "unsatisfiable range returns 416 and complete representation length",
+    "empty file and malformed decimal ranges use ordinary GET semantics",
+    "full 4 GiB HTTP read checked byte-for-byte with bounded client memory",
+    "60 cancelled uploads mixed with downloads retain original file, VM/helper identity and healthy MCP/DAV",
+    "paced real download lasts over 30 seconds and multiple 5-second idle intervals",
+    "synchronized real guest truncate yields incomplete HTTP body, not padded success",
+    "premature EOF diagnostic is present in bounded guest log",
+    "old If-Match rejects modified file with 412 without replacement content",
+    "unconsumed real download expires at configured idle timeout",
+    "80 cancelled real downloads release guest file descriptors and connection slots",
+    "DAV revocation interrupts real in-flight download",
+    "space disable interrupts real in-flight download"
+  ],
+  "container": "davlargec48be69a4d",
+  "image_id": "sha256:e5913326b6f3bac140e4524ffd8468bb0d77aac353c674430308877481e94105",
+  "source_sha256": "2e50d622ab9e45736a9d4816831eede4656ba9d8783b2a34c15d8a42c7081532",
+  "source_revision": "a8f50c53618388115aa671a7072ac4151c58b158",
+  "helper_build_id": "fc1290358b2c03b824eca32f99c2ff0b84f0d9ccad9b0b115ef793118c758f67",
+  "runtime": {
+    "microsandbox": "0.7.2",
+    "sqlite": "3.51.3",
+    "source_revision": "60d4dc8a436fb9365491567ec21d073e924e3c6d",
+    "source_archive_sha256": "fecd277ccfddbb4a131e4c9dfe056a87a014926c78dd705776d738158c483828",
+    "sdk_source_modified": true,
+    "runtime_source_modified": true,
+    "runtime_patch": {
+      "version": "0.7.2",
+      "source_revision": "60d4dc8a436fb9365491567ec21d073e924e3c6d",
+      "source_archive_sha256": "fecd277ccfddbb4a131e4c9dfe056a87a014926c78dd705776d738158c483828",
+      "patches": [
+        {
+          "id": "relay",
+          "patch": "msb-0.7.2-relay.patch",
+          "patch_sha256": "4c7b1d3724711b7bfe6461912767158bae40be799f341b62ec17d21fea8a5c96",
+          "files": [
+            {
+              "file": "crates/runtime/lib/runner/relay.rs",
+              "original_sha256": "94675ed774c288b808acefb03cfee5ac374211362eb8584fb4f51ca908361d13",
+              "patched_sha256": "b70d3a6e1f8c4970bfcbeff4f69205ac0a2fdd3a6655c6bf029d846c06567fa2"
+            }
+          ]
+        },
+        {
+          "id": "lifecycle",
+          "patch": "msb-0.7.2-lifecycle.patch",
+          "patch_sha256": "db84176c2fb44aec240d78ea44e326c3af3fe89cf3ad5006f4a25b10179b78b6",
+          "files": [
+            {
+              "file": "sdk/rust/lib/backend/local/sandbox/mod.rs",
+              "original_sha256": "be70a01e31e93995e111d6bb94c5c55e31528f3bacf627ccde836f54f74fd053",
+              "patched_sha256": "a56a6be62c28c251778f37ecb2f7c3a20375414c23862eb777de9ce9fe043d5c"
+            },
+            {
+              "file": "sdk/rust/lib/sandbox/handle.rs",
+              "original_sha256": "ec632d9b88c86498ef86b110560378ec1a3ff65b5f6e53369b46adca9e854941",
+              "patched_sha256": "7954ed6a43fe4bad9c135976ffd74a4755ee9fa39e53b06936050f888ad74b51"
+            },
+            {
+              "file": "crates/runtime/lib/client/ipc.rs",
+              "original_sha256": "50c618ea8f969f2471dc93c972abd94cf29da889a55a16ecd0dc96b2341ce3ef",
+              "patched_sha256": "02b49657d09983109209d754495d823a42180ed3a00a77b4cc75baea6621e3b1"
+            },
+            {
+              "file": "crates/runtime/lib/client/maintenance.rs",
+              "original_sha256": "069a0435317f92786124ce112c9ca2a2bc7f5cd49c47d35f990364a0891a18b2",
+              "patched_sha256": "c23c2581a16debd845fd807e746d0478721c12a2803b6a1aa63133d27384d4a7"
+            },
+            {
+              "file": "sdk/rust/lib/backend/local/sandbox/create.rs",
+              "original_sha256": "fc2b311e284a2afff3f19149e2de581794c338fa5b358c6769a4ecf50fbd7b4a",
+              "patched_sha256": "d9b6b0968df872b66fdfd937f554e6e335654b9ce3b58d237a267e77e91d9a78"
+            }
+          ]
+        }
+      ],
+      "vendored_crates": {
+        "microsandbox": {
+          "crate_sha256": "0fda3a76b3754d8eb10a5f9b6267a57517b9231eb2fe8254ab175df8a80fa8c8",
+          "tree_sha256": "8516beb48c58a41d1ced521ce6224fd1f8391cde7b20f454188c51c18d6cc6de"
+        },
+        "microsandbox-runtime": {
+          "crate_sha256": "c258d666aa6c4314fdf2ff6c93044f64f7dea376174b7de27dbd5a6a01b518e9",
+          "tree_sha256": "46e7904ea1527c12bb4e9c853e6c2120f953f7e3469255b3110cdcd63d468e43"
+        }
+      }
+    },
+    "profile": "release",
+    "msb_sha256": "c3ef4764900d4bc7de6d33cd2ab8bd400a1a412161871ba27686ca4db4ff8b9b",
+    "desktop": {
+      "kind": "desktop",
+      "preset": "runcove-desktop",
+      "reference": "runcove/runcove-workspace@sha256:29e1c5d072a55eb98e38518941a7aee0e19abb098364b5d609a27844de35b698",
+      "workerContract": 1,
+      "helper_sha256": "c63eed7de3f3028d941ebbf3889b4b10e48e4e6ce7cf80e6db1fbcb3e14cf5c6",
+      "ui_files": {
+        "assets/desktop-D80Ritzr.js": "888cadfdfcc21efd3219ba96045b0b4a38c7bb8581df46cbd4a79aef4f02f228",
+        "assets/i18n-SI9ul58Q.js": "1fade829c6f90162a222fefbc0994cd105dee0879a083a8310200e2719eb36c0",
+        "assets/index-BU_vbHzJ.js": "61692527f827f1f892a2f6eb1b97cce4c263c4a3169c1d259fa82d633f7e5c06",
+        "assets/index-C8gOcvl2.css": "d0c5a5acdac8e3dd2e5fa6a3f39081603e4581d96e9e77fc6cfe61158b2576e9",
+        "index.html": "67c7aff825629d8f6e3c346b9003c5c7d6bbff1fa263fcf89189fd0cb7f6bafa",
+        "licenses/SOURCES.txt": "406457243c71f0eb4f5939dee665173c9d04b52eaf90b96965c624fb8531e4ea",
+        "licenses/i18next.txt": "1cd0a2b02a6cc40ef8ee16310d13eeffdd7b5de4a562fd3ee7c921d8eb54f60a",
+        "licenses/noVNC.txt": "3ccd2242d7f5b6c5ae831a486f63cce1f18d8cd11c511f6a7a7251673763b2d1",
+        "licenses/qrcode.txt": "8df47c6ad9ac2c41eb9b2a72def9908959da0ede8dadd56c7b249c1bdb0c5ce6"
+      }
+    }
+  },
+  "runtime_executables_verified": 3,
+  "full_read": {
+    "bytes": 4294967296,
+    "seconds": 7.1662720649983385
+  },
+  "mixed_cancellation": {
+    "upload_cancellations": 60,
+    "download_cancellations": 60,
+    "early_rejected_uploads": [
+      403,
+      403,
+      403,
+      403,
+      403,
+      403,
+      403,
+      403,
+      403,
+      403,
+      403,
+      403,
+      403,
+      403,
+      403,
+      403,
+      403,
+      403,
+      403,
+      403,
+      403,
+      403,
+      403,
+      403
+    ],
+    "max_probe_seconds": 0.08391894200030947,
+    "retryable_responses": 0,
+    "same_helper_identity": true,
+    "relay_client_disconnects": 0,
+    "merge_failures": 0
+  },
+  "truncated_bytes_received": 17301504,
+  "cleanup_passed": true
+}

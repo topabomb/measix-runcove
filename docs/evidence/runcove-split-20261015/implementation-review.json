@@ -1,0 +1,20 @@
+{
+  "scope": "read-only subagent reviews and resolved implementation findings; final execution evidence is recorded separately",
+  "findings_resolved": [
+    "Lost Standalone desktop owner retains ownership and blocks recreation until container restart",
+    "Offline loader binds the package tag to the exact image or archived config identity",
+    "Workspace build uses a checked content-named local tag without requiring registry publication",
+    "Workspace transfer preserves sticky, setuid and setgid bits after ownership mapping",
+    "Literal Linux backslash filenames round-trip through the same path validation",
+    "Worker result must be an object before controller-owned log metadata is attached",
+    "Rejected PUT receiver remains owned by its connection while the original error is delivered",
+    "Rejected upload draining checks cancellation and the same absolute deadline before each frame"
+  ],
+  "additional_execution_finding_resolved": "Reading source files on relatime filesystems must not classify an atime update as a concurrent source write",
+  "reviews_do_not_claim": [
+    "production deployment or migration",
+    "registry publication",
+    "ARM or general NAS compatibility",
+    "resolution of the first intermittent idle tab-restoration failure solely from later successful runs"
+  ]
+}

@@ -1,0 +1,15 @@
+
+> runcove-desktop-ui@0.1.0 test
+> playwright test --reporter=list --output=/path/to/runcove/agent-space/target/standalone-verification/runcove-qualify-89ce6c5361/ui-results
+
+
+Running 4 tests using 1 worker
+
+  ✓  1 tests/workbench.spec.ts:37:1 › real VNC keyboard, clipboard, English UI and a second viewer (5.1s)
+  ✓  2 tests/workbench.spec.ts:88:1 › a connected passive VNC viewer sleeps after 300 seconds and restores its tabs (5.2m)
+  ✓  3 tests/workbench.spec.ts:115:1 › human takeover allows basic tools and workspace uploads (1.0s)
+  ✓  4 tests/workbench.spec.ts:136:1 › HTTPS proxy with rewritten Host preserves nested workbench and origin boundary (752ms)
+
+  Slow test file: tests/workbench.spec.ts (5.3m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  4 passed (5.3m)

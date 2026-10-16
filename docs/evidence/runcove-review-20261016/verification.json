@@ -1,0 +1,255 @@
+{
+  "passed": true,
+  "base_commit": "b1a46fc",
+  "date": "2026-10-16",
+  "checks": {
+    "server-helper": {
+      "passed": true,
+      "log_sha256": "00cba53c86da6a17450e363cc7a11f0c5a559ae583453b1272392374ca785065"
+    },
+    "msb-patches": {
+      "passed": true,
+      "log_sha256": "4664446e0500f85ac30798eb1063b81f727997307defab1525090322ea0d445a"
+    },
+    "ui-typecheck": {
+      "passed": true,
+      "log_sha256": "3c619657399a00a8f24ea0b8a6fc0be4e390d0fb979a225f487ff13b6294ee67"
+    },
+    "ui-check-i18n": {
+      "passed": true,
+      "log_sha256": "594b0e9ead68fc0c6d288ba0a1b92f0b0e9a3bf096834fac4e8dcf06403a54ff"
+    },
+    "ui-check-ui": {
+      "passed": true,
+      "log_sha256": "5914f4ea7f783569af619296d62095d3236545201dda25d3401800faec1adb9f"
+    },
+    "first-party-syntax": {
+      "passed": true,
+      "counts": {
+        "python": 51,
+        "javascript": 10,
+        "shell": 7,
+        "toml": 8,
+        "json": 10
+      }
+    },
+    "documentation-links": {
+      "passed": true,
+      "log_sha256": "0f7bcdd1f2fcc6f9b2663141f60b372a223f9fa107ff34268e4064f3391e9c99"
+    },
+    "package-manuals": {
+      "passed": true,
+      "files": 103,
+      "root_index_and_local_references_retained": true,
+      "new_review_evidence_retained": true,
+      "finished_plan_and_archive_removed": true
+    },
+    "diff": {
+      "passed": true,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "limitations": [
+    "No release image rebuild or new offline package",
+    "No production changes or registry push",
+    "Third-party code is checked against its pinned provenance and patch manifest; this is not a fresh line-by-line audit of upstream dependencies"
+  ],
+  "source_inventory": {
+    "files": 172,
+    "sha256": "2d4157a5b251aa6b63cd15c33b70758909386054f1fea5fe7c6ca84d3b59616f"
+  },
+  "source_sha256": "b8ac21e217b66f345976fe473cde41f2593b2006164bfd507ab6663756059138",
+  "rust_tests": {
+    "passed": 307,
+    "failed": 0,
+    "ignored": 0
+  },
+  "code_validation": {
+    "passed": true,
+    "checks": [
+      "fmt",
+      "helpers",
+      "workspace-tests",
+      "clippy",
+      "standalone-check",
+      "standalone-dependencies",
+      "test_managed_cleanup",
+      "test_exec_owner",
+      "test_verify_protocol",
+      "test_verify_dav_large",
+      "test_package",
+      "workspace-transfer"
+    ],
+    "logs": {
+      "fmt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "helpers": "f694a9e074374d315f58b8a63ce849858b1b8708cf56b3d194218605bd2a9d6e",
+      "workspace-tests": "e76a1b91d597f676ff6c996ef116760de07fd395e81ddc3d718f547cd4b7208f",
+      "clippy": "ac57e6236ee38cd29a50e67d5a8f488c602eb63d585764c6531f319cccd257ec",
+      "standalone-check": "300a91aec68b3b7d7b50ef51357f18ef428385b538aac5b86601be33291ff951",
+      "standalone-dependencies": "a17d3df60377897b8f758a2a90738088eb6fa66bda7da961eb5aaf92cb0b0095",
+      "test_managed_cleanup": "1e43b905e11ca028139fe5078016515111aaf7cebf8d6a3e224b7d03b9cb6ac9",
+      "test_exec_owner": "aa4d19161042e95f0b2a9f31ce9e3440486aa7ccf0e0d56887809c6e310d1757",
+      "test_verify_protocol": "b01936ab0df89deb966f9d82f4cdb87425204c90c44108a22f6141d30127e092",
+      "test_verify_dav_large": "24adda79e21044fef19cdc7f0606a9cd7770fc9a99c705a8622ee923c13bce5d",
+      "test_package": "fe008aab760eb03ccac7578e2b84665b1b50b0d7f855b17a0c7a8d039435b658",
+      "workspace-transfer": "e2ef497f0922c236c2f1298f1a64c03a52ec1c0798cd04c8dbcd6e9d76e5701e"
+    },
+    "rust_summaries": [
+      "test result: ok. 84 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.18s",
+      "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.99s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.34s",
+      "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s",
+      "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.69s",
+      "test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.44s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.78s",
+      "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.97s",
+      "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.23s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 19.78s",
+      "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.62s",
+      "test result: ok. 34 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s",
+      "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.76s",
+      "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.02s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.52s",
+      "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.05s",
+      "test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.25s",
+      "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s",
+      "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s",
+      "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s",
+      "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.30s",
+      "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.73s",
+      "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.96s",
+      "test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.25s",
+      "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s",
+      "test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.13s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 43.67s",
+      "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s",
+      "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+      "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s",
+      "test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.62s",
+      "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.67s",
+      "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    ]
+  },
+  "standalone_runtime": {
+    "build_and_check": {
+      "passed": true,
+      "scope": "current source and development assets; not a rebuilt release image",
+      "checks": [
+        "standalone-build",
+        "standalone-clippy",
+        "standalone-runtime"
+      ],
+      "logs": {
+        "standalone-build": "b9afac4781af71f21623cbdddfde15435a2b66d982fd704d9c672fecea20a251",
+        "standalone-clippy": "a1f543218162a881532dce002a8e7616e5ab7a3c817683a2a11eed76e227e156",
+        "standalone-runtime": "e7ab6bf5210ab48c9891c22698758348162a1a5c67b14f0c725ed3b4f491d9d0"
+      },
+      "report": "/path/to/runcove/agent-space/target/standalone-verification/runcove-qualify-e396448506/result.json",
+      "binaries": {
+        "runcove-standalone": "1f90137f61c7c389db9906128213057339f8c1881edceef4d32804b72402b61f",
+        "agent-space-desktop": "a1ce5aa2f2d7591f3f6f016b484669899a74e09b58024323852e69b4ada3207d",
+        "agent-space-webdav": "9f59da2e846d1492f67b0af80b896d227f5db472cedb96ccc9a4db1495ce2e27",
+        "agent-space-static-http": "1ba726a38403e885d7333342785940b5082e5ffc3c54524cf03277ee2e199384"
+      }
+    },
+    "qualification": {
+      "target": "standalone",
+      "scope": "development assets",
+      "image": "runcove-standalone:qualify",
+      "checks": [
+        "starts_without_kvm_msb_or_docker_socket",
+        "single_space_routes_have_no_management_or_user_selection",
+        "shared_eight_tools_and_nonroot_secret_isolation",
+        "profile_preparation_cannot_follow_user_links_with_root_privileges",
+        "real_shared_browser_and_desktop_png",
+        "root_task_owner_keeps_final_results_in_memory_without_following_user_paths",
+        "dav_workbench_and_mcp_edits_share_writable_user_ownership",
+        "artifact_listing_respects_payload_permissions_through_user_symlinks",
+        "publication_uses_single_space_address",
+        "stopped_data_child_dies_with_killed_control_owner_and_helper_recovers",
+        "shared_test_browser_vm.py",
+        "shared_test_desktop_files_vm.py",
+        "shared_test_browser_lifecycle_vm.py",
+        "shared_real_vnc_keyboard_clipboard_viewers_responsive_and_idle",
+        "rewritten_host_workbench_preserves_own_origin_and_nonce_checks",
+        "lost_desktop_owner_blocks_recreation_and_control_until_container_restart",
+        "active_mcp_sse_closes_on_graceful_shutdown",
+        "graceful_restart_preserves_workspace_and_expires_page_session"
+      ],
+      "passed": true,
+      "image_id": "sha256:b13c172f4e8a21c42d256dbbea21ecb6fcd4a578847851c85e98fd47a25c2993",
+      "suite_logs": {
+        "test_browser_lifecycle_vm.py.log": "1f615dfb6d0892535fe941598a02039cbc5b71415d669d4649a338fc9a2da4ff",
+        "test_browser_vm.py.log": "b468fc1d2fc4a9d912f7536b958c504af6d18ccf0525203966c144ec55ec4d07",
+        "test_desktop_files_vm.py.log": "890a0c7351ad83672b518db8ce3dc428695626bda80cb241a268ef157ab2c61f",
+        "ui.log": "1d9836ddc5122795e7eec9757527de22150d97689f5339458e35f23cf8cca5aa"
+      },
+      "full": true,
+      "cleanup_passed": true
+    },
+    "scope_note": "Development binaries exercise the four execution/control/artifact fixes. Later Server-only resource validation is covered by the final Rust suite; this is not a release-image attestation."
+  },
+  "server_helper": {
+    "passed": true,
+    "scope": "Server image with current desktop helper bind-mounted; not final-image qualification",
+    "checks": [
+      "current verified desktop helper is running inside an actual MSB VM",
+      "UID1001 listing refuses root-private directory links and normal artifact listing recovers"
+    ],
+    "helper_sha256": "a1ce5aa2f2d7591f3f6f016b484669899a74e09b58024323852e69b4ada3207d",
+    "base_image_id": "sha256:e5913326b6f3bac140e4524ffd8468bb0d77aac353c674430308877481e94105",
+    "cleanup_passed": true
+  },
+  "regressions_before_fix": {
+    "config_and_owner": {
+      "failed_tests": [
+        "canonical_conversion_preserves_new_installation_defaults",
+        "output_eof_does_not_leave_a_timed_out_owner_running"
+      ],
+      "log_sha256": "c059ec00df7dd27c4c784d854169b1e9e3d2dec3f21259ae480a6e009eea790e"
+    },
+    "handoff": {
+      "failed_test": "abandoned_handoff_releases_transition_without_releasing_the_operation",
+      "log_sha256": "8337ed30e13f30a2f88d038aa5486bb148baeaa9aaaa1ac338f6f3dec8963f6f"
+    },
+    "artifact_listing": {
+      "image_id": "sha256:b13c172f4e8a21c42d256dbbea21ecb6fcd4a578847851c85e98fd47a25c2993",
+      "http_status": 200,
+      "leaked_metadata": [
+        "name",
+        "bytes"
+      ],
+      "log_sha256": "c538e3c60ff3adf63d6eb35105b5137c4498c6ba2280c54b6614eaf45b041505"
+    }
+  },
+  "documents": {
+    "passed": true,
+    "files": 18,
+    "links": 175,
+    "errors": []
+  },
+  "documentation_cleanup": {
+    "removed": [
+      "docs/README.md",
+      "docs/runcove-implementation-plan.md",
+      "docs/archive/README.md",
+      "docs/archive/web-publish-validation-20261004.md",
+      "docs/evidence/runcove-split-20261015/planning-review.json"
+    ],
+    "new_long_term_entries": [
+      "README.md",
+      "docs/development.md"
+    ],
+    "validation_records": "retained fixed release, restoration and runtime evidence; removed repeated development/deployment chronology"
+  },
+  "finished_at_utc": "2026-10-15T17:20:45.710785+00:00"
+}

@@ -1,0 +1,68 @@
+[package]
+name = "agent-space-mcp"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["msb"]
+msb = ["agent-engine/msb", "dep:microsandbox"]
+
+[[bin]]
+name = "agent-space-mcp"
+path = "src/main.rs"
+required-features = ["msb"]
+
+[[bin]]
+name = "runcove-standalone"
+path = "src/bin/runcove-standalone.rs"
+
+[dependencies]
+agent-engine = { path = "..", default-features = false }
+microsandbox = { version = "=0.7.2", optional = true }
+rmcp = { version = "1.7", features = [
+    "server",
+    "transport-streamable-http-server",
+    "transport-streamable-http-server-session",
+    "schemars",
+] }
+axum = {version="0.8",features=["ws"]}
+tokio = { version = "1", features = ["full"] }
+tokio-util = "0.7"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-appender = "0.2"
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+bytes = "1"
+async-stream = "0.3"
+futures = "0.3"
+http = "1"
+hyper = { version = "1", features = ["client", "http1"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+sha2 = "0.10"
+hex = "0.4"
+uuid = {version="1",features=["v4"]}
+subtle = "2"
+schemars = "1.0"
+base64 = "0.22"
+url = "2.5"
+percent-encoding = "2"
+toml = "0.8"
+libc = "0.2"
+
+time = { version = "0.3", features = ["formatting"] }
+
+[dev-dependencies]
+rmcp = { version = "1.7", features = [
+    "client",
+    "transport-streamable-http-client-reqwest",
+] }
+agent-engine = { path = "..", default-features = false, features = ["test-utils"] }
+tokio = { version = "1", features = ["test-util"] }
+serial_test = "3"
+tower = { version = "0.5", features = ["util"] }
+tempfile = "3"
+filetime = "0.2"
+reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }

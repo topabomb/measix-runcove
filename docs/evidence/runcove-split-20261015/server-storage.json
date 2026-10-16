@@ -1,0 +1,19 @@
+{
+  "image_id": "sha256:e5913326b6f3bac140e4524ffd8468bb0d77aac353c674430308877481e94105",
+  "target": "server",
+  "passed": true,
+  "scope": "final image",
+  "rejected_upload": {
+    "early_status": 412,
+    "connection_closed_seconds": 2.0008333890000003,
+    "progress_frames": 49
+  },
+  "attempts": 20,
+  "checks": [
+    "real 8 MiB filesystem ENOSPC returns 507",
+    "failed overwrite preserves original bytes",
+    "temporary upload cleanup permits next write",
+    "early rejected PUT response and fixed total drain deadline"
+  ],
+  "cleanup_passed": true
+}

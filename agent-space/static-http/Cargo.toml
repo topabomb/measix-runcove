@@ -1,0 +1,11 @@
+[package]
+name = "agent-space-static-http"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+libc = "0.2"
+percent-encoding = "2"
+
+[build-dependencies]
+sha2 = "0.10"

@@ -1,0 +1,79 @@
+# Rust
+target/
+*.rs.bk
+.cargo/config.toml
+
+# Node.js / npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Agent & tools
+.codebuddy/
+
+# Machine-specific deployment runbooks (may contain server topology and public keys)
+docs/local/
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Local credentials and private key material
+.secrets/
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+
+# Logs
+*.log
+
+# Docker build artifacts (generated, not source)
+agent-space/docker/.build/
+agent-space/docker/configs/
+agent-space/docker/agent-space.tar
+agent-space-*.tar
+agent-space-*.tar.gz
+agent-space-*.zip
+runcove-*.tar
+runcove-*.tar.gz
+runcove-*.zip
+runcove-*.zip.sha256
+
+# Operator-supplied local runtime assets
+vendor/
+
+# Reviewed, pinned protocol and MSB patches are application build inputs.
+!agent-space/vendor/
+agent-space/vendor/*
+!agent-space/vendor/dav-server/
+!agent-space/vendor/microsandbox/
+!agent-space/vendor/microsandbox-runtime/
+!agent-space/vendor/MSB-LICENSE
+
+# Built workbench assets (npm build / Docker UI stage)
+agent-space/desktop-ui/dist/
+agent-space/desktop-ui/test-results/
+agent-space/desktop-ui/playwright-report/

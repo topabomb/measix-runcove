@@ -1,0 +1,14 @@
+[package]
+name = "agent-space-desktop"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.8"
+tokio = { version = "1", features = ["full"] }
+tokio-util = "0.7"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+libc = "0.2"
+uuid = { version = "1", features = ["v4"] }

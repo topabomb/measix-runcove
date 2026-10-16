@@ -1,0 +1,50 @@
+{
+  "base_image_id": "sha256:1c389b9be5db3aa7d397375de1eac8a79839de0cd8b7e828b5c010ef325f8b72",
+  "repair_image_id": "sha256:225cb914676bcc241500206b02b9c6b68449bd7db4f5be6ce88a81153018661c",
+  "passed": true,
+  "checks": [
+    "original_static_four_tools_and_two_disks",
+    "original_static_token_and_mcp_endpoint",
+    "root_and_workspace_files_preserved",
+    "cold_backup_and_restart",
+    "actual_vm_uses_sqlite351_runtime",
+    "isolated_complete_volume_rollback"
+  ],
+  "started_at": "2026-09-30T14:40:14.948783+00:00",
+  "repair": {
+    "started_at": "2026-09-30T14:40:23.444079+00:00",
+    "old_container_id": "cc17871b84346a58130c389093182bf54acd42e7e7a382d3083a83f523ad2e5f",
+    "old_image_id": "sha256:1c389b9be5db3aa7d397375de1eac8a79839de0cd8b7e828b5c010ef325f8b72",
+    "new_image_id": "sha256:225cb914676bcc241500206b02b9c6b68449bd7db4f5be6ce88a81153018661c",
+    "passed": true,
+    "old_exit_code": 0,
+    "old_oom_killed": false,
+    "config_sha256": "c36a1ba2a3a9c40093e33cd45002fc0fc7177b9cddafe38bbfa2a3860d74bb23",
+    "backup_sha256": {
+      "data.tar.gz": "72ca5f9a46e6e48ca6b58b639dd1086965831533bca4dd9d31ffa27f412ed3a9",
+      "logs.tar.gz": "adce8a6fd9ce7fc157feb8482a8d026245d0a44a4370089d989a081331a8aae8"
+    },
+    "previous_container_name": "as-runtime-repair-02cfc2a842-pre-sqlite351-20260930T144056Z",
+    "new_container_id": "96d49a57f8ba9cc86bdf6fc13133f9dfe429385edcd287d31201818b32c6e5d5",
+    "credentials_preserved": true,
+    "config_preserved": true,
+    "user_state_preserved": true,
+    "state_store_present": false,
+    "disk_hashes_preserved": true,
+    "disk_files": 2,
+    "restart_verified": true,
+    "runtime": {
+      "microsandbox": "0.7.2",
+      "sqlite": "3.51.3",
+      "source_revision": "60d4dc8a436fb9365491567ec21d073e924e3c6d",
+      "source_archive_sha256": "fecd277ccfddbb4a131e4c9dfe056a87a014926c78dd705776d738158c483828",
+      "sdk_source_modified": false,
+      "profile": "release",
+      "msb_sha256": "4ebe8e0416483bb6f060896fea7ffecd2ba97fd3a0bbd4562aba46e17357426e"
+    },
+    "health": "HTTP 200",
+    "completed_at": "2026-09-30T14:41:04.752816+00:00",
+    "old_container_removed": true
+  },
+  "completed_at": "2026-09-30T14:41:15.700393+00:00"
+}

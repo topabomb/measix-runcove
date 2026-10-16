@@ -1,0 +1,7 @@
+five-minute passive polling / idle / wake verified; tab count and profile preserved
+test_passive_polling_does_not_keep_desktop_alive_and_wake_preserves_tabs (__main__.DesktopLifecycle.test_passive_polling_does_not_keep_desktop_alive_and_wake_preserves_tabs) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 312.678s
+
+OK

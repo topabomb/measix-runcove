@@ -1,0 +1,152 @@
+[
+  {
+    "iteration": 0,
+    "home": "<isolated-test-dir>/stock-sdk-home-93d35774",
+    "exitCode": 0,
+    "output": "SDK=0.7.2 SQLITE=3.46.0 MODE=parent\nINITIAL_LIST count=0\nINSPECT after-sdk-list pid=1192614 locks=[\"2: POSIX  ADVISORY  READ 1192614 08:50:373752 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-93d35774/db/msb.db-shm\"]\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-first\nREADY\nDROPPED_CHILD_BACKEND\nFIRST_CHILD_EXIT exit status: 0\nINSPECT after-first-child-exit pid=1192614 locks=[\"2: POSIX  ADVISORY  READ 1192614 08:50:373752 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-93d35774/db/msb.db-shm (deleted)\"]\nPARENT_CREATED parent-write\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-second\nREADY\nINSPECT while-second-child-alive pid=1192614 locks=[\"3: POSIX  ADVISORY  READ 1192614 08:50:373752 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-93d35774/db/msb.db-shm (deleted)\"]\nFINAL_SANDBOX_LIST count=0\nFINAL_VOLUME_LIST count=2\n",
+    "independentVolumeNames": [
+      "child-first",
+      "child-second"
+    ],
+    "independentIntegrity": [
+      [
+        "ok"
+      ]
+    ]
+  },
+  {
+    "iteration": 1,
+    "home": "<isolated-test-dir>/stock-sdk-home-2f3c034f",
+    "exitCode": 0,
+    "output": "SDK=0.7.2 SQLITE=3.46.0 MODE=parent\nINITIAL_LIST count=0\nINSPECT after-sdk-list pid=1192701 locks=[\"15: POSIX  ADVISORY  READ 1192701 08:50:373770 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-2f3c034f/db/msb.db-shm\"]\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-first\nREADY\nDROPPED_CHILD_BACKEND\nFIRST_CHILD_EXIT exit status: 0\nINSPECT after-first-child-exit pid=1192701 locks=[\"15: POSIX  ADVISORY  READ 1192701 08:50:373770 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-2f3c034f/db/msb.db-shm (deleted)\"]\nPARENT_CREATED parent-write\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-second\nREADY\nINSPECT while-second-child-alive pid=1192701 locks=[\"16: POSIX  ADVISORY  READ 1192701 08:50:373770 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-2f3c034f/db/msb.db-shm (deleted)\"]\nFINAL_SANDBOX_LIST count=0\nFINAL_VOLUME_LIST count=2\n",
+    "independentVolumeNames": [
+      "child-first",
+      "child-second"
+    ],
+    "independentIntegrity": [
+      [
+        "ok"
+      ]
+    ]
+  },
+  {
+    "iteration": 2,
+    "home": "<isolated-test-dir>/stock-sdk-home-573f56ae",
+    "exitCode": 0,
+    "output": "SDK=0.7.2 SQLITE=3.46.0 MODE=parent\nINITIAL_LIST count=0\nINSPECT after-sdk-list pid=1192716 locks=[\"12: POSIX  ADVISORY  READ 1192716 08:50:373785 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-573f56ae/db/msb.db-shm\"]\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-first\nREADY\nDROPPED_CHILD_BACKEND\nFIRST_CHILD_EXIT exit status: 0\nINSPECT after-first-child-exit pid=1192716 locks=[\"12: POSIX  ADVISORY  READ 1192716 08:50:373785 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-573f56ae/db/msb.db-shm (deleted)\"]\nPARENT_CREATED parent-write\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-second\nREADY\nINSPECT while-second-child-alive pid=1192716 locks=[\"13: POSIX  ADVISORY  READ 1192716 08:50:373785 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-573f56ae/db/msb.db-shm (deleted)\"]\nFINAL_SANDBOX_LIST count=0\nFINAL_VOLUME_LIST count=2\n",
+    "independentVolumeNames": [
+      "child-first",
+      "child-second"
+    ],
+    "independentIntegrity": [
+      [
+        "ok"
+      ]
+    ]
+  },
+  {
+    "iteration": 3,
+    "home": "<isolated-test-dir>/stock-sdk-home-f3c34bc6",
+    "exitCode": 0,
+    "output": "SDK=0.7.2 SQLITE=3.46.0 MODE=parent\nINITIAL_LIST count=0\nINSPECT after-sdk-list pid=1192737 locks=[\"19: POSIX  ADVISORY  READ 1192737 08:50:373801 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-f3c34bc6/db/msb.db-shm\"]\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-first\nREADY\nDROPPED_CHILD_BACKEND\nFIRST_CHILD_EXIT exit status: 0\nINSPECT after-first-child-exit pid=1192737 locks=[\"19: POSIX  ADVISORY  READ 1192737 08:50:373801 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-f3c34bc6/db/msb.db-shm (deleted)\"]\nPARENT_CREATED parent-write\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-second\nREADY\nINSPECT while-second-child-alive pid=1192737 locks=[\"20: POSIX  ADVISORY  READ 1192737 08:50:373801 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-f3c34bc6/db/msb.db-shm (deleted)\"]\nFINAL_SANDBOX_LIST count=0\nFINAL_VOLUME_LIST count=2\n",
+    "independentVolumeNames": [
+      "child-first",
+      "child-second"
+    ],
+    "independentIntegrity": [
+      [
+        "ok"
+      ]
+    ]
+  },
+  {
+    "iteration": 4,
+    "home": "<isolated-test-dir>/stock-sdk-home-48f51fae",
+    "exitCode": 0,
+    "output": "SDK=0.7.2 SQLITE=3.46.0 MODE=parent\nINITIAL_LIST count=0\nINSPECT after-sdk-list pid=1192752 locks=[\"1: POSIX  ADVISORY  READ 1192752 08:50:373815 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-48f51fae/db/msb.db-shm\"]\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-first\nREADY\nDROPPED_CHILD_BACKEND\nFIRST_CHILD_EXIT exit status: 0\nINSPECT after-first-child-exit pid=1192752 locks=[\"1: POSIX  ADVISORY  READ 1192752 08:50:373815 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-48f51fae/db/msb.db-shm (deleted)\"]\nPARENT_CREATED parent-write\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-second\nREADY\nINSPECT while-second-child-alive pid=1192752 locks=[\"1: POSIX  ADVISORY  READ 1192752 08:50:373815 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-48f51fae/db/msb.db-shm (deleted)\"]\nFINAL_SANDBOX_LIST count=0\nFINAL_VOLUME_LIST count=2\n",
+    "independentVolumeNames": [
+      "child-first",
+      "child-second"
+    ],
+    "independentIntegrity": [
+      [
+        "ok"
+      ]
+    ]
+  },
+  {
+    "iteration": 5,
+    "home": "<isolated-test-dir>/stock-sdk-home-6cf2319a",
+    "exitCode": 0,
+    "output": "SDK=0.7.2 SQLITE=3.46.0 MODE=parent\nINITIAL_LIST count=0\nINSPECT after-sdk-list pid=1192768 locks=[\"6: POSIX  ADVISORY  READ 1192768 08:50:373829 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-6cf2319a/db/msb.db-shm\"]\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-first\nREADY\nDROPPED_CHILD_BACKEND\nFIRST_CHILD_EXIT exit status: 0\nINSPECT after-first-child-exit pid=1192768 locks=[\"6: POSIX  ADVISORY  READ 1192768 08:50:373829 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-6cf2319a/db/msb.db-shm (deleted)\"]\nPARENT_CREATED parent-write\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-second\nREADY\nINSPECT while-second-child-alive pid=1192768 locks=[\"6: POSIX  ADVISORY  READ 1192768 08:50:373829 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-6cf2319a/db/msb.db-shm (deleted)\"]\nFINAL_SANDBOX_LIST count=0\nFINAL_VOLUME_LIST count=2\n",
+    "independentVolumeNames": [
+      "child-first",
+      "child-second"
+    ],
+    "independentIntegrity": [
+      [
+        "ok"
+      ]
+    ]
+  },
+  {
+    "iteration": 6,
+    "home": "<isolated-test-dir>/stock-sdk-home-3a44cb11",
+    "exitCode": 0,
+    "output": "SDK=0.7.2 SQLITE=3.46.0 MODE=parent\nINITIAL_LIST count=0\nINSPECT after-sdk-list pid=1192783 locks=[\"18: POSIX  ADVISORY  READ 1192783 08:50:373843 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-3a44cb11/db/msb.db-shm\"]\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-first\nREADY\nDROPPED_CHILD_BACKEND\nFIRST_CHILD_EXIT exit status: 0\nINSPECT after-first-child-exit pid=1192783 locks=[\"18: POSIX  ADVISORY  READ 1192783 08:50:373843 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-3a44cb11/db/msb.db-shm (deleted)\"]\nPARENT_CREATED parent-write\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-second\nREADY\nINSPECT while-second-child-alive pid=1192783 locks=[\"19: POSIX  ADVISORY  READ 1192783 08:50:373843 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-3a44cb11/db/msb.db-shm (deleted)\"]\nFINAL_SANDBOX_LIST count=0\nFINAL_VOLUME_LIST count=2\n",
+    "independentVolumeNames": [
+      "child-first",
+      "child-second"
+    ],
+    "independentIntegrity": [
+      [
+        "ok"
+      ]
+    ]
+  },
+  {
+    "iteration": 7,
+    "home": "<isolated-test-dir>/stock-sdk-home-77c3f7b2",
+    "exitCode": 0,
+    "output": "SDK=0.7.2 SQLITE=3.46.0 MODE=parent\nINITIAL_LIST count=0\nINSPECT after-sdk-list pid=1192863 locks=[\"17: POSIX  ADVISORY  READ 1192863 08:50:373864 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-77c3f7b2/db/msb.db-shm\"]\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-first\nREADY\nDROPPED_CHILD_BACKEND\nFIRST_CHILD_EXIT exit status: 0\nINSPECT after-first-child-exit pid=1192863 locks=[\"17: POSIX  ADVISORY  READ 1192863 08:50:373864 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-77c3f7b2/db/msb.db-shm (deleted)\"]\nPARENT_CREATED parent-write\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-second\nREADY\nINSPECT while-second-child-alive pid=1192863 locks=[\"18: POSIX  ADVISORY  READ 1192863 08:50:373864 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-77c3f7b2/db/msb.db-shm (deleted)\"]\nFINAL_SANDBOX_LIST count=0\nFINAL_VOLUME_LIST count=2\n",
+    "independentVolumeNames": [
+      "child-first",
+      "child-second"
+    ],
+    "independentIntegrity": [
+      [
+        "ok"
+      ]
+    ]
+  },
+  {
+    "iteration": 8,
+    "home": "<isolated-test-dir>/stock-sdk-home-143473ea",
+    "exitCode": 0,
+    "output": "SDK=0.7.2 SQLITE=3.46.0 MODE=parent\nINITIAL_LIST count=0\nINSPECT after-sdk-list pid=1193219 locks=[\"2: POSIX  ADVISORY  READ 1193219 08:50:373885 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-143473ea/db/msb.db-shm\"]\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-first\nREADY\nDROPPED_CHILD_BACKEND\nFIRST_CHILD_EXIT exit status: 0\nINSPECT after-first-child-exit pid=1193219 locks=[\"2: POSIX  ADVISORY  READ 1193219 08:50:373885 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-143473ea/db/msb.db-shm (deleted)\"]\nPARENT_CREATED parent-write\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-second\nREADY\nINSPECT while-second-child-alive pid=1193219 locks=[\"3: POSIX  ADVISORY  READ 1193219 08:50:373885 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-143473ea/db/msb.db-shm (deleted)\"]\nFINAL_SANDBOX_LIST count=0\nFINAL_VOLUME_LIST count=2\n",
+    "independentVolumeNames": [
+      "child-first",
+      "child-second"
+    ],
+    "independentIntegrity": [
+      [
+        "ok"
+      ]
+    ]
+  },
+  {
+    "iteration": 9,
+    "home": "<isolated-test-dir>/stock-sdk-home-acec02d3",
+    "exitCode": 0,
+    "output": "SDK=0.7.2 SQLITE=3.46.0 MODE=parent\nINITIAL_LIST count=0\nINSPECT after-sdk-list pid=1193457 locks=[\"1: POSIX  ADVISORY  READ 1193457 08:50:373902 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-acec02d3/db/msb.db-shm\"]\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-first\nREADY\nDROPPED_CHILD_BACKEND\nFIRST_CHILD_EXIT exit status: 0\nINSPECT after-first-child-exit pid=1193457 locks=[\"1: POSIX  ADVISORY  READ 1193457 08:50:373902 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-acec02d3/db/msb.db-shm (deleted)\"]\nPARENT_CREATED parent-write\nSDK=0.7.2 SQLITE=3.46.0 MODE=writer\nCREATED child-second\nREADY\nINSPECT while-second-child-alive pid=1193457 locks=[\"2: POSIX  ADVISORY  READ 1193457 08:50:373902 128 128\"] shm=[\"<isolated-test-dir>/stock-sdk-home-acec02d3/db/msb.db-shm (deleted)\"]\nFINAL_SANDBOX_LIST count=0\nFINAL_VOLUME_LIST_ERROR database error: Query Error: error occurred while decoding column \"quota_mib\": mismatched types; Rust type `core::option::Option<i32>` (as SQL type `INTEGER`) is not compatible with SQL type `TEXT`\n",
+    "independentVolumeNames": [
+      "child-first",
+      "child-second"
+    ],
+    "independentIntegrity": [
+      [
+        "ok"
+      ]
+    ]
+  }
+]

@@ -1,0 +1,91 @@
+{
+  "image": "agent-space:schema3-006bc6b7ddd0471d",
+  "image_id": "sha256:9ee5cd5fd3998d5defc005b90b1ace906f48484f8fbb680a50a0e6ab7e76ce06",
+  "baseline_image": "agent-space:schema3-1a4371f031c901f4",
+  "passed": [
+    "abrupt_container_exit_leaves_original_sandbox_crashed",
+    "first_concurrent_dav_recovers_crashed_vm_with_live_recycled_pid",
+    "graceful_container_restart_preserves_original_space_and_files",
+    "dav_resumes_existing_paused_vm",
+    "abrupt_container_exit_recovers_original_paused_vm",
+    "cached_runtime_recovers_after_unexpected_vm_process_exit",
+    "failed_dav_helper_start_is_retryable_without_recreating_vm",
+    "startup_deadline_and_backend_failure_release_terminal_capacity_then_retry",
+    "cancelled_first_dav_waiter_can_retry_and_retains_one_runtime_owner",
+    "guest_stall_deadline_is_retryable_and_retains_resident_capacity",
+    "original_mcp_and_dav_credentials_remain_valid",
+    "failure_logs_include_stage_identity_and_elapsed_time"
+  ],
+  "first_dav_seconds": 1.0281845350000367,
+  "agentSpaceId": "spc_[REDACTED_01]",
+  "original_identity": {
+    "sandbox_id": 2,
+    "name": "smcp-spc_[REDACTED_01]",
+    "status": "Running",
+    "config_sha256": "cae4ef11d82cb3f61ff93e37c0e40c9ebb585734cda10fa504f2c4b504fa3567",
+    "run": {
+      "id": 2,
+      "pid": 419,
+      "status": "Running",
+      "termination_detail": null
+    },
+    "run_count": 1,
+    "state_sha256": "4b2aff2235b4350f573a850c4a0dc11ac70985d96206fbe89f4f31001f057eb4",
+    "history": [
+      {
+        "id": 2,
+        "pid": 419
+      }
+    ]
+  },
+  "final_identity": {
+    "sandbox_id": 2,
+    "name": "smcp-spc_[REDACTED_01]",
+    "status": "Running",
+    "config_sha256": "cae4ef11d82cb3f61ff93e37c0e40c9ebb585734cda10fa504f2c4b504fa3567",
+    "run": {
+      "id": 13,
+      "pid": 158,
+      "status": "Running",
+      "termination_detail": null
+    },
+    "run_count": 8,
+    "state_sha256": "4b2aff2235b4350f573a850c4a0dc11ac70985d96206fbe89f4f31001f057eb4",
+    "history": [
+      {
+        "id": 2,
+        "pid": 419
+      },
+      {
+        "id": 4,
+        "pid": 421
+      },
+      {
+        "id": 6,
+        "pid": 86
+      },
+      {
+        "id": 8,
+        "pid": 87
+      },
+      {
+        "id": 9,
+        "pid": 134
+      },
+      {
+        "id": 10,
+        "pid": 194
+      },
+      {
+        "id": 12,
+        "pid": 95
+      },
+      {
+        "id": 13,
+        "pid": 158
+      }
+    ]
+  },
+  "max_sessions": 1,
+  "publication": "Sandbox and space identifiers were removed or anonymized; isolated regression outcomes retained."
+}

@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "image_id": "sha256:b13c172f4e8a21c42d256dbbea21ecb6fcd4a578847851c85e98fd47a25c2993",
+  "checks": [
+    "exact_old_vm_selected_workspace_export_and_source_unchanged",
+    "archive_preflight_and_root_to_payload_mapping",
+    "standalone_restores_tabs_profile_links_and_writable_user_data"
+  ],
+  "old_image_id": "sha256:9ee5cd5fd3998d5defc005b90b1ace906f48484f8fbb680a50a0e6ab7e76ce06",
+  "archive_sha256": "fc614e108770820e78a96160f0274ea8c15e4b66d218f768514ff292a2ad9f56",
+  "entries": 246,
+  "import_result": {
+    "applied": true,
+    "archiveSha256": "fc614e108770820e78a96160f0274ea8c15e4b66d218f768514ff292a2ad9f56",
+    "entries": 246,
+    "unsupportedOwners": [],
+    "mapping": {
+      "0:0": "1001:1001",
+      "1001:1001": "1001:1001"
+    },
+    "archivedRuntime": ".agent-space/restored-runtime-cc0293dc908b40589ee0d9864d73eff8"
+  },
+  "cleanup_passed": true
+}

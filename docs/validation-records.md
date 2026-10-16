@@ -1,0 +1,106 @@
+# 固定版本验证记录
+
+本页保留源码检查、镜像资格和实际部署的证据索引，三者不互相替代。每份报告只适用于自己的输入和运行范围；本页不充当当前服务状态探针。接口与行为以对应参考文档为准，验证方法见[开发指南](development.md)。
+
+公开报告可能是去除现场信息后的投影；源码和镜像摘要保留原值。标为原始输出的日志摘要不等于脱敏文件的当前摘要，私人部署快照不随仓库或离线包发布。
+
+公开 Git 历史从整理后的首次提交开始，未保留此前的私有开发历史。下列旧报告及其证据中的 Git SHA 是当时输入的标识，不能在公开仓库中检出，也不能据此复现旧构建；源码摘要和镜像 ID 继续标识原始验证对象。首次提交包含之后的修复和文档整理，不能直接沿用旧镜像的资格结论；发布前仍须按当前源码重新构建并验证。
+
+## 上游介绍与资格脚本审查（2026-10-16）
+
+基线 `459c385` 加本次变更：在[仓库首页](../README.md#microsandbox-与项目定位)补充 microsandbox 介绍、致谢及三个固定上游版本的定位对照；比较来自官方/项目自身文档，没有执行跨项目运行或性能测试。文档数量保持不变。
+
+审查现有生产验收改动，确认 DAV 自建临时容器需同时清理匿名日志卷；修复桌面验收脚本结束后未恢复调用方管理员环境变量的问题。无 Docker 的回归覆盖失败诊断中的三类测试凭据脱敏、环境恢复、清理失败记录及匿名卷回收：`docker/test_package.py` 5 项、`docker/test_verify_dav_large.py` 3 项通过。当时另核对生产材料的镜像/来源关联及报告引用；后续公开化仅保留必要的脱敏结果投影。20 轮唤醒摘要已与本机原始报告及逐轮结果核对，投影规则写入 `wake-cycles.json`。
+
+本次仅修改文档、验收驱动和回归测试；未改服务/guest 实现，没有重建镜像或重跑真实 VM/桌面资格。下节生产结果属于其记录的既有镜像与执行日期，不是本次回归重新取得的结果。
+
+## 生产 Server 升级（2026-10-16）
+
+历史部署镜像为 **Runcove Server `runcove-fc010ed2726e9bec`**，image ID **`sha256:413c3411b962e140b89f9f1a7195b4350ff92af2f76f3dec5a9fe3a00c129260`**；Git 构建基线 `d5040e2`，实际构建输入 SHA-256 为 `fc010ed2726e9bec25c3872caeb69aba65078db53e8f3518526becca06380811`。这是固定历史结果，不表示当前源码重新构建或当前服务状态。见[公开结果摘要](evidence/runcove-production-20261016/verification.json)。
+
+- 同一最终镜像通过生命周期、完整桌面、精确旧生产版本升级/独立卷冷备回滚、4 GiB DAV 和真实写满资格；构建内 177 项 MSB 回归通过。真实 UI 四项端到端、两段实际五分钟休眠/恢复、1 GiB 文件、4 GiB 逐字节读取、80 次取消、20 次写满通过。见[资格](evidence/runcove-production-20261016/qualification.json)、[UI 日志](evidence/runcove-production-20261016/server-ui.log)和[升级回滚](evidence/runcove-production-20261016/upgrade-rollback.json)。
+- 现场升级记录核对过原账号、凭据、固定镜像及工作盘保留，后续生产功能与重启验证完成。公开树仅保留验证结论和发布产物身份；主机、域名、账号/空间标识、配置、磁盘清单、备份位置和真实部署截图不公开。
+- 首次休眠后观察缺少 `health` 字段，原测试未保留工具原始响应，原因未定。最终完整资格及 20 轮关闭/唤醒通过，不能据此声称首次异常已修复。见[首个失败](evidence/runcove-production-20261016/initial-wake-failure.log)及[唤醒结果](evidence/runcove-production-20261016/wake-cycles.json)。
+
+## 源码审查与维护整理（2026-10-16）
+
+### 双版本与拆分前实现的对照审查
+
+基线是规划提交 `a8f50c53618388115aa671a7072ac4151c58b158` 的父提交 `a8629c1`，审查起点为 `4a88cfc`。按产品边界、共享核心、Server 行为保留、Standalone 适配、认证/路由、配置转换、状态不变量、进程/helper、浏览器/文件、镜像及交付/迁移逐项对照，详细落点与复验见[对照报告](evidence/runcove-review-20261016/comparison.json)。
+
+结论：共享核心和两个运行适配的划分符合产品目标。Server 保留管理 API、原空间身份、凭据与 VM 生命周期；Standalone 复用工具和工作台，固定一个空间，不包含 MSB、管理 API 或持久用户清单。两者还存在隔离方式、资源/生命周期配置和持久化内容的必要差异，不能将区别概括成只去掉管理 API。Workspace 为 VM rootfs，不在其中嵌套 MSB。首版平台仍是 Linux/amd64，NAS/ARM 需分别验收。
+
+本次新增修复：
+
+- 资格脚本检查 ID 后仍以可变标签启动，可能让报告与实际被测镜像不一致；现在初始化、运行和旧版回滚均固定已检查的 ID，打包器也按报告 ID 选择镜像。模拟标签在检查后变化，修复前 5 个场景失败；修复后覆盖 7 个验证入口及打包选择。
+- 工作区导入只校验原归档，预览遗漏旧暂存重定位新增的父目录冲突；现在预览与 apply 都在创建 stage 前校验。原实现实际提取会因冲突失败，未复现越界写入。
+- Standalone 的 DAV origin 仅含空白时，配置校验允许留空但装配仍尝试解析 URL，导致启动失败；现在与校验使用相同空值语义，并纳入完整 Standalone 资格输入。
+
+最终完整 Rust 复验 **307 passed / 0 failed / 0 ignored**，两种构建的 Clippy、无 MSB 依赖检查、Python 回归和 UI 静态检查通过；独立 root 容器的 9 项导入测试、7 个验证入口及打包选择的标签变化回归通过。真实 Standalone 容器验证空白 DAV origin 修复前退出、修复后监听正常，容器与卷已清理。
+
+初次完整 Rust 回归的 Server DAV VM 测试在连续 HEAD 的第 75 次返回 503，日志显示运行时准入的 `Permission denied`；单独复测及随后完整复验通过。原因尚未定位，首次失败与后续复验分别留存于对照报告，不能从后续成功推断已修复该异常。
+
+本次仍只提交源码与证据，没有重建发布镜像、生成离线包、修改生产或推送 registry；下列旧镜像记录保持原身份和日期。
+
+### 前次审查修复与验证范围
+
+本轮复核共享核心、两个入口/运行适配、认证与代理、状态/资源、进程/helper、浏览器/文件、构建/验证/打包及文档关系，修复：
+
+- 新格式配置转换误用旧监听/容量默认值；转换与正常加载改为同一解析入口。
+- 本地执行 owner 提前关闭输出后，进程等待遗漏取消和超时回收；输出 EOF 与进程退出继续由同一 monitor 持有。
+- 接管请求被取消后遗留 TRANSITION；释放交接状态，但原操作仍占位，清理失败继续 BLOCKED。
+- root 桌面 helper 经用户产物目录链接枚举私有文件元信息；完整遍历下放 UID1001 子进程。
+- VM CPU 从 u32 窄化到 u8 可截断，非法配额未在启动前拒绝；配置校验并在创建任何磁盘前检查转换，零内存/盘和输出限额一并报错。
+
+产物目录问题在上一版精确镜像上复现为 HTTP 200 并返回 root 私有文件名；修复后的开发资产容器回归要求拒绝且不泄露元信息，并验证正常产物枚举恢复。前述配置、执行和接管问题也有失败后通过的回归。
+
+源码、运行二进制和测试范围见[本轮审查报告](evidence/runcove-review-20261016/verification.json)。完整 Rust/Clippy、无 MSB 构建、进程/迁移/打包回归与独立容器桌面场景分别记录。已完成计划、旧文档索引及过程性发布流水已移除；有效的产品边界、回归矩阵和操作步骤归入仓库首页、架构、开发与部署/迁移指南。
+
+**本轮没有重建发布镜像或重新生成离线包。** 下节 2026-10-15 镜像及离线包不含这些修复，保留为历史资格证据，不能当作当前源码的发布结果；后续发布须使用新源码摘要，重新通过相应镜像门槛。生产环境未修改。
+
+## Runcove Server / Standalone 分离验收（2026-10-15）
+
+同一仓库共享 MCP、基础工具、浏览器、工作台、控制权、文件和发布核心。Server 保持 Docker + MSB VM 多空间与管理 API；Standalone 为一个使用者、一个空间的 Docker 容器，不带 MSB/KVM、管理 API 或静态多用户模式。Workspace 是 Server 使用的空间 rootfs，不在空间中嵌套 MSB。配置按目标收紧职责和默认值，旧配置显式转换并保留有效值；Server 状态仍为 schema3，强化身份/资源不变量，Standalone 不建立持久账号库。
+
+当时应用版本 **`runcove-2e50d622ab9e4573`**，构建输入 SHA-256 **`2e50d622ab9e45736a9d4816831eede4656ba9d8783b2a34c15d8a42c7081532`**；构建时 Git 基线为规划提交 `a8f50c5` 加本轮实现，不能把该 revision 单独当成最终源码身份。
+
+| 目标 | 最终镜像 ID | 资格范围 |
+|---|---|---|
+| Server | `sha256:e5913326b6f3bac140e4524ffd8468bb0d77aac353c674430308877481e94105` | 生命周期/账号/发布、真实 VM 桌面、1 GiB 文件、4 GiB DAV、磁盘写满、旧生产升级回滚 |
+| Standalone | `sha256:b13c172f4e8a21c42d256dbbea21ecb6fcd4a578847851c85e98fd47a25c2993` | 无 KVM 启动、单空间/秘密/UID 隔离、真实桌面、1 GiB 文件、4 GiB DAV、rclone/FUSE、磁盘写满、卷恢复 |
+
+- 源码：当前三个 helper 先构建，完整 workspace 串行 **303 passed / 0 failed / 0 ignored**；全目标 Clippy `-D warnings`、fmt、Standalone 无默认 feature 编译及 normal/build 依赖图通过。依赖图排除 MSB/libkrun；受管清理 6 项、执行所有权 5 项、文件迁移 8 项和协议/DAV/打包回归通过。详见[源码检查](evidence/runcove-split-20261015/code-validation.json)。
+- 两目标使用同一组真实浏览器、文件和生命周期套件；各有 **4 项 Playwright 端到端通过**，包括真实 RFB 键鼠/剪贴板、双观看者、人工接管不阻塞基础工具、实际超过 300 秒被动观看休眠/标签恢复，以及 HTTPS + 改写 Host + 嵌套前缀。Standalone 另验证丢失桌面 owner 后 BLOCKED、控制进程死亡后数据子进程收敛、重启后旧登录失效和工作卷保留。报告：[Server 桌面](evidence/runcove-split-20261015/server-desktop.json)、[生命周期](evidence/runcove-split-20261015/server-lifecycle.json)、[Standalone](evidence/runcove-split-20261015/standalone.json)。
+- 两目标完整读取 **4,294,967,296 bytes** 并逐字节核对，验证跨 2 GiB/尾部范围、真实截短、旧 ETag、80 次取消和后续可用；各 **20 次真实 8 MiB 文件系统 ENOSPC** 返回 507、保留原文件且可继续写入。拒绝 PUT 后即使每 40 ms 继续发数据，连接仍在同一个约 2 秒截止收敛。报告：[Server 文件](evidence/runcove-split-20261015/server-files.json)/[写满](evidence/runcove-split-20261015/server-storage.json)、[Standalone 文件](evidence/runcove-split-20261015/standalone-files.json)/[写满](evidence/runcove-split-20261015/standalone-storage.json)。Standalone 还通过真实 [rclone/FUSE](evidence/runcove-split-20261015/standalone-rclone.json) 挂载读写；FUSE 权限仅授予独立测试客户端。
+- 在新建隔离卷中，用精确规整前生产镜像 `sha256:9ee5cd5fd3998d5defc005b90b1ace906f48484f8fbb680a50a0e6ab7e76ce06` 创建真实 VM，再切换最终 Server，原凭据、空间/盘身份、文件/profile、桌面/DAV/发布和重启恢复通过；完整升级前冷备恢复到另一新卷后旧版回滚通过。相同旧镜像选定工作区导出到最终 Standalone，246 条目、所有者映射、原源未改、标签/profile/链接和用户可写性通过。报告：[升级/回滚](evidence/runcove-split-20261015/production-upgrade.json)、[单空间导入](evidence/runcove-split-20261015/workspace-import.json)。资格容器和卷均完成清理。
+- 实际模型经正式 HTTP MCP 完成“观察→CSV→浏览器上传→下载→MCP 摘要→工作台下载”链路，65,536 bytes 摘要一致；真实连接的中英文 320/390/1440 六种布局已查看，无溢出或页面错误。这是较早候选 `37a033…` 上、未变的共同 MCP/UI 组件证据，不能标成最终镜像运行记录。见[模型与布局](evidence/runcove-split-20261015/model-workflow.json)。
+- 较早一次完整 UI 运行出现休眠后恢复为新标签页，根因尚未确定。后续最终镜像完整套件均通过，另有 [20 次真实浏览器关闭/重启恢复](evidence/runcove-split-20261015/desktop-restore-cycles.jsonl) 通过；这些结果不等于已经定位或证明修复最初偶发失败。
+
+离线包的加载、Compose 和摘要以[离线包检查](evidence/runcove-split-20261015/packages.json)为准；[总证据](evidence/runcove-split-20261015/verification.json)记录最终身份。子代理只读审查发现的问题已修复，见[实现审查](evidence/runcove-split-20261015/implementation-review.json)。本次资格平台为 Linux/amd64；没有 ARM/目标 NAS 验收、registry 推送或生产切换，升级驱动使用的精确旧镜像见[公开镜像基线](evidence/runcove-split-20261015/production-baseline.json)，账号和拓扑快照不公开。
+
+
+## 工作区恢复记录（2026-10-14）
+
+历史恢复只导入工作区文件，不导入旧根盘、账号状态或 MSB 数据库，目的空间身份和凭据保留。27,722 个普通文件在离线恢复及重启后逐项校验，源 UID/GID、权限和 66 个符号链接恢复；旧上传暂存归属冲突通过完整留存旧目录、由正常 DAV 创建新归属处理。DAV PROPFIND、抽样 GET/摘要和实际文件入口通过，当时没有完成目的账号的公网桌面登录/控制验收。
+
+公开材料只保留[恢复结果投影](evidence/fresh-production-20261014/restore.json)和[独立镜像资格](evidence/fresh-production-20261014/qualification.json)，不包含业务文件清单、原始账号、部署配置或备份位置。具体维护步骤见[运维手册](operations.md#将完整工作区备份恢复到新空间)。
+
+## MSB 运行时固定证据
+
+| 固定范围 | 保留的结论与证据 |
+|---|---|
+| 2026-10-13 生命周期补丁基底 | 同源 SDK/CLI、SQLite 3.51.3；177 项构建内回归。见[构建验收](evidence/msb-lifecycle-20261013/verification.json)与[配方](evidence/msb-lifecycle-20261013/Dockerfile.sdk-runtime-cache) |
+| 2026-10-13 应用与真实重启 | 293 项串行 Rust、12 项隔离恢复、原盘/凭据保留。见[复核](evidence/msb-lifecycle-review-20261013/verification.json)、[恢复资格](evidence/msb-lifecycle-review-20261013/qualification.json) |
+| PID 复用原始失败 | 旧版 crashed + 无关 PID 复用时首次 DAV 超时；原现场最初崩溃原因仍未知。见[失败基线](evidence/dav-restart-20261013/baseline-pid-reuse.json) |
+| 2026-10-11 部分帧取消 | 确定性 partial-frame 回归与当时实际范围见[记录](evidence/dav-frame-read-20261011/verification.json) |
+| SQLite 锁/WAL 机制与旧版恢复 | 机制见[运行时维护](runtime.md#sqlite-防御)，操作见[故障处置](operations.md#sqlite-故障处置)，固定测试输入见[证据目录](evidence/sqlite-20260930/README.md) |
+
+补丁源码、上游链接、历史 relay 复现和逐项撤销条件统一由 [运行时维护](runtime.md)保存。本页不重复维护上游“当前状态”；未被索引的过程性开发/部署流水不随公开源码保留。
+
+## 持续有效的验证边界
+
+- HTTP 健康、VM Running 或单个 MCP 请求不能证明桌面、DAV、外部平台或恢复数据已验收。
+- 工作区转移与整套服务回滚是不同操作；只有全套一致冷备能恢复服务状态和磁盘。
+- DAV 锁不约束 MCP/bash，目录递归可部分完成，不能承诺 Office 协作或所有网盘客户端兼容。
+- 真实最终镜像、开发资产绑定测试、模型操作链路和目标部署现场分别标识；一次成功也不证明所有传输竞态或长期可靠性。
+- Linux/amd64 的 Docker 资格不等同于 ARM、目标 NAS、生产切换或 registry 发布。

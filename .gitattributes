@@ -1,0 +1,4 @@
+# Preserve original formatting in vendored upstream sources.
+agent-space/vendor/** whitespace=-blank-at-eol
+# Unified diff blank context lines contain a required leading space.
+agent-space/docker/patches/*.patch whitespace=-blank-at-eol

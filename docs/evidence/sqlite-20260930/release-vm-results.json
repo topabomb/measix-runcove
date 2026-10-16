@@ -1,0 +1,115 @@
+{
+  "label": "release",
+  "image": "agent-space:schema2-8429f3398403d5eb-sqlite351",
+  "roundsRequested": 10,
+  "roundsCompleted": 10,
+  "rounds": [
+    {
+      "iteration": 1,
+      "stop": "admin-disable",
+      "usersStopped": 2,
+      "health": 200,
+      "deletedShm": false
+    },
+    {
+      "iteration": 2,
+      "stop": "admin-disable",
+      "usersStopped": 2,
+      "health": 200,
+      "deletedShm": false
+    },
+    {
+      "iteration": 3,
+      "stop": "admin-disable",
+      "usersStopped": 2,
+      "health": 200,
+      "deletedShm": false
+    },
+    {
+      "iteration": 4,
+      "stop": "admin-disable",
+      "usersStopped": 2,
+      "health": 200,
+      "deletedShm": false
+    },
+    {
+      "iteration": 5,
+      "stop": "admin-disable",
+      "usersStopped": 2,
+      "health": 200,
+      "deletedShm": false
+    },
+    {
+      "iteration": 6,
+      "stop": "admin-disable",
+      "usersStopped": 2,
+      "health": 200,
+      "deletedShm": false
+    },
+    {
+      "iteration": 7,
+      "stop": "admin-disable",
+      "usersStopped": 2,
+      "health": 200,
+      "deletedShm": false
+    },
+    {
+      "iteration": 8,
+      "stop": "admin-disable",
+      "usersStopped": 2,
+      "health": 200,
+      "deletedShm": false
+    },
+    {
+      "iteration": 9,
+      "stop": "idle-with-resource-queries",
+      "usersStopped": 2,
+      "health": 200,
+      "deletedShm": false
+    },
+    {
+      "iteration": 10,
+      "stop": "idle-with-resource-queries",
+      "usersStopped": 2,
+      "health": 200,
+      "deletedShm": false
+    }
+  ],
+  "success": true,
+  "binaryHashes": [
+    "5027366cd60689134f64af61c3b9ec6a9725c734c53ca3ecf2ce8f4a763b30df  /usr/local/bin/agent-space-mcp",
+    "4ebe8e0416483bb6f060896fea7ffecd2ba97fd3a0bbd4562aba46e17357426e  /usr/local/bin/msb",
+    "4ebe8e0416483bb6f060896fea7ffecd2ba97fd3a0bbd4562aba46e17357426e  /var/lib/microsandbox/.microsandbox/bin/msb"
+  ],
+  "runtimeVersion": "msb 0.7.2",
+  "actualVmExecutables": [
+    "4ebe8e0416483bb6f060896fea7ffecd2ba97fd3a0bbd4562aba46e17357426e  /proc/154/exe",
+    "4ebe8e0416483bb6f060896fea7ffecd2ba97fd3a0bbd4562aba46e17357426e  /proc/179/exe"
+  ],
+  "restartPreservedSpacesAndWorkspaceCounters": true,
+  "databaseMalformedLogCount": 0,
+  "shutdownRequestedLogCount": 0,
+  "deletedShmBeforeShutdown": "",
+  "exitCode": 0,
+  "oomKilled": false,
+  "sqlite351IndependentReadOnlyProbe": {
+    "exitCode": 0,
+    "output": "sqlite=3.51.3 source=2026-03-13 10:38:09 737ae4a34738ffa0c3ff7f9bb18df914dd1cad163f28fd6b6e114a344fe6d618\nquery=PRAGMA integrity_check\nintegrity_check=ok\nquery=PRAGMA foreign_key_check\nquery=SELECT count(*) AS sandboxes FROM sandbox\nsandboxes=2\nquery=SELECT id,status,termination_reason,terminated_at FROM run WHERE id=67\n"
+  },
+  "independentIntegrity": [
+    [
+      "ok"
+    ]
+  ],
+  "independentForeignKeyViolations": [],
+  "runStatuses": [
+    [
+      "Terminated",
+      22
+    ]
+  ],
+  "sandboxCount": 2,
+  "volumeCount": 2,
+  "durationSeconds": 70.18,
+  "artifacts": "<isolated-test-dir>/as-sqlite351-release-4cb246b3"
+}

@@ -1,0 +1,65 @@
+{
+  "status": "implementation, final-image/source qualification and offline package checks passed",
+  "source_sha256": "2e50d622ab9e45736a9d4816831eede4656ba9d8783b2a34c15d8a42c7081532",
+  "build_git_baseline": "a8f50c53618388115aa671a7072ac4151c58b158",
+  "application_version": "runcove-2e50d622ab9e4573",
+  "images": {
+    "server": {
+      "image_id": "sha256:e5913326b6f3bac140e4524ffd8468bb0d77aac353c674430308877481e94105",
+      "platform": "linux/amd64",
+      "labels": {
+        "io.agent-space.microsandbox": "0.7.2",
+        "io.agent-space.source-sha256": "2e50d622ab9e45736a9d4816831eede4656ba9d8783b2a34c15d8a42c7081532",
+        "io.agent-space.sqlite": "3.51.3",
+        "io.agent-space.state-schema": "3",
+        "io.runcove.source-sha256": "2e50d622ab9e45736a9d4816831eede4656ba9d8783b2a34c15d8a42c7081532",
+        "io.runcove.target": "server",
+        "org.opencontainers.image.revision": "a8f50c53618388115aa671a7072ac4151c58b158",
+        "org.opencontainers.image.title": "Measix Runcove Server",
+        "org.opencontainers.image.version": "runcove-2e50d622ab9e4573"
+      }
+    },
+    "standalone": {
+      "image_id": "sha256:b13c172f4e8a21c42d256dbbea21ecb6fcd4a578847851c85e98fd47a25c2993",
+      "platform": "linux/amd64",
+      "labels": {
+        "io.agent-space.playwright": "1.63.0",
+        "io.runcove.image": "workspace",
+        "io.runcove.source-sha256": "2e50d622ab9e45736a9d4816831eede4656ba9d8783b2a34c15d8a42c7081532",
+        "io.runcove.target": "standalone",
+        "io.runcove.worker-contract": "1",
+        "org.opencontainers.image.authors": "Nikolai R Kristiansen <nikolaik@gmail.com>",
+        "org.opencontainers.image.revision": "a8f50c53618388115aa671a7072ac4151c58b158",
+        "org.opencontainers.image.title": "Measix Runcove Standalone",
+        "org.opencontainers.image.version": "runcove-2e50d622ab9e4573"
+      }
+    }
+  },
+  "rust_tests": {
+    "passed": 303,
+    "failed": 0,
+    "ignored": 0
+  },
+  "production_changed": false,
+  "registry_pushed": false,
+  "qualified_platform": "linux/amd64",
+  "limits": [
+    "No target NAS or ARM validation",
+    "No production switch or external platform production integration migration",
+    "One earlier idle tab-restoration failure has no established root cause; later full final-image runs and 20 real browser restart cycles passed"
+  ],
+  "reports": {
+    "standalone": "1e69775a7c22c9b231d31e60956380d7b99260048ae523a8e88a241a2070f596",
+    "server-desktop": "eb07d90011cf9c1d113b28005277c51c04bf5f1818b96237ebba0d1b8cafea40",
+    "server-lifecycle": "8d1b430d2498769e264939c924a1f0c044b82e7ec8ece8ef2d4b17309ac557ea",
+    "server-files": "6e95a4e1981ae00dcab6da74ad39b878c3be0b53fa05fe3605167f6146bf82c0",
+    "standalone-files": "e31921f1d5527e740426479ae504748480a8fbeac22a7a197dd26508cd4240b1",
+    "server-storage": "c2e2fcb7f0b0ba3f19cfed0dfb54f210bb9d368984497be3b189317b342dc767",
+    "standalone-storage": "79d2059d8461728522b97c63a20fe9bac258d929980d03bcff67eee07d9963bf",
+    "standalone-rclone": "7c9e38ebc779c92d017955c810ef1ca9fdf5490a98d233768221171545f9b132",
+    "production-upgrade": "075980464069f6935181af7df3e2ee02ae0936e0a8d02dcce0b7af0d16df869e",
+    "workspace-import": "ac286ac147d8ff23b985dddc296a69144c6fdb9c9460ed4df93fd51a3cd55630",
+    "code-validation": "93923b835169faabdaff0c2d4e4837dca81803be23ec2e1b08038409336f9d98",
+    "packages": "2f34ac1aebd38c1e59e32abc966946550cc736fa7b9343de5bc8397b81682883"
+  }
+}

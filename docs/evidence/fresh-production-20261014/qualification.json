@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "checks": [
+    "Fresh qualification state starts with zero users",
+    "Four real desktop VMs run concurrently with 2 CPUs, 3277 MiB memory and 32 GiB workspace disks",
+    "Fifth VM admission is rejected without consuming an additional slot",
+    "Real cloud desktop starts and returns a PNG desktop frame",
+    "Guest internet works through the preserved outbound proxy",
+    "Independent DAV listener supports PUT, GET, Range, PROPFIND and DELETE",
+    "All temporary accounts, VMs and capacity are cleaned up"
+  ],
+  "guestResources": [
+    {
+      "cpus": 2,
+      "memoryBytes": 3392290816,
+      "workspaceBytes": 33740832768,
+      "tmpBytes": 536870912
+    },
+    {
+      "cpus": 2,
+      "memoryBytes": 3392290816,
+      "workspaceBytes": 33740832768,
+      "tmpBytes": 536870912
+    },
+    {
+      "cpus": 2,
+      "memoryBytes": 3392290816,
+      "workspaceBytes": 33740832768,
+      "tmpBytes": 536870912
+    },
+    {
+      "cpus": 2,
+      "memoryBytes": 3392290816,
+      "workspaceBytes": 33740832768,
+      "tmpBytes": 536870912
+    }
+  ],
+  "admission": {
+    "activeSpaces": 4,
+    "ready": true
+  }
+}

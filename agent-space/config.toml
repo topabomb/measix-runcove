@@ -1,0 +1,78 @@
+resource_prefix = "smcp"
+
+[server]
+# Listen on all IPv4 interfaces; do not pin a LAN interface IP.
+listen = "0.0.0.0:8932"
+# Empty: use the actual local/LAN request entry. Production: set a stable HTTPS origin.
+public_base_url = ""
+max_running_spaces = 2
+# MCP protocol sessions survive workspace sleep. 0 disables protocol inactivity
+# expiry; DELETE and server shutdown still close sessions. A positive value
+# requires idle clients to initialize again after that many seconds.
+mcp_session_timeout_secs = 0
+allowed_hosts = []
+
+[workspace]
+image = { preset = "runcove-desktop" }
+cpus = 2
+memory_mib = 3072
+workspace_size_mib = 8192
+tmpfs_size_mib = 512
+shell = "/bin/bash"
+exec_timeout_secs = 30
+max_output_lines = 2000
+max_output_bytes = 51200
+# Network egress policy applied to every sandbox.
+# Values: "unrestricted" (default), "public-only", "private-and-public", "none".
+#   unrestricted      - no policy, full access (backward compatible)
+#   public-only       - allow public internet, block private LAN + host/gateway
+#   private-and-public- allow public + private LAN, block host/gateway
+#   none              - block all egress network access
+network_policy = "unrestricted"
+# Optional concurrent connection caps introduced by microsandbox 0.7.
+# Omit for the runtime default; zero explicitly means unlimited.
+# max_tcp_connections = 256
+# max_udp_connections = 256
+
+# Optional native host-side SOCKS proxy for sandbox outbound traffic.
+# Policies still apply; proxy failure never falls back to direct connections.
+# [workspace.outbound_proxy]
+# protocol = "socks5" # socks4 supports TCP; socks5 also supports non-DNS UDP
+# address = "127.0.0.1:1080" # IP:port reachable from the WSL/container host
+# [workspace.outbound_proxy.credentials]
+# username = "workspace"
+# password = { kind = "env", var = "MSB_PROXY_PASSWORD" }
+
+[lifecycle]
+request_idle_timeout_secs = 900
+work_idle_timeout_secs = 3600
+check_interval_secs = 60
+
+[logging]
+level = "info"
+
+[state]
+# Persistent directory initialized by `agent-space-mcp init-state`.
+dir = "/var/lib/microsandbox/agent-space-state"
+
+[admin]
+# Environment variable supplying the administrator bearer. The value is not stored here.
+token_env = "AGENT_SPACE_ADMIN_TOKEN"
+
+[web_publish]
+# Publications use /u/{username}/pub/{name}/.
+# Uses the request entry unless server.public_base_url is set. Trusted content only.
+enabled = true
+default_keep_alive_minutes = 10
+max_keep_alive_minutes = 1440
+startup_timeout_secs = 60
+io_idle_timeout_secs = 120
+
+# Dynamic users only. Publish this listener separately from the main service.
+[webdav]
+enabled = true
+listen = "0.0.0.0:8933"
+# Set public_port to the Docker host DAV port when it differs (e.g. 18933).
+public_base_url = ""
+startup_timeout_secs = 60
+io_idle_timeout_secs = 120

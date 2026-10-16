@@ -1,0 +1,35 @@
+{
+  "target": "standalone",
+  "scope": "final image",
+  "image": "runcove-standalone:qualify",
+  "checks": [
+    "starts_without_kvm_msb_or_docker_socket",
+    "single_space_routes_have_no_management_or_user_selection",
+    "shared_eight_tools_and_nonroot_secret_isolation",
+    "profile_preparation_cannot_follow_user_links_with_root_privileges",
+    "real_shared_browser_and_desktop_png",
+    "root_task_owner_keeps_final_results_in_memory_without_following_user_paths",
+    "dav_workbench_and_mcp_edits_share_writable_user_ownership",
+    "publication_uses_single_space_address",
+    "stopped_data_child_dies_with_killed_control_owner_and_helper_recovers",
+    "shared_test_browser_vm.py",
+    "shared_test_desktop_files_vm.py",
+    "shared_test_browser_lifecycle_vm.py",
+    "shared_real_vnc_keyboard_clipboard_viewers_responsive_and_idle",
+    "rewritten_host_workbench_preserves_own_origin_and_nonce_checks",
+    "lost_desktop_owner_blocks_recreation_and_control_until_container_restart",
+    "active_mcp_sse_closes_on_graceful_shutdown",
+    "graceful_restart_preserves_workspace_and_expires_page_session"
+  ],
+  "passed": true,
+  "image_id": "sha256:b13c172f4e8a21c42d256dbbea21ecb6fcd4a578847851c85e98fd47a25c2993",
+  "full": true,
+  "cleanup_passed": true,
+  "original_suite_log_sha256": {
+    "test_browser_lifecycle_vm.py.log": "ad5d56cdf9e29b7b7616bc992e7d4f904051061e7d61454af05c7e9c5d18ae7f",
+    "test_browser_vm.py.log": "7f9cb357b16aa071284d9de1d094a67567ea76003288a3716982faf099c2b962",
+    "test_desktop_files_vm.py.log": "9b58297876be4ba712c709ce7a3261732eba5605c947a8749dee8dd2499bfd07",
+    "ui.log": "82796d8257b0f67e097735bb7101190a2f789b7e09183fb94e04a2e216d71825"
+  },
+  "publication": "Log digests identify original test output; published logs may have operator paths redacted."
+}

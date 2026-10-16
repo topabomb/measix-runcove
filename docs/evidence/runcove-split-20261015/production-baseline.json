@@ -1,0 +1,12 @@
+{
+  "observedAtUtc": "2026-10-15T07:36:25.4562279Z",
+  "imageId": "sha256:9ee5cd5fd3998d5defc005b90b1ace906f48484f8fbb680a50a0e6ab7e76ce06",
+  "schemaVersion": 3,
+  "runtime": {
+    "microsandbox": "0.7.2",
+    "sqlite": "3.51.3",
+    "sourceRevision": "60d4dc8a436fb9365491567ec21d073e924e3c6d",
+    "msbSha256": "c3ef4764900d4bc7de6d33cd2ab8bd400a1a412161871ba27686ca4db4ff8b9b"
+  },
+  "publication": "Only the historical source image and runtime baseline are public; host, deployment, accounts, credential digests, mounts and ports were removed."
+}

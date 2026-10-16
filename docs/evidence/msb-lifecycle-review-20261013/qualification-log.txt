@@ -1,0 +1,58 @@
+[agent-space] starting...
+[agent-space] sing-box config not found, skipping proxy
+[agent-space] synchronizing msb runtime (stamp: 0.7.2 -> 0.7.2)...
+bin/msb: OK
+[agent-space] sandbox image already cached
+[agent-space] starting agent-space-mcp on port 8932...
+2026-10-13T04:55:16.871017Z  INFO agent_space_mcp: verifying sandbox image dependencies... image=nikolaik/python-nodejs:python3.12-nodejs22-slim
+2026-10-13T04:55:16.873888Z  INFO agent_engine::engine::msb: created disk volume, mounting via virtio-blk volume=smcp-imgcheck-1791867316-ws disk_path=/var/lib/microsandbox/.microsandbox/volumes/smcp-imgcheck-1791867316-ws/disk.raw
+2026-10-13T04:55:17.305541Z  INFO microsandbox::backend::local::sandbox::create: sandbox ready sandbox_name=smcp-imgcheck-1791867316 boot_time_ms=91 init_time_ms=9 ready_time_ms=110
+2026-10-13T04:55:17.418045Z  INFO agent_engine::session: workspace activated workspace=smcp-imgcheck-1791867316
+2026-10-13T04:55:17.659589Z  INFO agent_engine::session: workspace stopped; disks retained workspace=smcp-imgcheck-1791867316
+2026-10-13T04:55:17.663726Z  INFO agent_engine::session: removed session workspace=smcp-imgcheck-1791867316
+2026-10-13T04:55:17.663752Z  INFO agent_space_mcp: sandbox image dependencies verified image=nikolaik/python-nodejs:python3.12-nodejs22-slim
+2026-10-13T04:55:17.664251Z  INFO agent_space_mcp: lifecycle check started interval_secs=60
+2026-10-13T04:55:17.664545Z  INFO agent_space_mcp: agent-space-mcp listening on 0.0.0.0:8932
+2026-10-13T04:55:17.664558Z  INFO agent_space_mcp: agent-space-webdav listening on 0.0.0.0:8933
+2026-10-13T04:55:18.114841Z  INFO forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: microsandbox::backend::local::sandbox::create: sandbox ready sandbox_name=smcp-spc_[REDACTED_01] boot_time_ms=96 init_time_ms=15 ready_time_ms=118
+2026-10-13T04:55:18.235289Z  INFO forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: agent_engine::session: workspace activated workspace=smcp-spc_[REDACTED_01]
+2026-10-13T04:55:18.519025Z  INFO forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: agent_engine::engine::msb: started managed service workspace=smcp-spc_[REDACTED_01] service=Webdav instance=302a2547404240ee9c5b53b19f89b3b9 port=40837
+2026-10-13T04:55:19.972325Z  INFO forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: microsandbox::backend::local::sandbox::create: sandbox ready sandbox_name=smcp-spc_[REDACTED_01] boot_time_ms=92 init_time_ms=12 ready_time_ms=112
+2026-10-13T04:55:20.089214Z  INFO forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: agent_engine::session: workspace activated workspace=smcp-spc_[REDACTED_01]
+2026-10-13T04:55:20.383854Z  INFO forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: agent_engine::engine::msb: started managed service workspace=smcp-spc_[REDACTED_01] service=Webdav instance=bb6ac24cae2e4072afa94f6a6f086b46 port=39415
+2026-10-13T04:55:21.565686Z  INFO forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: microsandbox::backend::local::sandbox::create: sandbox ready sandbox_name=smcp-spc_[REDACTED_01] boot_time_ms=103 init_time_ms=8 ready_time_ms=119
+2026-10-13T04:55:21.702870Z  INFO forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: agent_engine::session: workspace activated workspace=smcp-spc_[REDACTED_01]
+2026-10-13T04:55:21.703092Z  WARN forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: agent_engine::engine: runtime startup failed phase="dav_helper_start" phase_elapsed_ms=0 elapsed_ms=550 error=engine error: read helper: No such file or directory (os error 2)
+2026-10-13T04:55:21.703133Z  WARN forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: agent_space_mcp::webdav: DAV runtime admission or connection failed error=engine error: read helper: No such file or directory (os error 2) elapsed_ms=550
+2026-10-13T04:55:22.084673Z  INFO forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: agent_engine::engine::msb: started managed service workspace=smcp-spc_[REDACTED_01] service=Webdav instance=5a2dff728b3d4d699c4a6debf202a914 port=37745
+2026-10-13T04:55:22.645392Z  INFO agent_space_mcp: received SIGTERM
+2026-10-13T04:55:22.645416Z  INFO agent_space_mcp: shutting down
+2026-10-13T04:55:22.817069Z  INFO agent_engine::session: workspace stopped; disks retained workspace=smcp-spc_[REDACTED_01]
+[agent-space] starting...
+[agent-space] sing-box config not found, skipping proxy
+[agent-space] synchronizing msb runtime (stamp: 0.7.2 -> 0.7.2)...
+bin/msb: OK
+[agent-space] sandbox image already cached
+[agent-space] starting agent-space-mcp on port 8932...
+2026-10-13T04:55:23.357044Z  INFO agent_space_mcp: verifying sandbox image dependencies... image=nikolaik/python-nodejs:python3.12-nodejs22-slim
+2026-10-13T04:55:23.360507Z  INFO agent_engine::engine::msb: created disk volume, mounting via virtio-blk volume=smcp-imgcheck-1791867323-ws disk_path=/var/lib/microsandbox/.microsandbox/volumes/smcp-imgcheck-1791867323-ws/disk.raw
+2026-10-13T04:55:23.789174Z  INFO microsandbox::backend::local::sandbox::create: sandbox ready sandbox_name=smcp-imgcheck-1791867323 boot_time_ms=101 init_time_ms=13 ready_time_ms=122
+2026-10-13T04:55:23.899794Z  INFO agent_engine::session: workspace activated workspace=smcp-imgcheck-1791867323
+2026-10-13T04:55:24.133512Z  INFO agent_engine::session: workspace stopped; disks retained workspace=smcp-imgcheck-1791867323
+2026-10-13T04:55:24.136970Z  INFO agent_engine::session: removed session workspace=smcp-imgcheck-1791867323
+2026-10-13T04:55:24.136990Z  INFO agent_space_mcp: sandbox image dependencies verified image=nikolaik/python-nodejs:python3.12-nodejs22-slim
+2026-10-13T04:55:24.137649Z  INFO agent_space_mcp: lifecycle check started interval_secs=60
+2026-10-13T04:55:24.137917Z  INFO agent_space_mcp: agent-space-mcp listening on 0.0.0.0:8932
+2026-10-13T04:55:24.137928Z  INFO agent_space_mcp: agent-space-webdav listening on 0.0.0.0:8933
+2026-10-13T04:55:27.254568Z  WARN forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: agent_engine::engine: DAV startup deadline exceeded phase="vm_start" phase_elapsed_ms=2999 elapsed_ms=3001
+2026-10-13T04:55:27.254608Z  WARN forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: agent_space_mcp::webdav: DAV runtime admission or connection failed error=timeout: DAV startup deadline exceeded: phase=vm_start, phase_elapsed_ms=2999, elapsed_ms=3001 elapsed_ms=3001
+2026-10-13T04:55:29.272801Z  WARN forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: agent_engine::engine: runtime startup failed phase="vm_start" phase_elapsed_ms=5018 elapsed_ms=5019 error=engine error: sandbox 'smcp-spc_[REDACTED_01]': sandbox still running: sandbox "smcp-spc_[REDACTED_01]" runtime still owns its lifecycle lock
+2026-10-13T04:55:31.656005Z  INFO forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: microsandbox::backend::local::sandbox::create: sandbox ready sandbox_name=smcp-spc_[REDACTED_01] boot_time_ms=93 init_time_ms=10 ready_time_ms=112
+2026-10-13T04:55:31.771660Z  INFO forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: agent_engine::session: workspace activated workspace=smcp-spc_[REDACTED_01]
+2026-10-13T04:55:32.061884Z  INFO forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: agent_engine::engine::msb: started managed service workspace=smcp-spc_[REDACTED_01] service=Webdav instance=406c3d4a2bbe480cb5f191d56dc1580c port=39771
+2026-10-13T04:55:34.282291Z  INFO forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: microsandbox::backend::local::sandbox::create: sandbox ready sandbox_name=smcp-spc_[REDACTED_01] boot_time_ms=90 init_time_ms=10 ready_time_ms=110
+2026-10-13T04:55:34.394943Z  INFO forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: agent_engine::session: workspace activated workspace=smcp-spc_[REDACTED_01]
+2026-10-13T04:55:34.678733Z  INFO forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: agent_engine::engine::msb: started managed service workspace=smcp-spc_[REDACTED_01] service=Webdav instance=bb7f74a9bd4049e5903965d0f3ace5bd port=42797
+2026-10-13T04:55:38.656291Z  WARN forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: agent_engine::engine: DAV startup deadline exceeded phase="dav_helper_check" phase_elapsed_ms=2496 elapsed_ms=3001
+2026-10-13T04:55:38.656324Z  WARN forward_authenticated{username=recovery agentSpaceId=spc_[REDACTED_01] sandboxName=smcp-spc_[REDACTED_01]}: agent_space_mcp::webdav: DAV runtime admission or connection failed error=timeout: DAV startup deadline exceeded: phase=dav_helper_check, phase_elapsed_ms=2496, elapsed_ms=3001 elapsed_ms=3001
+2026-10-13T04:55:39.532928Z  INFO agent_space_mcp::server: user initialized with workspace user=recovery workspace=smcp-spc_[REDACTED_01]

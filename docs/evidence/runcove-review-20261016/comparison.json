@@ -1,0 +1,318 @@
+{
+  "passed": true,
+  "baseline_commit": "a8629c13022ccd95f6b035a7142fd46066f8d33c",
+  "planning_commit": "a8f50c53618388115aa671a7072ac4151c58b158",
+  "review_start_commit": "4a88cfc6cfd4f30c77f4c7cf019ebcedca71d14a",
+  "scope": "Comparative first-party source review plus working-tree fixes; no release-image rebuild",
+  "source_validation": {
+    "passed": true,
+    "checks": [
+      "fmt",
+      "helpers",
+      "workspace-tests",
+      "clippy",
+      "standalone-build",
+      "standalone-clippy",
+      "blank-origin-runtime"
+    ],
+    "first_attempt_failure": {
+      "test": "real_host_dav_transfer_lock_bash_concurrency_and_restart",
+      "observed": "HEAD 75 returned 503 after VM runtime admission failed with Permission denied",
+      "log_sha256": "3761a3fa54d2d16f8391b8efb8812e794168d0b4458c305305b15200809f6305",
+      "targeted_rerun_log_sha256": "6562c25ac4f4319805465cb0ace04c475c3eca30db2e979d6365d8cd1e639ced",
+      "targeted_rerun": "1 passed, 0 failed",
+      "attribution": "Not reproduced in isolated rerun; cause not established. Do not claim fixed from a later pass."
+    },
+    "rust_tests": {
+      "passed": 307,
+      "failed": 0,
+      "ignored": 0
+    }
+  },
+  "comparative_source_diff_sha256": "c31abb8dded3494a806858ed0128ebdf3dc8d921ae8d24a419bbe19b67697d9f",
+  "audit_areas": [
+    {
+      "area": "Product and dependency boundary",
+      "paths": [
+        "Cargo.toml",
+        "agent-space-mcp/Cargo.toml",
+        "src/engine/mod.rs",
+        "agent-space-mcp/src/bin/runcove-standalone.rs"
+      ],
+      "assessment": "One shared core, separate entry points and optional VM backend. Standalone has no VM dependency in its release build."
+    },
+    {
+      "area": "Existing Server lifecycle and integration",
+      "paths": [
+        "agent-space-mcp/src/main.rs",
+        "src/session.rs",
+        "src/workspace_service.rs",
+        "agent-space-mcp/src/admin_api.rs",
+        "src/resources.rs"
+      ],
+      "assessment": "Existing owners, provisioning, API contracts, credential invalidation and resource observation retained. No second lifecycle manager introduced."
+    },
+    {
+      "area": "Single existing container adapter",
+      "paths": [
+        "src/engine/process.rs",
+        "agent-space-mcp/src/standalone.rs"
+      ],
+      "assessment": "Exactly one existing workspace, no VM/disk provisioning or VM idle reclamation, Docker owns container resources and final lifetime."
+    },
+    {
+      "area": "Configuration and legacy conversion",
+      "paths": [
+        "src/config.rs",
+        "config.toml",
+        "docker/configs.example/config.toml",
+        "docker/configs.example/standalone.toml"
+      ],
+      "assessment": "Legacy effective defaults and aliases preserved; canonical defaults separated. Standalone rejects VM, roster, state and management fields."
+    },
+    {
+      "area": "State authority and persistence",
+      "paths": [
+        "src/state.rs",
+        "src/image.rs"
+      ],
+      "assessment": "Server retains schema3 identity/resource ownership and durable write protections. Standalone identity is read-only in memory; no account file."
+    },
+    {
+      "area": "Authentication and route adaptation",
+      "paths": [
+        "agent-space-mcp/src/mcp_auth.rs",
+        "agent-space-mcp/src/origins.rs",
+        "agent-space-mcp/src/desktop.rs",
+        "agent-space-mcp/src/lib.rs"
+      ],
+      "assessment": "Single-space paths still require credentials, current-identity checks, cookie/Origin/nonce protection; Server paths retained."
+    },
+    {
+      "area": "Execution and managed ownership",
+      "paths": [
+        "src/engine/managed.rs",
+        "src/engine/msb.rs",
+        "src/engine/process.rs",
+        "guest/managed.py",
+        "guest/exec.py",
+        "build-support/data_process.rs"
+      ],
+      "assessment": "Shared managed startup and output decoding preserve VM behavior. Local payload identity, secret exclusion, cancellation and root control ownership remain explicit."
+    },
+    {
+      "area": "Desktop tasks and control",
+      "paths": [
+        "src/control.rs",
+        "src/desktop.rs",
+        "desktop-helper/src/main.rs",
+        "desktop-helper/src/desktop.rs",
+        "desktop-ui/src/desktop.js"
+      ],
+      "assessment": "Same tasks, control lease, workers and UI. Lost local desktop owner blocks recreation; no duplicated task service or user-space picker."
+    },
+    {
+      "area": "Files, DAV and publication",
+      "paths": [
+        "agent-space-mcp/src/server.rs",
+        "agent-space-mcp/src/webdav.rs",
+        "agent-space-mcp/src/web_publish.rs",
+        "static-http/src/main.rs",
+        "webdav/src/main.rs"
+      ],
+      "assessment": "Same tool and streaming semantics; paths adapted per target, DAV remains separately authenticated/listened. Local file payload runs as UID1001."
+    },
+    {
+      "area": "Image roles and deployment",
+      "paths": [
+        "docker/Dockerfile",
+        "docker/Dockerfile.standalone",
+        "docker/compose.server.yaml",
+        "docker/compose.standalone.yaml",
+        "docker/standalone-entrypoint.sh",
+        "images/desktop/Dockerfile",
+        "images/desktop/build.sh",
+        "images/desktop/export.py"
+      ],
+      "assessment": "Server contains MSB; Workspace is a rootfs without MSB; Standalone reuses desktop dependencies and adds direct service. Independent deployment/build files are justified."
+    },
+    {
+      "area": "Release evidence and archive identity",
+      "paths": [
+        "docker/package.py",
+        "docker/release_identity.py",
+        "docker/release-metadata.py",
+        "docker/load-package.sh.in",
+        "docker/qualification.py",
+        "docker/verify.py",
+        "docker/verify-desktop.py",
+        "docker/verify-standalone.py",
+        "docker/verify-dav-large.py",
+        "docker/verify-storage-failure.py"
+      ],
+      "assessment": "Target/source/image/cleanup gates retained. Mutable-tag race fixed by pinning launch references; historical reports are not rewritten."
+    },
+    {
+      "area": "Upgrade, rollback and workspace transfer",
+      "paths": [
+        "docker/verify-production-upgrade.py",
+        "docker/verify-workspace-import.py",
+        "docker/workspace-transfer.py",
+        "tests/test_workspace_transfer.py"
+      ],
+      "assessment": "Whole-service cold rollback is distinct from selected-workspace transfer. Source ownership retained; destination mapping explicit. Projected archival namespace now validated in dry-run and apply."
+    }
+  ],
+  "findings_resolved": [
+    {
+      "issue": "Mutable image tags can change the image launched after identity inspection",
+      "origin": "New dual-target qualification drivers plus the pre-existing lifecycle driver",
+      "before": "Five simulated tag-change cases failed",
+      "fix": "Pin candidate and historical source references to inspected immutable IDs across initialization, execution and rollback; package the qualified image_id instead of resolving its old tag again",
+      "regression": "docker/test_package.py: seven driver entry points and package selection"
+    },
+    {
+      "issue": "Dry-run omits conflicts in the post-archival workspace namespace",
+      "origin": "Dual-target selected-workspace transfer",
+      "before": "Preview accepted a source .agent-space symlink combined with legacy uploads; apply failed with a path conflict",
+      "fix": "Validate mapped paths and all synthetic parent relationships before creating a stage",
+      "regression": "tests/test_workspace_transfer.py: test_runtime_archival_never_traverses_a_source_link",
+      "boundary": "No outside-directory write reproduced in the old importer"
+    },
+    {
+      "issue": "Whitespace-only DAV public origin passes validation but stops Standalone startup",
+      "origin": "Standalone assembly",
+      "before": {
+        "scope": "development service binary; not release image qualification",
+        "phase": "before",
+        "passed": true,
+        "binary_sha256": "779c0698e451a5f73d99b146278a774966f977199581468878dc47b563db574d",
+        "exit_code": 1,
+        "error": "Error: relative URL without a base",
+        "cleanup_passed": true
+      },
+      "after": {
+        "scope": "development service binary; not release image qualification",
+        "phase": "after",
+        "passed": true,
+        "binary_sha256": "a84954d2cfdcdbc0ee2824e8ab5ac1d703728129258bbb3f0470e6ae4cbbf1ca",
+        "dav_listener_status": 401,
+        "cleanup_passed": true
+      },
+      "fix": "Use the same whitespace-empty semantics as validation",
+      "regression": "Full Standalone qualifier now uses whitespace-only DAV origin; actual disposable-container startup also checked"
+    }
+  ],
+  "prior_evidence_scope": {
+    "report": "verification.json",
+    "retained": "Full shared Standalone browser/files/real VNC/idle suite and actual Server VM helper evidence from the previous review",
+    "reason_not_replayed": "Workers, UI, helper code and lifecycle owners are unchanged by these fixes. Current full Rust VM suite and targeted actual Standalone startup are rerun."
+  },
+  "limitations": [
+    "No release image rebuild, offline package regeneration, registry push or production changes",
+    "No ARM or target NAS acceptance",
+    "Initial real Server DAV VM test failed once with a runtime Permission denied; isolated rerun passed. Root cause not established and not claimed fixed.",
+    "Third-party code remains pinned and patch-audited, not a new line-by-line upstream audit"
+  ],
+  "checks": {
+    "fmt": {
+      "passed": true,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "helpers": {
+      "passed": true,
+      "log_sha256": "148008a3dc2c6b75a26c1aeb8523e537a1b87f96be0df0e649a3ed5d2efd948f"
+    },
+    "workspace-tests": {
+      "passed": true,
+      "log_sha256": "011eb8da54d7adcdbaa2fdb024edff187b4c2284a8c9e808ba1983fb1b992345"
+    },
+    "clippy": {
+      "passed": true,
+      "log_sha256": "4742c2b98449a6b881c8b1efbe757ee28a10f761312e2dc67d7ad2c6c73df5d9"
+    },
+    "standalone-build": {
+      "passed": true,
+      "log_sha256": "75e6b6f47aa657df31a0c45810d0208b6baa2f46d7ff91cdfe3938a58e4f1e45"
+    },
+    "standalone-clippy": {
+      "passed": true,
+      "log_sha256": "5cc98aac2195eaa3ded264ae09d88dcbf1e2e75a7240dfb1b7bae4aa292b731a"
+    },
+    "blank-origin-runtime": {
+      "passed": true,
+      "log_sha256": "b80fe6a8d9c55991ae2cc284c4f7c3c9bc924abe2fef2d15907ec47b19a4b2f3"
+    },
+    "package": {
+      "passed": true,
+      "log_sha256": "66d6e314674f6e6ea71cf48674237688347597b068c9457453dcd6ce6dfe124b"
+    },
+    "dav-driver": {
+      "passed": true,
+      "log_sha256": "24adda79e21044fef19cdc7f0606a9cd7770fc9a99c705a8622ee923c13bce5d"
+    },
+    "protocol": {
+      "passed": true,
+      "log_sha256": "b9a0f2865e5fea96e9c6d489c89be72749ea5120002ef2c842f405f0630b9790"
+    },
+    "managed-cleanup": {
+      "passed": true,
+      "log_sha256": "b95b5805bef96b568b1b2424b637003cd6f306e6312d682e4f2e4e23f635b26a"
+    },
+    "exec-owner": {
+      "passed": true,
+      "log_sha256": "dccb4b96e2cad5e98f66121352dbb665b0f1fce7ad2086df41d3c07c26eef791"
+    },
+    "msb-patches": {
+      "passed": true,
+      "log_sha256": "ff93f8af6dd4826856a5062ec67dd622e17df7594a9d421525070dc2d70a679b"
+    },
+    "workspace-transfer": {
+      "passed": true,
+      "log_sha256": "d041de1238c0ff86f970a1ff7932c08b9ea56782fc94936eb6589c72421feaf7"
+    },
+    "ui-typecheck": {
+      "passed": true,
+      "log_sha256": "3c619657399a00a8f24ea0b8a6fc0be4e390d0fb979a225f487ff13b6294ee67"
+    },
+    "ui-check-i18n": {
+      "passed": true,
+      "log_sha256": "594b0e9ead68fc0c6d288ba0a1b92f0b0e9a3bf096834fac4e8dcf06403a54ff"
+    },
+    "ui-check-ui": {
+      "passed": true,
+      "log_sha256": "5914f4ea7f783569af619296d62095d3236545201dda25d3401800faec1adb9f"
+    },
+    "standalone-dependencies": {
+      "passed": true,
+      "log_sha256": "a17d3df60377897b8f758a2a90738088eb6fa66bda7da961eb5aaf92cb0b0095"
+    },
+    "images-before-fix": {
+      "scope": "intentional regression failures",
+      "log_sha256": "918af0d43e1951fadc41c061a991487f69441c5e47a2557c647cc64b198063ea"
+    },
+    "import-before-fix": {
+      "scope": "intentional regression failures",
+      "log_sha256": "f470a8e8049c9cc1994dbb1ff20d1e303ec6b3c40d484a8b3902bc080ec85408"
+    },
+    "python-syntax": {
+      "passed": true,
+      "files": 51
+    },
+    "documentation-links": {
+      "passed": true,
+      "files": 18,
+      "local_paths": 176
+    },
+    "package-manuals": {
+      "passed": true,
+      "current_comparison_evidence_copied": true
+    },
+    "diff": {
+      "passed": true,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "build_source_sha256": "fc010ed2726e9bec25c3872caeb69aba65078db53e8f3518526becca06380811",
+  "finished_at_utc": "2026-10-15T17:43:58.780795+00:00"
+}

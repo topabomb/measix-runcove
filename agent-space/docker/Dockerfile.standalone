@@ -1,0 +1,56 @@
+ARG WORKSPACE_IMAGE
+FROM nikolaik/python-nodejs@sha256:3a486570ce499b396f0189e27a782410801a27503b0f82b95ed51bfd01d72478 AS ui
+WORKDIR /ui
+COPY desktop-ui/package.json desktop-ui/package-lock.json ./
+RUN npm ci --ignore-scripts --no-audit --no-fund
+COPY desktop-ui/ ./
+RUN npm run build
+
+FROM rust:1.96-slim AS builder
+WORKDIR /build
+COPY Cargo.toml Cargo.lock ./
+COPY src/ ./src/
+COPY agent-space-mcp/ ./agent-space-mcp/
+COPY static-http/ ./static-http/
+COPY webdav/ ./webdav/
+COPY desktop-helper/ ./desktop-helper/
+COPY build-support/ ./build-support/
+COPY guest/ ./guest/
+COPY images/ ./images/
+COPY vendor/ ./vendor/
+RUN --mount=type=cache,id=runcove-registry,target=/usr/local/cargo/registry \
+    --mount=type=cache,id=runcove-standalone-target,target=/build/target \
+    CARGO_BUILD_JOBS=2 cargo build --release --locked -p agent-space-mcp --no-default-features --bin runcove-standalone && \
+    CARGO_BUILD_JOBS=2 cargo build --release --locked -p agent-space-static-http -p agent-space-webdav -p agent-space-desktop && \
+    mkdir -p /out && cp /build/target/release/runcove-standalone /build/target/release/agent-space-static-http /build/target/release/agent-space-webdav /build/target/release/agent-space-desktop /out/
+
+# Built from the same desktop dependency source as the managed Workspace.
+FROM ${WORKSPACE_IMAGE}
+ARG APP_VERSION=unversioned
+ARG SOURCE_REVISION=unknown
+ARG SOURCE_DIGEST=unknown
+LABEL org.opencontainers.image.title="Measix Runcove Standalone" \
+      org.opencontainers.image.version="${APP_VERSION}" \
+      org.opencontainers.image.revision="${SOURCE_REVISION}" \
+      io.runcove.target="standalone" \
+      io.runcove.source-sha256="${SOURCE_DIGEST}"
+COPY --from=builder /out/runcove-standalone /usr/local/bin/
+COPY --from=builder /out/agent-space-static-http /usr/local/bin/
+COPY --from=builder /out/agent-space-webdav /usr/local/bin/
+COPY --from=builder /out/agent-space-desktop /usr/local/bin/
+COPY --from=ui /ui/dist/ /opt/agent-space/desktop-ui/
+COPY docker/configs.example/standalone.toml /etc/runcove/config.toml
+COPY --chmod=755 docker/standalone-entrypoint.sh /usr/local/bin/
+COPY images/desktop-image.lock.json /opt/agent-space/desktop-image.lock.json
+COPY docker/release-metadata.py /tmp/release-metadata.py
+RUN python3 /tmp/release-metadata.py --target standalone --bins /usr/local/bin --ui /opt/agent-space/desktop-ui \
+    --workspace-lock /opt/agent-space/desktop-image.lock.json --source "$SOURCE_DIGEST" --revision "$SOURCE_REVISION" \
+    --output /opt/agent-space/release.json && rm /tmp/release-metadata.py
+ENV AGENT_SPACE_DESKTOP_UI=/opt/agent-space/desktop-ui
+RUN mkdir -p /workspace && chown 1001:1001 /workspace
+VOLUME ["/workspace"]
+EXPOSE 8932 8933
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl --fail --silent --max-time 4 http://127.0.0.1:8932/healthz >/dev/null || exit 1
+ENTRYPOINT ["standalone-entrypoint.sh"]
+CMD ["--config", "/etc/runcove/config.toml"]

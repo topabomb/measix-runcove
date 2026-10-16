@@ -1,0 +1,17 @@
+#!/bin/sh
+set -eu
+HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+cd "$HERE"
+printf '%s  image.tar.gz\n' '@ARCHIVE_SHA@' | sha256sum -c -
+docker load -i "$HERE/image.tar.gz"
+IMAGE_ID=@IMAGE_ID@
+CONFIG_ID=@CONFIG_ID@
+TAG=@TAG@
+if docker image inspect "$IMAGE_ID" >/dev/null 2>&1; then REF=$IMAGE_ID; else REF=$CONFIG_ID; fi
+ACTUAL=$(docker image inspect "$REF" --format '{{.Id}}')
+SOURCE=$(docker image inspect "$REF" --format '{{index .Config.Labels "io.runcove.source-sha256"}}')
+[ "$SOURCE" = @SOURCE@ ] || { echo 'Loaded image source mismatch' >&2; exit 1; }
+EXISTING=$(docker image inspect "$TAG" --format '{{.Id}}' 2>/dev/null || true)
+[ -z "$EXISTING" ] || [ "$EXISTING" = "$ACTUAL" ] || { echo 'Existing package tag points to different bytes; resolve explicitly before deployment' >&2; exit 1; }
+docker tag "$REF" "$TAG"
+printf 'Loaded verified %s (%s)\n' "$TAG" "$ACTUAL"

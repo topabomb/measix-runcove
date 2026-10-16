@@ -1,0 +1,6 @@
+{
+  "kind": "desktop",
+  "preset": "runcove-desktop",
+  "reference": "runcove/runcove-workspace@sha256:29e1c5d072a55eb98e38518941a7aee0e19abb098364b5d609a27844de35b698",
+  "workerContract": 1
+}

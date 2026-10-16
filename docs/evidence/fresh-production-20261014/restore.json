@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "checks": [
+    "Archive hash and all paths, types, symlink targets and source ownership metadata validated",
+    "Sole new desktop account, running VM and 32 GiB owned disk identity confirmed",
+    "All 27722 regular file SHA256 values, source permissions/owners and symlink targets match",
+    "Same production container is healthy on both domains; account identity, image and both credential digests unchanged"
+  ],
+  "imageId": "sha256:9ee5cd5fd3998d5defc005b90b1ace906f48484f8fbb680a50a0e6ab7e76ce06",
+  "regularFilesVerified": 27722,
+  "archiveEntries": 31933,
+  "archiveFileBytes": 4063182328,
+  "symlinksVerified": 66,
+  "sourcePermissionsAndOwnershipMatch": true,
+  "extraInitializedFilesRetained": 0,
+  "accountStateBytesUnchanged": true,
+  "adminCredentialUnchanged": true,
+  "mainHealth": 200,
+  "davHealth": 200,
+  "ready": true,
+  "workspaceStatusAfterRestart": "running",
+  "temporaryHelperRemoved": true,
+  "publication": "Operator identifiers, backup and filesystem paths, state/archive digests and live resource snapshots removed; reported verification outcomes retained."
+}

@@ -1,0 +1,61 @@
+{
+  "version": "0.7.2",
+  "source_revision": "60d4dc8a436fb9365491567ec21d073e924e3c6d",
+  "source_archive_sha256": "fecd277ccfddbb4a131e4c9dfe056a87a014926c78dd705776d738158c483828",
+  "patches": [
+    {
+      "id": "relay",
+      "patch": "msb-0.7.2-relay.patch",
+      "patch_sha256": "4c7b1d3724711b7bfe6461912767158bae40be799f341b62ec17d21fea8a5c96",
+      "files": [
+        {
+          "file": "crates/runtime/lib/runner/relay.rs",
+          "original_sha256": "94675ed774c288b808acefb03cfee5ac374211362eb8584fb4f51ca908361d13",
+          "patched_sha256": "b70d3a6e1f8c4970bfcbeff4f69205ac0a2fdd3a6655c6bf029d846c06567fa2"
+        }
+      ]
+    },
+    {
+      "id": "lifecycle",
+      "patch": "msb-0.7.2-lifecycle.patch",
+      "patch_sha256": "db84176c2fb44aec240d78ea44e326c3af3fe89cf3ad5006f4a25b10179b78b6",
+      "files": [
+        {
+          "file": "sdk/rust/lib/backend/local/sandbox/mod.rs",
+          "original_sha256": "be70a01e31e93995e111d6bb94c5c55e31528f3bacf627ccde836f54f74fd053",
+          "patched_sha256": "a56a6be62c28c251778f37ecb2f7c3a20375414c23862eb777de9ce9fe043d5c"
+        },
+        {
+          "file": "sdk/rust/lib/sandbox/handle.rs",
+          "original_sha256": "ec632d9b88c86498ef86b110560378ec1a3ff65b5f6e53369b46adca9e854941",
+          "patched_sha256": "7954ed6a43fe4bad9c135976ffd74a4755ee9fa39e53b06936050f888ad74b51"
+        },
+        {
+          "file": "crates/runtime/lib/client/ipc.rs",
+          "original_sha256": "50c618ea8f969f2471dc93c972abd94cf29da889a55a16ecd0dc96b2341ce3ef",
+          "patched_sha256": "02b49657d09983109209d754495d823a42180ed3a00a77b4cc75baea6621e3b1"
+        },
+        {
+          "file": "crates/runtime/lib/client/maintenance.rs",
+          "original_sha256": "069a0435317f92786124ce112c9ca2a2bc7f5cd49c47d35f990364a0891a18b2",
+          "patched_sha256": "c23c2581a16debd845fd807e746d0478721c12a2803b6a1aa63133d27384d4a7"
+        },
+        {
+          "file": "sdk/rust/lib/backend/local/sandbox/create.rs",
+          "original_sha256": "fc2b311e284a2afff3f19149e2de581794c338fa5b358c6769a4ecf50fbd7b4a",
+          "patched_sha256": "d9b6b0968df872b66fdfd937f554e6e335654b9ce3b58d237a267e77e91d9a78"
+        }
+      ]
+    }
+  ],
+  "vendored_crates": {
+    "microsandbox": {
+      "crate_sha256": "0fda3a76b3754d8eb10a5f9b6267a57517b9231eb2fe8254ab175df8a80fa8c8",
+      "tree_sha256": "8516beb48c58a41d1ced521ce6224fd1f8391cde7b20f454188c51c18d6cc6de"
+    },
+    "microsandbox-runtime": {
+      "crate_sha256": "c258d666aa6c4314fdf2ff6c93044f64f7dea376174b7de27dbd5a6a01b518e9",
+      "tree_sha256": "46e7904ea1527c12bb4e9c853e6c2120f953f7e3469255b3110cdcd63d468e43"
+    }
+  }
+}

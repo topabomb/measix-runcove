@@ -1,0 +1,619 @@
+//! Loopback-only guest browser owner. No MCP or user credentials live here.
+mod desktop;
+mod process;
+use axum::{
+    extract::{Path, Query, State},
+    http::StatusCode,
+    routing::{get, post},
+    Json, Router,
+};
+use serde::Deserialize;
+use serde_json::{json, Value};
+use std::{
+    collections::HashMap,
+    process::Stdio,
+    sync::Arc,
+    time::{Duration, Instant},
+};
+use tokio::{
+    io::AsyncReadExt,
+    process::Command,
+    sync::{Mutex, Notify},
+};
+use tokio_util::sync::CancellationToken;
+
+#[derive(Clone)]
+struct App {
+    desktop: Arc<Mutex<desktop::Desktop>>,
+    jobs: Arc<Mutex<HashMap<String, Arc<Job>>>>,
+}
+struct Job {
+    id: String,
+    finished: Mutex<Option<Instant>>,
+    deadline: Instant,
+    status: Mutex<Value>,
+    cancel: CancellationToken,
+    done: Notify,
+    directory: String,
+    result: Mutex<Option<Value>>,
+    observation: Mutex<Option<Value>>,
+}
+type Reply = Result<Json<Value>, (StatusCode, Json<Value>)>;
+fn fail(code: &str) -> (StatusCode, Json<Value>) {
+    (StatusCode::CONFLICT, Json(json!({"error":code})))
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Run {
+    task_id: String,
+    code: String,
+    #[serde(default = "default_timeout")]
+    timeout_secs: u64,
+    #[serde(default)]
+    page_id: Option<String>,
+    #[serde(default)]
+    captures: Vec<Value>,
+}
+fn default_timeout() -> u64 {
+    60
+}
+#[derive(Deserialize)]
+struct Poll {
+    #[serde(default)]
+    summary: bool,
+}
+async fn health(State(app): State<App>) -> Reply {
+    let mut desktop = app.desktop.lock().await;
+    Ok(Json(json!({"desktop":desktop.alive(),"worker_contract":1})))
+}
+async fn viewer(State(app): State<App>) -> Reply {
+    app.desktop
+        .lock()
+        .await
+        .start()
+        .await
+        .map_err(|e| fail(&e.to_string()))?;
+    app.desktop.lock().await.last_used = Instant::now();
+    Ok(Json(json!({"desktop":true})))
+}
+async fn input(State(app): State<App>) -> Reply {
+    app.desktop.lock().await.last_used = Instant::now();
+    Ok(Json(json!({"ok":true})))
+}
+async fn artifacts() -> Reply {
+    // The user owns every workspace ancestor and may replace it with a link.
+    // Perform the complete walk as the data UID, including ancestor traversal.
+    let mut command = Command::new(std::env::current_exe().map_err(|e| fail(&e.to_string()))?);
+    command
+        .arg("--list-artifacts")
+        .stdin(Stdio::null())
+        .kill_on_drop(true);
+    process::isolate(&mut command, Some(1001));
+    let output = tokio::time::timeout(Duration::from_secs(5), command.output())
+        .await
+        .map_err(|_| fail("ARTIFACTS_TIMEOUT"))?
+        .map_err(|e| fail(&e.to_string()))?;
+    if !output.status.success() {
+        return Err(fail("ARTIFACTS_UNAVAILABLE"));
+    }
+    Ok(Json(
+        serde_json::from_slice(&output.stdout).map_err(|_| fail("INVALID_ARTIFACTS"))?,
+    ))
+}
+fn list_artifacts() -> anyhow::Result<Value> {
+    anyhow::ensure!(
+        unsafe { libc::geteuid() } == 1001,
+        "artifact listing requires UID1001"
+    );
+    let mut files = vec![];
+    match std::fs::read_dir(desktop::ARTIFACTS) {
+        Ok(entries) => {
+            for entry in entries.flatten().take(1000) {
+                if let Ok(meta) = entry.path().symlink_metadata() {
+                    if meta.is_file() {
+                        files.push(json!({"name":entry.file_name().to_string_lossy(),"bytes":meta.len(),"path":entry.path().to_string_lossy()}));
+                    }
+                }
+            }
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error.into()),
+    }
+    Ok(json!({"files":files}))
+}
+async fn observe(State(app): State<App>, Json(params): Json<Value>) -> Reply {
+    if !matches!(
+        params["view"].as_str(),
+        None | Some("dom" | "page" | "desktop")
+    ) {
+        return Err(fail("INVALID_VIEW"));
+    }
+    let mut desktop = app.desktop.lock().await;
+    desktop.start().await.map_err(|e| fail(&e.to_string()))?;
+    desktop.last_used = Instant::now();
+    let value = desktop::node(params)
+        .await
+        .map_err(|e| fail(&e.to_string()))?;
+    Ok(Json(value))
+}
+async fn run(State(app): State<App>, Json(params): Json<Run>) -> Reply {
+    if params.code.is_empty()
+        || params.code.len() > 65536
+        || !(1..=600).contains(&params.timeout_secs)
+        || params.captures.len() > 32
+        || uuid::Uuid::parse_str(&params.task_id).is_err()
+    {
+        return Err(fail("INVALID_ARGUMENT"));
+    }
+    let mut jobs = app.jobs.lock().await;
+    if jobs.contains_key(&params.task_id) {
+        return Err(fail("DUPLICATE_TASK"));
+    }
+    for job in jobs.values() {
+        let status = job.status.lock().await;
+        if status["terminal"] != true && status["phase"] != "observing" {
+            return Err(fail("BUSY"));
+        }
+    }
+    let id = params.task_id.clone();
+    let accepted = Instant::now();
+    let directory = format!(
+        "/tmp/agent-space/{}/job-{id}",
+        std::env::var("AGENT_SPACE_HELPER_INSTANCE").map_err(|_| fail("MISSING_OWNER"))?
+    );
+    std::fs::create_dir(&directory).map_err(|e| fail(&e.to_string()))?;
+    let c = std::ffi::CString::new(directory.clone()).map_err(|_| fail("INVALID_OWNER"))?;
+    unsafe {
+        if libc::chown(c.as_ptr(), 1001, 1001) != 0 {
+            return Err(fail("JOB_OWNERSHIP"));
+        }
+    }
+    let job = Arc::new(Job {
+        id: id.clone(),
+        finished: Mutex::new(None),
+        deadline: accepted + Duration::from_secs(params.timeout_secs),
+        status: Mutex::new(
+            json!({"task_id":id,"state":"running","phase":"preparing","terminal":false}),
+        ),
+        cancel: CancellationToken::new(),
+        done: Notify::new(),
+        directory,
+        result: Mutex::new(None),
+        observation: Mutex::new(None),
+    });
+    jobs.insert(id.clone(), job.clone());
+    drop(jobs);
+    tokio::spawn(async move {
+        execute(app, job, params).await;
+    });
+    Ok(Json(
+        json!({"task_id":id,"state":"running","phase":"preparing"}),
+    ))
+}
+async fn execute(app: App, job: Arc<Job>, params: Run) {
+    let until = tokio::time::Instant::from_std(job.deadline);
+    let prepare = async {
+        let mut desktop = app.desktop.lock().await;
+        desktop.start().await?;
+        desktop.last_used = Instant::now();
+        drop(desktop);
+        desktop::node(json!({"page_id":params.page_id,"create_page":true})).await
+    };
+    let prepared = tokio::select! {
+     result=prepare=>result,
+     _=job.cancel.cancelled()=>Err(anyhow::anyhow!("EXECUTION_CANCELLED")),
+     _=tokio::time::sleep_until(until)=>Err(anyhow::anyhow!("EXECUTION_TIMEOUT")),
+    };
+    let started = prepared.is_ok();
+    let observed_page = prepared.as_ref().ok().map(|value| value["page_id"].clone());
+    let outcome = match prepared {
+        Ok(observation) => worker(&job, &params, observation).await,
+        Err(error) => {
+            let mut desktop = app.desktop.lock().await;
+            if !desktop.alive() {
+                if let Err(cleanup) = desktop.stop().await {
+                    drop(desktop);
+                    return finish_unconfirmed(
+                        &app,
+                        &job,
+                        format!("CLEANUP_UNCONFIRMED: preparation cleanup: {cleanup}"),
+                    )
+                    .await;
+                }
+            }
+            Err(error)
+        }
+    };
+    let state = if outcome.is_ok() {
+        "succeeded"
+    } else if job.cancel.is_cancelled() {
+        "cancelled"
+    } else if Instant::now() >= job.deadline {
+        "timed_out"
+    } else {
+        "failed"
+    };
+    *job.status.lock().await =
+        json!({"task_id":job.id,"state":"running","phase":"cleaning","terminal":false});
+    let _ = tokio::time::timeout(
+        Duration::from_secs(2),
+        desktop::node(json!({"action":"restore"})),
+    )
+    .await;
+    if outcome.is_ok() {
+        *job.status.lock().await = json!({"task_id":job.id,"state":"running","phase":"observing","terminal":false,"cleanup_confirmed":true});
+        let observed = tokio::time::timeout(
+            Duration::from_secs(5),
+            desktop::node(json!({"view":"dom","page_id":observed_page,"allow_missing_page":true})),
+        )
+        .await;
+        if let Ok(Ok(value)) = observed {
+            *job.observation.lock().await = Some(value);
+        }
+    }
+    let error = match outcome {
+        Ok(value) => {
+            *job.result.lock().await = Some(value);
+            None
+        }
+        Err(error) => Some(error.to_string()),
+    };
+    let cleanup_confirmed = !error
+        .as_ref()
+        .is_some_and(|e| e.contains("CLEANUP_UNCONFIRMED"));
+    let mut final_status = json!({"task_id":job.id,"state":state,"terminal":true,"cleanup_confirmed":cleanup_confirmed});
+    if let Some(error) = error {
+        final_status["error"] = json!(error);
+        final_status["side_effects"] = json!(if started {
+            "may_have_occurred"
+        } else {
+            "not_started"
+        });
+    }
+    *job.status.lock().await = final_status;
+    *job.finished.lock().await = Some(Instant::now());
+    app.desktop.lock().await.last_used = Instant::now();
+    job.done.notify_waiters();
+}
+async fn finish_unconfirmed(app: &App, job: &Job, error: String) {
+    *job.status.lock().await = json!({"task_id":job.id,"state":"failed","terminal":true,"cleanup_confirmed":false,"error":error,"side_effects":"may_have_occurred"});
+    *job.finished.lock().await = Some(Instant::now());
+    app.desktop.lock().await.last_used = Instant::now();
+    job.done.notify_waiters();
+}
+async fn worker(job: &Job, params: &Run, observation: Value) -> anyhow::Result<Value> {
+    let remaining = job.deadline.saturating_duration_since(Instant::now());
+    anyhow::ensure!(
+        !remaining.is_zero() && !job.cancel.is_cancelled(),
+        "EXECUTION_TIMEOUT_OR_CANCELLED"
+    );
+    let worker_spec = json!({"code":params.code,"page_id":observation["page_id"],"window":observation["window"],"nativeWindow":observation["nativeWindow"],"pageResponsive":observation["health"]["page"],"captures":params.captures,"timeoutMs":remaining.as_millis()});
+    let spec = json!({"program":"node","args":[format!("{}/browser-worker.cjs",desktop::NODE)],"uid":1001,
+    "timeout_secs":remaining.as_secs_f64(),"max_bytes":32768,"max_lines":500,"cleanup_on_exit":true});
+    let mut command = Command::new("python3");
+    command
+        .args([
+            "-I",
+            "-c",
+            include_str!("../../guest/exec.py"),
+            &spec.to_string(),
+        ])
+        .env("DISPLAY", ":1")
+        .env("HOME", "/home/desktop")
+        .env("AGENT_TASK", worker_spec.to_string())
+        .env("AGENT_RESULT", format!("{}/result.json", job.directory))
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    process::isolate(&mut command, None);
+    let mut child = command.spawn()?;
+    let identity = process::identity(
+        child
+            .id()
+            .ok_or_else(|| anyhow::anyhow!("missing worker PID"))?,
+    )
+    .ok_or_else(|| anyhow::anyhow!("worker owner exited"))?;
+    *job.status.lock().await =
+        json!({"task_id":job.id,"state":"running","phase":"executing","terminal":false});
+    let stdout = child.stdout.take().unwrap();
+    let stderr = child.stderr.take().unwrap();
+    let reader = tokio::spawn(async move {
+        let mut bytes = vec![];
+        stdout.take(512 * 1024).read_to_end(&mut bytes).await?;
+        Ok::<_, std::io::Error>(bytes)
+    });
+    let errors = tokio::spawn(async move {
+        let mut bytes = vec![];
+        stderr.take(8192).read_to_end(&mut bytes).await?;
+        Ok::<_, std::io::Error>(bytes)
+    });
+    let ending = tokio::select! {
+      exit=child.wait()=>{exit?;false},
+      _=job.cancel.cancelled()=>true,
+      _=tokio::time::sleep_until(tokio::time::Instant::from_std(job.deadline))=>true,
+    };
+    if ending {
+        *job.status.lock().await =
+            json!({"task_id":job.id,"state":"running","phase":"cleaning","terminal":false});
+        if process::identity(identity.pid) == Some(identity) {
+            unsafe {
+                libc::kill(identity.pid as i32, libc::SIGTERM);
+            }
+        }
+        if tokio::time::timeout(Duration::from_secs(4), child.wait())
+            .await
+            .is_err()
+        {
+            process::stop_tree(identity).await?;
+            let _ = child.wait().await;
+        }
+    }
+    let bytes = reader.await??;
+    let diagnostic = errors.await??;
+    anyhow::ensure!(
+        !bytes.is_empty(),
+        "CLEANUP_UNCONFIRMED: worker result lost: {}",
+        String::from_utf8_lossy(&diagnostic)
+    );
+    let output: Value = serde_json::from_slice(&bytes)
+        .map_err(|e| anyhow::anyhow!("CLEANUP_UNCONFIRMED: invalid worker owner result: {e}"))?;
+    anyhow::ensure!(output["cleanup_confirmed"] == true, "CLEANUP_UNCONFIRMED");
+    anyhow::ensure!(output["cancelled"] != true, "EXECUTION_CANCELLED");
+    anyhow::ensure!(output["timed_out"] != true, "EXECUTION_TIMEOUT");
+    anyhow::ensure!(
+        output["exit_code"] == 0,
+        "SCRIPT_ERROR: {}",
+        output["stderr"].as_str().unwrap_or_default()
+    );
+    let stdout = output["stdout"].as_str().unwrap_or_default();
+    let stderr = output["stderr"].as_str().unwrap_or_default();
+    let mut result = read_worker_result(
+        std::path::Path::new(&job.directory)
+            .join("result.json")
+            .as_path(),
+    )?;
+    if !stdout.is_empty() || !stderr.is_empty() {
+        let mut logs = serde_json::Map::new();
+        if !stdout.is_empty() {
+            logs.insert("stdout".into(), json!(stdout));
+        }
+        if !stderr.is_empty() {
+            logs.insert("stderr".into(), json!(stderr));
+        }
+        if output["truncated"] == true {
+            logs.insert("truncated".into(), json!(true));
+        }
+        result["logs"] = Value::Object(logs);
+    }
+    Ok(result)
+}
+fn read_worker_result(path: &std::path::Path) -> anyhow::Result<Value> {
+    use std::io::Read;
+    use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
+    let file = std::fs::OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+        .open(path)?;
+    let metadata = file.metadata()?;
+    let limit = 12 * 1024 * 1024;
+    anyhow::ensure!(
+        metadata.is_file()
+            && metadata.uid() == 1001
+            && metadata.nlink() == 1
+            && metadata.len() <= limit,
+        "invalid worker result ownership/type/size"
+    );
+    let mut bytes = Vec::new();
+    file.take(limit + 1).read_to_end(&mut bytes)?;
+    anyhow::ensure!(bytes.len() <= limit as usize, "worker result too large");
+    decode_worker_result(&bytes)
+}
+fn decode_worker_result(bytes: &[u8]) -> anyhow::Result<Value> {
+    let result: Value = serde_json::from_slice(bytes)?;
+    anyhow::ensure!(
+        result.is_object(),
+        "SCRIPT_ERROR: worker result must be an object"
+    );
+    Ok(result)
+}
+async fn task(State(app): State<App>, Path(id): Path<String>, Query(poll): Query<Poll>) -> Reply {
+    let job = app
+        .jobs
+        .lock()
+        .await
+        .get(&id)
+        .cloned()
+        .ok_or_else(|| fail("TASK_NOT_FOUND"))?;
+    let mut status = job.status.lock().await.clone();
+    if status["terminal"] == true && !poll.summary {
+        if let Some(value) = job.result.lock().await.as_ref() {
+            status["result"] = value.clone();
+        }
+        if let Some(value) = job.observation.lock().await.as_ref() {
+            status["observation"] = value.clone();
+        }
+    } else if status["terminal"] != true {
+        status["remaining_secs"] = json!(job
+            .deadline
+            .saturating_duration_since(Instant::now())
+            .as_secs());
+    }
+    Ok(Json(status))
+}
+async fn cancel(State(app): State<App>, Path(id): Path<String>) -> Reply {
+    let job = app
+        .jobs
+        .lock()
+        .await
+        .get(&id)
+        .cloned()
+        .ok_or_else(|| fail("TASK_NOT_FOUND"))?;
+    job.cancel.cancel();
+    Ok(Json(json!({"task_id":id,"state":"cancelling"})))
+}
+async fn reset(State(app): State<App>) -> Reply {
+    let jobs = app.jobs.lock().await.values().cloned().collect::<Vec<_>>();
+    for job in &jobs {
+        job.cancel.cancel();
+    }
+    for job in &jobs {
+        tokio::time::timeout(Duration::from_secs(8), async {
+            loop {
+                let notified = job.done.notified();
+                if job.status.lock().await["terminal"] == true {
+                    break;
+                }
+                notified.await;
+            }
+        })
+        .await
+        .map_err(|_| fail("CLEANUP_UNCONFIRMED"))?;
+        if job.status.lock().await["cleanup_confirmed"] == false {
+            return Err(fail("CLEANUP_UNCONFIRMED"));
+        }
+    }
+    Ok(Json(json!({"ok":true})))
+}
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    if std::env::args().nth(1).as_deref() == Some("--list-artifacts") {
+        println!("{}", list_artifacts()?);
+        return Ok(());
+    }
+    if std::env::args().nth(1).as_deref() == Some("--prepare-workspace") {
+        anyhow::ensure!(
+            unsafe { libc::geteuid() } == 1001,
+            "workspace preparation requires UID1001"
+        );
+        return desktop::prepare_workspace();
+    }
+    unsafe {
+        anyhow::ensure!(
+            libc::prctl(libc::PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0) == 0,
+            "subreaper failed"
+        );
+    }
+    // Child workers are UID 1001; allow traversal only, keeping the managed
+    // identity record and logs root-owned and non-writable by browser workers.
+    if let Ok(instance) = std::env::var("AGENT_SPACE_HELPER_INSTANCE") {
+        use std::os::unix::fs::PermissionsExt;
+        let directory = format!("/tmp/agent-space/{instance}");
+        std::fs::set_permissions(directory, std::fs::Permissions::from_mode(0o711))?;
+    }
+    desktop::install_sources()?;
+    let app = App {
+        desktop: Arc::new(Mutex::new(Default::default())),
+        jobs: Arc::new(Mutex::new(HashMap::new())),
+    };
+    let upkeep = app.clone();
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_secs(2)).await;
+            let mut jobs = upkeep.jobs.lock().await;
+            let mut expired = vec![];
+            let mut active = false;
+            for (id, job) in jobs.iter() {
+                if job.status.lock().await["terminal"] != true {
+                    active = true;
+                } else if job
+                    .finished
+                    .lock()
+                    .await
+                    .is_some_and(|t| t.elapsed() > Duration::from_secs(1800))
+                {
+                    expired.push(id.clone());
+                }
+            }
+            for id in expired {
+                if let Some(job) = jobs.remove(&id) {
+                    let directory = std::path::Path::new(&job.directory);
+                    if directory.symlink_metadata().is_ok_and(|m| m.is_dir()) {
+                        if let Ok(entries) = std::fs::read_dir(directory) {
+                            let mut clean = true;
+                            for file in entries.flatten() {
+                                if matches!(
+                                    file.file_name().to_str(),
+                                    Some("result.json" | "observation.json")
+                                ) && file.path().symlink_metadata().is_ok_and(|m| m.is_file())
+                                {
+                                    let _ = std::fs::remove_file(file.path());
+                                } else {
+                                    clean = false;
+                                }
+                            }
+                            if clean {
+                                let _ = std::fs::remove_dir(directory);
+                            }
+                        }
+                    }
+                }
+            }
+            drop(jobs);
+            if !active {
+                let mut desktop = upkeep.desktop.lock().await;
+                if desktop.last_used.elapsed() > Duration::from_secs(300) {
+                    if let Err(error) = desktop.stop().await {
+                        eprintln!("desktop cleanup: {error}");
+                    }
+                }
+            }
+        }
+    });
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+    let port = listener.local_addr()?.port();
+    println!("READY {port}");
+    let router = Router::new()
+        .route("/health", get(health))
+        .route("/viewer", post(viewer))
+        .route("/observe", post(observe))
+        .route("/input", post(input))
+        .route("/artifacts", get(artifacts))
+        .route("/run", post(run))
+        .route("/task/{id}", get(task))
+        .route("/task/{id}/cancel", post(cancel))
+        .route("/reset", post(reset))
+        .with_state(app.clone());
+    let mut terminate = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
+    axum::serve(listener, router)
+        .with_graceful_shutdown({
+            let shutdown_app = app.clone();
+            async move {
+                terminate.recv().await;
+                for job in shutdown_app.jobs.lock().await.values() {
+                    job.cancel.cancel();
+                }
+            }
+        })
+        .await?;
+    for job in app.jobs.lock().await.values() {
+        job.cancel.cancel();
+    }
+    app.desktop.lock().await.stop().await?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod result_tests {
+    use super::*;
+    #[test]
+    fn worker_result_rejects_non_object_json_before_attaching_logs() {
+        for bytes in [b"[]".as_slice(), b"null", b"7", b"true", b"\"text\""] {
+            assert!(decode_worker_result(bytes).is_err());
+        }
+        assert!(decode_worker_result(b"{\"value\":7}").unwrap().is_object());
+    }
+    #[test]
+    fn worker_result_never_follows_user_links_or_accepts_non_user_owned_files() {
+        let dir = std::env::temp_dir().join(format!("runcove-result-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir(&dir).unwrap();
+        let private = dir.join("private.json");
+        std::fs::write(&private, b"{\"secret\":true}").unwrap();
+        let result = dir.join("result.json");
+        std::os::unix::fs::symlink(&private, &result).unwrap();
+        assert!(read_worker_result(&result).is_err());
+        std::fs::hard_link(&private, dir.join("linked.json")).unwrap();
+        assert!(read_worker_result(&private).is_err());
+        assert_eq!(std::fs::read(&private).unwrap(), b"{\"secret\":true}");
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+}

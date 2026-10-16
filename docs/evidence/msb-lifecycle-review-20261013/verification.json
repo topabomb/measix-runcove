@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-13",
+  "candidate": {
+    "image": "agent-space:schema3-006bc6b7ddd0471d",
+    "image_id": "sha256:9ee5cd5fd3998d5defc005b90b1ace906f48484f8fbb680a50a0e6ab7e76ce06",
+    "source_digest": "006bc6b7ddd0471d7c93e923892d3b63a505490386f2848c735b87d73dfc606f",
+    "revision": "a27a583025fc3b7cd37e7fc17b3e84c3acc7d14a",
+    "dirty_worktree": true,
+    "build_method": "reviewed-application-rebuild-on-unchanged-qualified-MSB-layer",
+    "base_image_id": "sha256:af5a06bbf8a43d1922526b798eef27b1940cd93c5d7287527d3e7cc2af9c7392",
+    "runtime_manifest_and_cli_unchanged": true
+  },
+  "rust_workspace": {
+    "passed": 293,
+    "failed": 0,
+    "ignored": 0
+  },
+  "targeted_dav_tests": 5,
+  "clippy_all_targets": "passed -D warnings",
+  "format_and_diff": "passed",
+  "managed_cleanup": 6,
+  "exec_owner": 5,
+  "patch_input_guards": 4,
+  "msb_layer_unchanged_from_previous_177_test_build": true,
+  "vendor_original_file_comparison": {
+    "microsandbox": 176,
+    "microsandbox-runtime": 70
+  },
+  "live_existing_space_checks": 12,
+  "first_concurrent_dav_seconds": 1.0281845350000367,
+  "review_fixes": [
+    "Release confirmed terminal capacity and discard old guest state when VM exits between start and readiness.",
+    "Log the original failure phase before reconciliation, suppress later duplicate failure logs.",
+    "Correct retired application-side PID/timestamp repair description and broken section link.",
+    "Clarify that SDK-patched assets cannot be used for legacy runtime-only SQLite repair."
+  ],
+  "extra_regression": "Paused VM after abrupt container exit recovers on original disks; pause is projected runtime state, not a persisted Paused row.",
+  "application_direct_msb_database_writes": false,
+  "new_database_or_schema": false,
+  "credentials_rotated": false,
+  "upstream_content_published": false,
+  "limits": [
+    "Historical PID 131 owner and initial VM crash cause remain unknown.",
+    "Temporary Linux ownership patch is not a complete repair of every signal path in #1642.",
+    "Remote production and browser UI were not updated in this review."
+  ],
+  "runtime_only_incompatible_assets_refusal": "passed",
+  "publication": "Private deployment details omitted; isolated regression results and artifact identities retained."
+}

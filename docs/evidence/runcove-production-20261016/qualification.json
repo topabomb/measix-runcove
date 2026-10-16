@@ -1,0 +1,47 @@
+{
+  "source_commit": "d5040e2596d7dc2a7d6c83f595cb619dfb5c5ba0",
+  "source_sha256": "fc010ed2726e9bec25c3872caeb69aba65078db53e8f3518526becca06380811",
+  "image_id": "sha256:413c3411b962e140b89f9f1a7195b4350ff92af2f76f3dec5a9fe3a00c129260",
+  "tag": "runcove-server:runcove-fc010ed2726e9bec",
+  "passed": true,
+  "checks": {
+    "lifecycle": {
+      "exit_code": 0,
+      "report": "server-lifecycle.json",
+      "report_sha256": "bc2b1509ea1caf1e5fe619a0c4ee00b1126353e4aebada4b491296be27b96543",
+      "reused_completed_same_image": true
+    },
+    "desktop": {
+      "exit_code": 0,
+      "log_sha256": "ee5fd2379b29e4e6e3e8d2215bc69b963e0c6a2049b1cfcb1e16fc911b1fd90e",
+      "report": "server-desktop.json",
+      "report_sha256": "447f83bd1394fe612d70aaa0c34f7e5cdafb2c47d3985fca6fcd31ff2b2c103f"
+    },
+    "upgrade": {
+      "exit_code": 0,
+      "log_sha256": "4950c612794529a132b8b04918a5be82fd1bd323b8a427f1662d1cc9fe4b639f",
+      "report": "upgrade-rollback.json",
+      "report_sha256": "79664d3a809af9eb78c67c312a743fc726d8555d28fc501763f2ab5d163ae6b5"
+    },
+    "files": {
+      "exit_code": 0,
+      "log_sha256": "ab05ee4aa12bfb4bf953ee62b3a4835b325a0000bce890ff897b58b9a37eaebc",
+      "report": "server-files.json",
+      "report_sha256": "bd1be2ad797864b60d31e3c35806ea5edfc2403a9351942a2956ecb055073646"
+    },
+    "storage": {
+      "exit_code": 0,
+      "log_sha256": "f3e61e85a2438bcfb3aeb22d4e507775495296b48961c2a9da85ee433f770dfc",
+      "report": "server-storage.json",
+      "report_sha256": "2be394044f8c674672ebe07e1cf349a7bc8adf0de8c1792316d7130c5190f435"
+    }
+  },
+  "started_at": 1792118834.500668,
+  "phase": "complete",
+  "finished_at": 1792119856.878372,
+  "scope": "final Server image qualification",
+  "limitations": [
+    "The first passive wake observation lacked the health field. The original tool response was not retained, so its cause remains unknown. Later complete qualification and 20 forced-close/wake cycles passed; these passes do not prove the first failure fixed."
+  ],
+  "publication": "Private deployment details omitted; isolated regression results and artifact identities retained."
+}

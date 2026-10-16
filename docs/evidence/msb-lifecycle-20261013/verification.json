@@ -1,0 +1,133 @@
+{
+  "date": "2026-10-13",
+  "candidate": {
+    "image": "agent-space:schema3-4fb3368f4bf108aa",
+    "source_digest": "4fb3368f4bf108aa4063dc2e88231e5cce39d3027816cc3d204513fad440c859",
+    "revision": "a27a583025fc3b7cd37e7fc17b3e84c3acc7d14a",
+    "build_method": "full-sdk-runtime-build-reviewed-builder-cache"
+  },
+  "image_id": "sha256:af5a06bbf8a43d1922526b798eef27b1940cd93c5d7287527d3e7cc2af9c7392",
+  "rust_workspace": {
+    "passed": 292,
+    "failed": 0,
+    "ignored": 0
+  },
+  "msb_layer_regressions": [
+    82,
+    4,
+    16,
+    75
+  ],
+  "msb_layer_regression_total": 177,
+  "patch_input_guards": 4,
+  "managed_cleanup": 6,
+  "exec_owner": 5,
+  "live_old_space_checks": 11,
+  "application_direct_msb_writes": false,
+  "active_upstream_trackers": [
+    1826,
+    1642
+  ],
+  "upstream_comment_published": false,
+  "local_container_updated": true,
+  "runtime": {
+    "microsandbox": "0.7.2",
+    "sqlite": "3.51.3",
+    "source_revision": "60d4dc8a436fb9365491567ec21d073e924e3c6d",
+    "source_archive_sha256": "fecd277ccfddbb4a131e4c9dfe056a87a014926c78dd705776d738158c483828",
+    "sdk_source_modified": true,
+    "runtime_source_modified": true,
+    "runtime_patch": {
+      "version": "0.7.2",
+      "source_revision": "60d4dc8a436fb9365491567ec21d073e924e3c6d",
+      "source_archive_sha256": "fecd277ccfddbb4a131e4c9dfe056a87a014926c78dd705776d738158c483828",
+      "patches": [
+        {
+          "id": "relay",
+          "patch": "msb-0.7.2-relay.patch",
+          "patch_sha256": "4c7b1d3724711b7bfe6461912767158bae40be799f341b62ec17d21fea8a5c96",
+          "files": [
+            {
+              "file": "crates/runtime/lib/runner/relay.rs",
+              "original_sha256": "94675ed774c288b808acefb03cfee5ac374211362eb8584fb4f51ca908361d13",
+              "patched_sha256": "b70d3a6e1f8c4970bfcbeff4f69205ac0a2fdd3a6655c6bf029d846c06567fa2"
+            }
+          ]
+        },
+        {
+          "id": "lifecycle",
+          "patch": "msb-0.7.2-lifecycle.patch",
+          "patch_sha256": "db84176c2fb44aec240d78ea44e326c3af3fe89cf3ad5006f4a25b10179b78b6",
+          "files": [
+            {
+              "file": "sdk/rust/lib/backend/local/sandbox/mod.rs",
+              "original_sha256": "be70a01e31e93995e111d6bb94c5c55e31528f3bacf627ccde836f54f74fd053",
+              "patched_sha256": "a56a6be62c28c251778f37ecb2f7c3a20375414c23862eb777de9ce9fe043d5c"
+            },
+            {
+              "file": "sdk/rust/lib/sandbox/handle.rs",
+              "original_sha256": "ec632d9b88c86498ef86b110560378ec1a3ff65b5f6e53369b46adca9e854941",
+              "patched_sha256": "7954ed6a43fe4bad9c135976ffd74a4755ee9fa39e53b06936050f888ad74b51"
+            },
+            {
+              "file": "crates/runtime/lib/client/ipc.rs",
+              "original_sha256": "50c618ea8f969f2471dc93c972abd94cf29da889a55a16ecd0dc96b2341ce3ef",
+              "patched_sha256": "02b49657d09983109209d754495d823a42180ed3a00a77b4cc75baea6621e3b1"
+            },
+            {
+              "file": "crates/runtime/lib/client/maintenance.rs",
+              "original_sha256": "069a0435317f92786124ce112c9ca2a2bc7f5cd49c47d35f990364a0891a18b2",
+              "patched_sha256": "c23c2581a16debd845fd807e746d0478721c12a2803b6a1aa63133d27384d4a7"
+            },
+            {
+              "file": "sdk/rust/lib/backend/local/sandbox/create.rs",
+              "original_sha256": "fc2b311e284a2afff3f19149e2de581794c338fa5b358c6769a4ecf50fbd7b4a",
+              "patched_sha256": "d9b6b0968df872b66fdfd937f554e6e335654b9ce3b58d237a267e77e91d9a78"
+            }
+          ]
+        }
+      ],
+      "vendored_crates": {
+        "microsandbox": {
+          "crate_sha256": "0fda3a76b3754d8eb10a5f9b6267a57517b9231eb2fe8254ab175df8a80fa8c8",
+          "tree_sha256": "8516beb48c58a41d1ced521ce6224fd1f8391cde7b20f454188c51c18d6cc6de"
+        },
+        "microsandbox-runtime": {
+          "crate_sha256": "c258d666aa6c4314fdf2ff6c93044f64f7dea376174b7de27dbd5a6a01b518e9",
+          "tree_sha256": "46e7904ea1527c12bb4e9c853e6c2120f953f7e3469255b3110cdcd63d468e43"
+        }
+      }
+    },
+    "profile": "release",
+    "msb_sha256": "c3ef4764900d4bc7de6d33cd2ab8bd400a1a412161871ba27686ca4db4ff8b9b",
+    "desktop": {
+      "kind": "desktop",
+      "preset": "runcove-desktop",
+      "reference": "runcove/agent-space-desktop@sha256:0c22246f2c40e26e4509a88c7df7d1d27f4d97ed130c9a03f4e9456536abad9d",
+      "workerContract": 1,
+      "helper_sha256": "da420354365260679e2dae2b1ce8125d728137e2674ffcac9b14492fba394676",
+      "ui_files": {
+        "assets/desktop-Dl2wQQHs.js": "0f8b2d0f5c015fb2c7258d16f483977078751be7852625618ce7f5083f37de35",
+        "assets/i18n-SI9ul58Q.js": "1fade829c6f90162a222fefbc0994cd105dee0879a083a8310200e2719eb36c0",
+        "assets/index-C8gOcvl2.css": "d0c5a5acdac8e3dd2e5fa6a3f39081603e4581d96e9e77fc6cfe61158b2576e9",
+        "assets/index-DgUKhinf.js": "13d8d89ee4ed1f0bcfe43fc9d8ae065f54cde4523476fe028026c67170c3269d",
+        "index.html": "18789f16dbf42d29b0c498fdc0a4e6ae27ac1584c22fcc37b90703aa8dc2acd7",
+        "licenses/SOURCES.txt": "406457243c71f0eb4f5939dee665173c9d04b52eaf90b96965c624fb8531e4ea",
+        "licenses/i18next.txt": "1cd0a2b02a6cc40ef8ee16310d13eeffdd7b5de4a562fd3ee7c921d8eb54f60a",
+        "licenses/noVNC.txt": "3ccd2242d7f5b6c5ae831a486f63cce1f18d8cd11c511f6a7a7251673763b2d1",
+        "licenses/qrcode.txt": "8df47c6ad9ac2c41eb9b2a72def9908959da0ede8dadd56c7b249c1bdb0c5ce6"
+      }
+    }
+  },
+  "limits": [
+    "Original historical PID 131 owner and initial VM exit cause are unproven.",
+    "The Linux temporary patch does not claim to complete all signal paths in upstream #1642.",
+    "No new SDK version, database, schema migration, credential rotation or disk replacement.",
+    "Browser UI and remote production were not updated or accepted in this run."
+  ],
+  "obsolete_application_writer_candidate_removed": true,
+  "temporary_builder_tags_removed": true,
+  "final_clippy_all_targets": "passed",
+  "format_and_diff": "passed",
+  "publication": "Private deployment details omitted; isolated regression results and artifact identities retained."
+}

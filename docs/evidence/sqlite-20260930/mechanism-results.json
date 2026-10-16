@@ -1,0 +1,592 @@
+[
+  [
+    {
+      "case": "current-behavior",
+      "shmRetainedAfterFirstClose": false,
+      "shmInodeUnchanged": false,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=11 extended=11 message=database disk image is malformed",
+        "DONE"
+      ]
+    },
+    {
+      "case": "metadata-verification",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    },
+    {
+      "case": "all-patched-sqlite",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    }
+  ],
+  [
+    {
+      "case": "current-behavior",
+      "shmRetainedAfterFirstClose": false,
+      "shmInodeUnchanged": false,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=11 extended=11 message=database disk image is malformed",
+        "DONE"
+      ]
+    },
+    {
+      "case": "metadata-verification",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    },
+    {
+      "case": "all-patched-sqlite",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    }
+  ],
+  [
+    {
+      "case": "current-behavior",
+      "shmRetainedAfterFirstClose": false,
+      "shmInodeUnchanged": false,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=11 extended=11 message=database disk image is malformed",
+        "DONE"
+      ]
+    },
+    {
+      "case": "metadata-verification",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    },
+    {
+      "case": "all-patched-sqlite",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    }
+  ],
+  [
+    {
+      "case": "current-behavior",
+      "shmRetainedAfterFirstClose": false,
+      "shmInodeUnchanged": false,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=11 extended=11 message=database disk image is malformed",
+        "DONE"
+      ]
+    },
+    {
+      "case": "metadata-verification",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    },
+    {
+      "case": "all-patched-sqlite",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    }
+  ],
+  [
+    {
+      "case": "current-behavior",
+      "shmRetainedAfterFirstClose": false,
+      "shmInodeUnchanged": false,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=11 extended=11 message=database disk image is malformed",
+        "DONE"
+      ]
+    },
+    {
+      "case": "metadata-verification",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    },
+    {
+      "case": "all-patched-sqlite",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    }
+  ],
+  [
+    {
+      "case": "current-behavior",
+      "shmRetainedAfterFirstClose": false,
+      "shmInodeUnchanged": false,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=11 extended=11 message=database disk image is malformed",
+        "DONE"
+      ]
+    },
+    {
+      "case": "metadata-verification",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    },
+    {
+      "case": "all-patched-sqlite",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    }
+  ],
+  [
+    {
+      "case": "current-behavior",
+      "shmRetainedAfterFirstClose": false,
+      "shmInodeUnchanged": false,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=11 extended=11 message=database disk image is malformed",
+        "DONE"
+      ]
+    },
+    {
+      "case": "metadata-verification",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    },
+    {
+      "case": "all-patched-sqlite",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    }
+  ],
+  [
+    {
+      "case": "current-behavior",
+      "shmRetainedAfterFirstClose": false,
+      "shmInodeUnchanged": false,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=11 extended=11 message=database disk image is malformed",
+        "DONE"
+      ]
+    },
+    {
+      "case": "metadata-verification",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    },
+    {
+      "case": "all-patched-sqlite",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    }
+  ],
+  [
+    {
+      "case": "current-behavior",
+      "shmRetainedAfterFirstClose": false,
+      "shmInodeUnchanged": false,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=11 extended=11 message=database disk image is malformed",
+        "DONE"
+      ]
+    },
+    {
+      "case": "metadata-verification",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    },
+    {
+      "case": "all-patched-sqlite",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    }
+  ],
+  [
+    {
+      "case": "current-behavior",
+      "shmRetainedAfterFirstClose": false,
+      "shmInodeUnchanged": false,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=11 extended=11 message=database disk image is malformed",
+        "DONE"
+      ]
+    },
+    {
+      "case": "metadata-verification",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    },
+    {
+      "case": "all-patched-sqlite",
+      "shmRetainedAfterFirstClose": true,
+      "shmInodeUnchanged": true,
+      "output": [
+        "QUERY code=0 extended=0 message=ok",
+        "READY sqlite=3.51.3",
+        "VERIFIED",
+        "QUERY code=0 extended=0 message=ok",
+        "CLOSED",
+        "QUERY code=0 extended=0 message=ok",
+        "UPDATED",
+        "QUERY code=0 extended=0 message=ok",
+        "READY",
+        "OPEN code=0",
+        "QUERY code=0 extended=0 message=ok",
+        "DONE"
+      ]
+    }
+  ]
+]

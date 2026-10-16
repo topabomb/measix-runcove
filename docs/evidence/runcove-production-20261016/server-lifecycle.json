@@ -1,0 +1,40 @@
+{
+  "image": "sha256:413c3411b962e140b89f9f1a7195b4350ff92af2f76f3dec5a9fe3a00c129260",
+  "image_id": "sha256:413c3411b962e140b89f9f1a7195b4350ff92af2f76f3dec5a9fe3a00c129260",
+  "microsandbox": "0.7.2",
+  "idle_seconds": 310,
+  "protocol_versions": [
+    {
+      "requested": "2025-11-25",
+      "negotiated": "2025-11-25"
+    },
+    {
+      "requested": "2025-06-18",
+      "negotiated": "2025-06-18"
+    },
+    {
+      "requested": "2025-03-26",
+      "negotiated": "2025-03-26"
+    }
+  ],
+  "checks": [
+    "three protocol versions negotiate exactly and discover complete tools in their HTTP sessions",
+    "image/version, helper, and five-tool contract are exact; metadata does not wake VM",
+    "finite keepalive protects idle VM, get does not extend it, expiry reclaims VM and invalidates URL",
+    "real VM 4 MiB upload/download hashes match; app Authorization and query survive, publication key stays on Host",
+    "same-name file/directory/port replacement preserves URL, Basic realm and credentials; failed preparation keeps old service",
+    "file/directory/port coexist with independent paths and credentials, automatic auth, ranges, stable retry and scoped close; app survives",
+    "configured fallback and manual bash timeout both use seconds",
+    "direct file URL and bash/read/write/edit resume a paused VM; publication identity is preserved",
+    "in-flight command survives both short reclamation thresholds",
+    "same MCP session wakes a stopped VM and retains both disks",
+    "original MCP session still executes after 310s idle",
+    "Host restart invalidates all publication state; old URL does not wake the VM",
+    "graceful container restart preserves root disk and workspace volume",
+    "fresh image initializes state and serves a managed user without Hub",
+    "disable closes publications and new token restores retained workspace files",
+    "managed delete removes its sandbox and named volume from the runtime catalog"
+  ],
+  "passed": true,
+  "cleanup_passed": true
+}

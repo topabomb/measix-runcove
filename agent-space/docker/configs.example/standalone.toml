@@ -1,0 +1,32 @@
+# Measix Runcove Standalone: one user, one container workspace; no MSB.
+[server]
+listen = "0.0.0.0:8932"
+public_base_url = ""
+mcp_session_timeout_secs = 0
+
+[auth]
+token_env = "RUNCOVE_TOKEN"
+# Only needed when the external DAV listener below is enabled.
+dav_token_env = "RUNCOVE_DAV_TOKEN"
+
+[execution]
+shell = "/bin/bash"
+exec_timeout_secs = 30
+max_output_lines = 2000
+max_output_bytes = 51200
+
+[logging]
+level = "info"
+
+# Workbench file transfer remains available with external DAV disabled.
+[webdav]
+enabled = false
+listen = "0.0.0.0:8933"
+public_base_url = ""
+startup_timeout_secs = 60
+io_idle_timeout_secs = 120
+
+[web_publish]
+enabled = true
+startup_timeout_secs = 60
+io_idle_timeout_secs = 120

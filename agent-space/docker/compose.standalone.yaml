@@ -1,0 +1,25 @@
+name: runcove-standalone
+services:
+  workspace:
+    image: ${RUNCOVE_IMAGE:-runcove-standalone:local}
+    init: true
+    restart: unless-stopped
+    environment:
+      RUNCOVE_TOKEN: ${RUNCOVE_TOKEN:?Set a long random RUNCOVE_TOKEN}
+      RUNCOVE_DAV_TOKEN: ${RUNCOVE_DAV_TOKEN:-}
+    ports:
+      - "${RUNCOVE_PORT:-8932}:8932"
+    volumes:
+      - workspace:/workspace
+      - ./configs.example/standalone.toml:/etc/runcove/config.toml:ro
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+      - /run:size=64m,mode=755
+    shm_size: 512m
+    mem_limit: 3g
+    cpus: 2
+    stop_grace_period: 45s
+    security_opt:
+      - seccomp=./playwright-seccomp.json
+volumes:
+  workspace:

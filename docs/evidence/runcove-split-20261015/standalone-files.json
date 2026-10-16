@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "checks": [
+    "4 GiB sparse file HEAD, length and ETag through public DAV",
+    "cross-2-GiB, final byte/tail, open/suffix/huge-end ranges and current If-Match",
+    "unsatisfiable range returns 416 and complete representation length",
+    "empty file and malformed decimal ranges use ordinary GET semantics",
+    "full 4 GiB HTTP read checked byte-for-byte with bounded client memory",
+    "synchronized real guest truncate yields incomplete HTTP body, not padded success",
+    "premature EOF diagnostic is present in bounded guest log",
+    "old If-Match rejects modified file with 412 without replacement content",
+    "80 cancelled real downloads release guest file descriptors and connection slots"
+  ],
+  "container": "runcove-qualify-89ce6c5361",
+  "image_id": "sha256:b13c172f4e8a21c42d256dbbea21ecb6fcd4a578847851c85e98fd47a25c2993",
+  "source_sha256": "2e50d622ab9e45736a9d4816831eede4656ba9d8783b2a34c15d8a42c7081532",
+  "source_revision": "a8f50c53618388115aa671a7072ac4151c58b158",
+  "helper_build_id": "fc1290358b2c03b824eca32f99c2ff0b84f0d9ccad9b0b115ef793118c758f67",
+  "runtime": {
+    "target": "standalone",
+    "engine": "process"
+  },
+  "full_read": {
+    "bytes": 4294967296,
+    "seconds": 6.720546518998162
+  },
+  "truncated_bytes_received": 7214928,
+  "cleanup_passed": true
+}

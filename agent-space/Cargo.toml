@@ -1,0 +1,55 @@
+[workspace]
+members = [
+    "agent-space-mcp",
+    "static-http",
+    "webdav",
+    "desktop-helper",
+]
+resolver = "2"
+exclude = ["vendor/microsandbox", "vendor/microsandbox-runtime"]
+
+[package]
+name = "agent-engine"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+microsandbox = { version = "=0.7.2", optional = true }
+microsandbox-agent-client = { version = "=0.7.2", optional = true }
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1"
+async-stream = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+thiserror = "2"
+tracing = "0.1"
+toml = "0.8"
+sha2 = "0.10"
+hex = "0.4"
+uuid = { version = "1", features = ["v4"] }
+getrandom = "0.3"
+libc = "0.2"
+bytes = "1"
+tokio-util = { version = "0.7", features = ["io"] }
+futures = "0.3"
+url = "2.5"
+
+[features]
+default = ["msb"]
+msb = ["dep:microsandbox", "dep:microsandbox-agent-client"]
+test-utils = []
+
+[dev-dependencies]
+serial_test = "3"
+
+[dev-dependencies.agent-engine]
+path = "."
+default-features = false
+features = ["test-utils"]
+
+[patch.crates-io]
+# Temporary, digest-audited MSB ownership repair; see docker/patches/manifest.json.
+microsandbox = { path = "vendor/microsandbox" }
+microsandbox-runtime = { path = "vendor/microsandbox-runtime" }
+dav-server = { path = "vendor/dav-server" }

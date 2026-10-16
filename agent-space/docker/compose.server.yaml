@@ -1,0 +1,20 @@
+name: runcove-server
+services:
+  server:
+    image: ${RUNCOVE_IMAGE:-runcove-server:local}
+    restart: unless-stopped
+    environment:
+      AGENT_SPACE_ADMIN_TOKEN: ${AGENT_SPACE_ADMIN_TOKEN:?Set a long random administrator token}
+    devices:
+      - /dev/kvm:/dev/kvm
+    ports:
+      - "${RUNCOVE_PORT:-8932}:8932"
+      - "${RUNCOVE_DAV_PORT:-8933}:8933"
+    volumes:
+      - data:/var/lib/microsandbox
+      - logs:/var/log/agent-space
+      - ./configs.example/config.toml:/etc/agent-space/config.toml:ro
+    stop_grace_period: 60s
+volumes:
+  data:
+  logs:

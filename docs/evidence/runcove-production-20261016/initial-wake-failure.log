@@ -1,0 +1,15 @@
+test_passive_polling_does_not_keep_desktop_alive_and_wake_preserves_tabs (__main__.DesktopLifecycle.test_passive_polling_does_not_keep_desktop_alive_and_wake_preserves_tabs) ... ERROR
+
+======================================================================
+ERROR: test_passive_polling_does_not_keep_desktop_alive_and_wake_preserves_tabs (__main__.DesktopLifecycle.test_passive_polling_does_not_keep_desktop_alive_and_wake_preserves_tabs)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/path/to/runcove/agent-space/tests/test_browser_lifecycle_vm.py", line 27, in test_passive_polling_does_not_keep_desktop_alive_and_wake_preserves_tabs
+    observed=text(client.tool('browser_observe',{}));self.assertTrue(observed['health']['browser'])
+                                                                     ~~~~~~~~^^^^^^^^^^
+KeyError: 'health'
+
+----------------------------------------------------------------------
+Ran 1 test in 310.601s
+
+FAILED (errors=1)

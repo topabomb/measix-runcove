@@ -1,0 +1,14 @@
+# Application-only review fixes atop the already paired and qualified MSB image.
+# Build the matching application builder from docker/Dockerfile first:
+# docker build --target builder -t agent-space:review-lifecycle-builder -f docker/Dockerfile .
+# Require the base image ID sha256:af5a06bbf8a43d1922526b798eef27b1940cd93c5d7287527d3e7cc2af9c7392.
+# SDK/runtime vendor trees and patch manifest must match that image exactly.
+FROM agent-space:review-lifecycle-builder AS builder
+FROM agent-space:schema3-4fb3368f4bf108aa
+ARG APP_VERSION
+ARG SOURCE_REVISION
+ARG SOURCE_DIGEST
+LABEL org.opencontainers.image.version="${APP_VERSION}" \
+      org.opencontainers.image.revision="${SOURCE_REVISION}" \
+      io.agent-space.source-sha256="${SOURCE_DIGEST}"
+COPY --from=builder /build/target/release/agent-space-mcp /usr/local/bin/agent-space-mcp

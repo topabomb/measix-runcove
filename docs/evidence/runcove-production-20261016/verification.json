@@ -1,0 +1,27 @@
+{
+  "passed": true,
+  "target": "server",
+  "application_version": "runcove-fc010ed2726e9bec",
+  "source_commit": "d5040e2596d7dc2a7d6c83f595cb619dfb5c5ba0",
+  "source_sha256": "fc010ed2726e9bec25c3872caeb69aba65078db53e8f3518526becca06380811",
+  "image_id": "sha256:413c3411b962e140b89f9f1a7195b4350ff92af2f76f3dec5a9fe3a00c129260",
+  "archive_sha256": "ee714b7ea3767d4feff632ef0d91dfe375b15b468eebd26aa88f2ffaafa8192c",
+  "original_disk_files_verified": 4,
+  "credentials_rotated": false,
+  "limitations": [
+    "First passive wake observation lacked health; original response was not retained, cause unknown. Final complete qualification and 20 close/wake cycles passed without a claim of fixing that first failure.",
+    "A diagnostic UI rerun omitted local browser library paths; final full suite used prepared libraries and passed.",
+    "Docker top omitted PID and stopped the candidate. Corrected to pid,comm and resumed its same independent volumes, preserving candidate writes.",
+    "Ubuntu VHDX remained in use by this workspace and was not compacted."
+  ],
+  "reports": {
+    "qualification": "qualification.json",
+    "lifecycle": "server-lifecycle.json",
+    "desktop": "server-desktop.json",
+    "files": "server-files.json",
+    "storage": "server-storage.json",
+    "upgrade_rollback": "upgrade-rollback.json",
+    "wake_cycles": "wake-cycles.json"
+  },
+  "publication": "Live host, accounts, disk manifests, configuration, backups, screenshots and unrelated service inventory removed from the public tree; this is a historical result summary."
+}

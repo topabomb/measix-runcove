@@ -1,0 +1,17 @@
+{
+  "url": "http://127.0.0.1:8933/dav/",
+  "client": "rclone v1.60.1-DEV",
+  "checks": [
+    "recursive browse, mkdir, Unicode/spaces/reserved characters, empty file upload",
+    "64 MiB upload/download SHA-256",
+    "remote copy, rename, overwrite and delete",
+    "real FUSE mount: browse, seek/range read, mkdir, writeback, rename, delete"
+  ],
+  "passed": true,
+  "bytes": 67108864,
+  "sha256": "281e519df3077b557c6b03f5da83c4e8d397219259615dd7c3308f89cae8f2a6",
+  "image_id": "sha256:b13c172f4e8a21c42d256dbbea21ecb6fcd4a578847851c85e98fd47a25c2993",
+  "target": "standalone",
+  "cleanup_passed": true,
+  "client_report_sha256": "1a8f17d12826d140c4209a0b560850dea3eec53baa677acd72298bbb66d7f56a"
+}

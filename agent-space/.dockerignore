@@ -1,0 +1,22 @@
+target/
+.git/
+*.md
+tests/
+test_*.py
+.dockerignore
+
+# Operator configuration is never part of a build context.
+docker/configs/
+docker/.build/
+**/.env
+**/.env.*
+**/.secrets/
+**/*.key
+**/*.p12
+**/*.pfx
+**/id_rsa
+**/id_ed25519
+
+**/node_modules/
+desktop-ui/dist/
+**/__pycache__/

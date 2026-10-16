@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "rejects_existing_tag": true,
+  "rejects_unverified_source": true,
+  "runtime_only_build": true,
+  "base_image_remains_tagged_for_rollback": true,
+  "rejects_custom_storage_before_backup_or_start": true
+}

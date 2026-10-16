@@ -1,0 +1,135 @@
+{
+  "date": "2026-10-11",
+  "scope": "local Agent Space runtime repair; Core/Relay and production not qualified by this run",
+  "issue": "https://github.com/superradcompany/microsandbox/issues/1826",
+  "related_issue_comment": "https://github.com/superradcompany/microsandbox/issues/1801#issuecomment-6105676283",
+  "image": {
+    "image_id": "sha256:b5cde52c444314d9711684d81a603e5badcfcf0da80dce42214ef1a74e66e66a",
+    "tag": "agent-space:schema2-aa727ef8cd3b905f",
+    "labels": {
+      "io.agent-space.microsandbox": "0.7.2",
+      "io.agent-space.source-sha256": "aa727ef8cd3b905ffd019193319b8446bf08d0f4b43262c6a2bf8b2481462f35",
+      "io.agent-space.sqlite": "3.51.3",
+      "io.agent-space.state-schema": "2",
+      "org.opencontainers.image.revision": "6b6f66965288a8fae5329b504bfa7f9647143ef5",
+      "org.opencontainers.image.title": "Agent Space",
+      "org.opencontainers.image.version": "schema2-aa727ef8cd3b905f"
+    },
+    "runtime": {
+      "microsandbox": "0.7.2",
+      "sqlite": "3.51.3",
+      "source_revision": "60d4dc8a436fb9365491567ec21d073e924e3c6d",
+      "source_archive_sha256": "fecd277ccfddbb4a131e4c9dfe056a87a014926c78dd705776d738158c483828",
+      "sdk_source_modified": false,
+      "runtime_source_modified": true,
+      "runtime_patch": {
+        "version": "0.7.2",
+        "source_revision": "60d4dc8a436fb9365491567ec21d073e924e3c6d",
+        "source_archive_sha256": "fecd277ccfddbb4a131e4c9dfe056a87a014926c78dd705776d738158c483828",
+        "patch": "msb-0.7.2-relay.patch",
+        "patch_sha256": "4c7b1d3724711b7bfe6461912767158bae40be799f341b62ec17d21fea8a5c96",
+        "file": "crates/runtime/lib/runner/relay.rs",
+        "original_sha256": "94675ed774c288b808acefb03cfee5ac374211362eb8584fb4f51ca908361d13",
+        "patched_sha256": "b70d3a6e1f8c4970bfcbeff4f69205ac0a2fdd3a6655c6bf029d846c06567fa2"
+      },
+      "profile": "release",
+      "msb_sha256": "163a52a4411be0974df4e5cbc1c3e7f3ddb56719ab7456b4310af5addae9019f"
+    }
+  },
+  "source_frame_regression": {
+    "red_exit": 101,
+    "green_exit": 0,
+    "manifest": {
+      "version": "0.7.2",
+      "source_revision": "60d4dc8a436fb9365491567ec21d073e924e3c6d",
+      "source_archive_sha256": "fecd277ccfddbb4a131e4c9dfe056a87a014926c78dd705776d738158c483828",
+      "patch": "msb-0.7.2-relay.patch",
+      "patch_sha256": "4c7b1d3724711b7bfe6461912767158bae40be799f341b62ec17d21fea8a5c96",
+      "file": "crates/runtime/lib/runner/relay.rs",
+      "original_sha256": "94675ed774c288b808acefb03cfee5ac374211362eb8584fb4f51ca908361d13",
+      "patched_sha256": "b70d3a6e1f8c4970bfcbeff4f69205ac0a2fdd3a6655c6bf029d846c06567fa2"
+    }
+  },
+  "patch_guards": {
+    "exact_input": true,
+    "reapplication_rejected": true,
+    "modified_source_rejected": true,
+    "other_version_rejected": true
+  },
+  "runtime_relay_tests": {
+    "passed": 82,
+    "failed": 0
+  },
+  "candidate_native": {
+    "attempts": 6,
+    "bytes_per_upload": 540079753,
+    "all_uploads_successful": true,
+    "directory_207": 355,
+    "relay_errors": 0,
+    "checks": [
+      "same VM/helper and healthy MCP after native LAN uploads",
+      "image, cached and running VM runtime hashes match manifest"
+    ],
+    "cleanup_errors": []
+  },
+  "candidate_large": {
+    "checks": 15,
+    "full_read": {
+      "bytes": 4294967296,
+      "seconds": 6.443872782998369
+    },
+    "mixed_cancellation": {
+      "upload_cancellations": 60,
+      "download_cancellations": 60,
+      "early_rejected_uploads": [
+        502,
+        503,
+        403,
+        502,
+        403,
+        403,
+        502,
+        502,
+        502,
+        503,
+        403,
+        403,
+        403,
+        502,
+        403,
+        403,
+        403,
+        502,
+        503,
+        503,
+        502,
+        403,
+        503,
+        403
+      ],
+      "max_probe_seconds": 0.22125293599856377,
+      "retryable_responses": 2,
+      "same_helper_identity": true,
+      "relay_client_disconnects": 7,
+      "merge_failures": 0
+    }
+  },
+  "notes": [
+    "An initial repeated-overwrite fixture exceeded 1 GiB because atomic replacement holds old and new files. Final upload checks delete each verified file before the next iteration.",
+    "4 GiB coverage is a sparse-file read, not a 4 GiB PUT qualification.",
+    "Cancelled/rejected requests may close a cached client; reconnection retains the same VM/helper without replaying writes.",
+    "The deployment section records historical cold-backup paths and the stopped old container. After verification the user requested their deletion; they are no longer rollback assets."
+  ],
+  "cleanup": {
+    "completed_utc": "2026-10-11T05:37:42.622238+00:00",
+    "user_requested_remove_rollback_materials": true,
+    "removed_containers": 2,
+    "removed_agent_space_images": 7,
+    "removed_volumes": 28,
+    "removed_cold_backups": 5,
+    "removed_file_bytes": 3637707292,
+    "current_instance_unchanged": true,
+    "rollback_materials_retained": false
+  },
+  "publication": "Private deployment details omitted; isolated regression results and artifact identities retained."
+}

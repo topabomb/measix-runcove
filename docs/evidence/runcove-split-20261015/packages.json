@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "packages": [
+    {
+      "target": "standalone",
+      "image_id": "sha256:b13c172f4e8a21c42d256dbbea21ecb6fcd4a578847851c85e98fd47a25c2993",
+      "passed": true,
+      "checks": [
+        "all package files match SHA256SUMS",
+        "tampered archive digest rejected before docker load",
+        "actual offline load and exact content tag identity",
+        "packaged Compose initializes and serves authenticated eight-tool target on exact image"
+      ],
+      "cleanup_passed": true,
+      "package_filename": "runcove-standalone-runcove-2e50d622ab9e4573-linux-amd64-20261015T152706Z.zip",
+      "archive_sha256": "b01f46a9d8c692a28f5eabe097e15bb94323685ac9a1ef88b5449b1743603794",
+      "source_sha256": "2e50d622ab9e45736a9d4816831eede4656ba9d8783b2a34c15d8a42c7081532",
+      "zip_sha256_location": "Adjacent .zip.sha256 file; ZIP digest excluded from its own contents to avoid circular hashing"
+    },
+    {
+      "target": "server",
+      "image_id": "sha256:e5913326b6f3bac140e4524ffd8468bb0d77aac353c674430308877481e94105",
+      "passed": true,
+      "checks": [
+        "all package files match SHA256SUMS",
+        "tampered archive digest rejected before docker load",
+        "actual offline load and exact content tag identity",
+        "packaged Compose initializes and serves authenticated eight-tool target on exact image"
+      ],
+      "cleanup_passed": true,
+      "package_filename": "runcove-server-runcove-2e50d622ab9e4573-linux-amd64-20261015T153718Z.zip",
+      "archive_sha256": "d7716e0b90d7268b71d889cbcc374f6eb40b19c6801f36415d4011fef3929436",
+      "source_sha256": "2e50d622ab9e45736a9d4816831eede4656ba9d8783b2a34c15d8a42c7081532",
+      "zip_sha256_location": "Adjacent .zip.sha256 file; ZIP digest excluded from its own contents to avoid circular hashing"
+    }
+  ],
+  "documentation_refresh": "Final manuals/evidence refreshed after actual load/Compose checks; image archive, deployment, configuration and loader bytes unchanged"
+}

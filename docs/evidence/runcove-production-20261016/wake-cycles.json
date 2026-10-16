@@ -1,0 +1,254 @@
+{
+  "image_id": "sha256:413c3411b962e140b89f9f1a7195b4350ff92af2f76f3dec5a9fe3a00c129260",
+  "scope": "diagnostic forced-close/wake cycles",
+  "passed": true,
+  "cleanup_passed": true,
+  "cycles": [
+    {
+      "cycle": 0,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    },
+    {
+      "cycle": 1,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    },
+    {
+      "cycle": 2,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    },
+    {
+      "cycle": 3,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    },
+    {
+      "cycle": 4,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    },
+    {
+      "cycle": 5,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    },
+    {
+      "cycle": 6,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    },
+    {
+      "cycle": 7,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    },
+    {
+      "cycle": 8,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    },
+    {
+      "cycle": 9,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    },
+    {
+      "cycle": 10,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    },
+    {
+      "cycle": 11,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    },
+    {
+      "cycle": 12,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    },
+    {
+      "cycle": 13,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    },
+    {
+      "cycle": 14,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    },
+    {
+      "cycle": 15,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    },
+    {
+      "cycle": 16,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    },
+    {
+      "cycle": 17,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    },
+    {
+      "cycle": 18,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    },
+    {
+      "cycle": 19,
+      "before": [
+        "http://127.0.0.1:8124/"
+      ],
+      "after": {
+        "marker": "persisted",
+        "tabs": [
+          "http://127.0.0.1:8124/"
+        ]
+      }
+    }
+  ],
+  "original_report_sha256": "2ff349e1e4bec0db858b2c1e1a17fd93b27b23d4e6cad2c4162834c17273a2b9",
+  "projection": {
+    "source": "private full diagnostic result.json identified by original_report_sha256",
+    "retained": "image_id, scope, passed, cleanup_passed; each cycle retains cycle and before, and after is the original immediate result",
+    "omitted": "full browser observations and their page content; original_report_sha256 is not the checksum of another public evidence file"
+  }
+}

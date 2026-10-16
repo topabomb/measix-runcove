@@ -1,0 +1,66 @@
+{
+  "label": "normal",
+  "image": "agent-space:schema2-207b908e4e33e566",
+  "roundsRequested": 3,
+  "roundsCompleted": 3,
+  "rounds": [
+    {
+      "iteration": 1,
+      "stop": "admin-disable",
+      "usersStopped": 2,
+      "health": 200,
+      "deletedShm": false
+    },
+    {
+      "iteration": 2,
+      "stop": "idle-with-resource-queries",
+      "usersStopped": 2,
+      "health": 200,
+      "deletedShm": false
+    },
+    {
+      "iteration": 3,
+      "stop": "idle-with-resource-queries",
+      "usersStopped": 2,
+      "health": 200,
+      "deletedShm": false
+    }
+  ],
+  "success": true,
+  "binaryHashes": [
+    "5027366cd60689134f64af61c3b9ec6a9725c734c53ca3ecf2ce8f4a763b30df  /usr/local/bin/agent-space-mcp",
+    "4ebe8e0416483bb6f060896fea7ffecd2ba97fd3a0bbd4562aba46e17357426e  /usr/local/bin/msb",
+    "4ebe8e0416483bb6f060896fea7ffecd2ba97fd3a0bbd4562aba46e17357426e  /var/lib/microsandbox/.microsandbox/bin/msb"
+  ],
+  "runtimeVersion": "msb 0.7.2",
+  "actualVmExecutables": [
+    "4ebe8e0416483bb6f060896fea7ffecd2ba97fd3a0bbd4562aba46e17357426e  /proc/126/exe",
+    "4ebe8e0416483bb6f060896fea7ffecd2ba97fd3a0bbd4562aba46e17357426e  /proc/151/exe"
+  ],
+  "restartPreservedSpacesAndWorkspaceCounters": true,
+  "databaseMalformedLogCount": 0,
+  "shutdownRequestedLogCount": 0,
+  "deletedShmBeforeShutdown": "",
+  "exitCode": 0,
+  "oomKilled": false,
+  "sqlite351IndependentReadOnlyProbe": {
+    "exitCode": 0,
+    "output": "sqlite_version=3.51.3\nsqlite_source_id=2026-03-13 10:38:09 737ae4a34738ffa0c3ff7f9bb18df914dd1cad163f28fd6b6e114a344fe6d618\nread_only=1\nintegrity_check=ok\nforeign_key_violations=0\nsandboxes=2\nvolumes=2\nruns=8\nactive_runs=0\n"
+  },
+  "independentIntegrity": [
+    [
+      "ok"
+    ]
+  ],
+  "independentForeignKeyViolations": [],
+  "runStatuses": [
+    [
+      "Terminated",
+      8
+    ]
+  ],
+  "sandboxCount": 2,
+  "volumeCount": 2,
+  "durationSeconds": 44.0,
+  "artifacts": "<isolated-test-dir>/as-sqlite351-normal-33aec22c"
+}

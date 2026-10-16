@@ -1,0 +1,70 @@
+resource_prefix = "smcp"
+
+[server]
+# Listen on all IPv4 interfaces; do not pin a LAN interface IP.
+listen = "0.0.0.0:8932"
+# Empty: use the actual local/LAN request entry. Production: set a stable HTTPS origin.
+public_base_url = ""
+max_running_spaces = 2
+allowed_hosts = []
+mcp_session_timeout_secs = 0
+
+[workspace]
+image = { preset = "runcove-desktop" }
+cpus = 2
+memory_mib = 3072
+workspace_size_mib = 8192
+tmpfs_size_mib = 512
+shell = "/bin/bash"
+exec_timeout_secs = 30
+max_output_lines = 2000
+max_output_bytes = 51200
+network_policy = "unrestricted"
+# Optional concurrent connection caps. Omit for the runtime default; zero is unlimited.
+# max_tcp_connections = 256
+# max_udp_connections = 256
+
+# Optional native SOCKS proxy; address is resolved on the container host side.
+# No TUN device or NET_ADMIN capability is needed for this route.
+# [workspace.outbound_proxy]
+# protocol = "socks5"
+# address = "127.0.0.1:1080"
+# [workspace.outbound_proxy.credentials]
+# username = "workspace"
+# password = { kind = "env", var = "MSB_PROXY_PASSWORD" }
+
+[lifecycle]
+request_idle_timeout_secs = 900
+work_idle_timeout_secs = 3600
+check_interval_secs = 60
+
+[logging]
+level = "info"
+dir = "/var/log/agent-space"
+max_days = 7
+
+[state]
+# Initialize this directory once with the same image and data volume.
+dir = "/var/lib/microsandbox/agent-space-state"
+
+[admin]
+# Environment variable supplying the administrator bearer. The value is not stored here.
+token_env = "AGENT_SPACE_ADMIN_TOKEN"
+
+# Optional: file exchange for common WebDAV clients, dynamic users only.
+# Production: set a stable HTTPS origin distinct from MCP/admin and publications.
+[webdav]
+enabled = true
+listen = "0.0.0.0:8933"
+# Set public_port to the Docker host DAV port when it differs (e.g. 18933).
+public_base_url = ""
+startup_timeout_secs = 60
+io_idle_timeout_secs = 120
+
+[web_publish]
+# Same-origin path publications; disable if not needed. Trusted content only.
+enabled = true
+default_keep_alive_minutes = 10
+max_keep_alive_minutes = 1440
+startup_timeout_secs = 60
+io_idle_timeout_secs = 120

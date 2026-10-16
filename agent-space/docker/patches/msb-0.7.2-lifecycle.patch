@@ -1,0 +1,482 @@
+--- a/sdk/rust/lib/backend/local/sandbox/mod.rs
++++ b/sdk/rust/lib/backend/local/sandbox/mod.rs
+@@ -171,6 +171,13 @@
+                         .transpose()?
+                         .unwrap_or(false));
+                 }
++                #[cfg(target_os = "linux")]
++                return Ok(microsandbox_runtime::ipc::recorded_runtime_is_alive(
++                    pid,
++                    &self.config().run_dir(),
++                    name,
++                )?);
++                #[cfg(not(target_os = "linux"))]
+                 Ok(!Self::pid_has_exited(pid))
+             };
+             let start = std::time::Instant::now();
+@@ -737,6 +744,13 @@
+             .as_ref()
+             .and_then(|run| run.pid)
+             .is_some_and(Self::pid_is_alive);
++        #[cfg(target_os = "linux")]
++        if let (Some((run_dir, _)), Some(pid)) =
++            (socket_roots, run.as_ref().and_then(|run| run.pid))
++        {
++            alive =
++                microsandbox_runtime::ipc::recorded_runtime_is_alive(pid, run_dir, &sandbox.name)?;
++        }
+         #[cfg(windows)]
+         if let (Some((_, sandboxes_dir)), Some(run)) = (socket_roots, &run)
+             && let Some(owner) = crate::runtime::ownership::recorded_owner(
+@@ -835,6 +849,13 @@
+ 
+         #[allow(unused_mut)]
+         let mut alive = run.pid.is_some_and(Self::pid_is_alive);
++        #[cfg(target_os = "linux")]
++        if let Some((run_dir, _)) = socket_roots
++            && let Some(pid) = run.pid
++        {
++            alive =
++                microsandbox_runtime::ipc::recorded_runtime_is_alive(pid, run_dir, &sandbox.name)?;
++        }
+         #[cfg(windows)]
+         if let Some((_, sandboxes_dir)) = socket_roots
+             && let Some(owner) = crate::runtime::ownership::recorded_owner(
+@@ -1551,6 +1572,31 @@
+ // Tests
+ //--------------------------------------------------------------------------------------------------
+ 
++#[cfg(all(test, target_os = "linux"))]
++fn spawn_owned_test_runtime(run_dir: &Path, name: &str) -> std::process::Child {
++    use std::os::fd::AsRawFd;
++    use std::os::unix::process::CommandExt;
++    let owner = microsandbox_runtime::ipc::acquire_lifecycle_guard(run_dir, name).unwrap();
++    let fd = owner.as_raw_fd();
++    let mut command = std::process::Command::new("sleep");
++    command.arg("30");
++    unsafe {
++        command.pre_exec(move || {
++            let copy = libc::fcntl(fd, libc::F_DUPFD_CLOEXEC, 200);
++            if copy < 0 {
++                return Err(std::io::Error::last_os_error());
++            }
++            let result = libc::dup2(copy, microsandbox_runtime::vm::LIFECYCLE_LOCK_FD);
++            libc::close(copy);
++            if result < 0 {
++                return Err(std::io::Error::last_os_error());
++            }
++            Ok(())
++        });
++    }
++    command.spawn().unwrap()
++}
++
+ #[cfg(test)]
+ mod tests {
+     use std::fs;
+@@ -1645,6 +1691,10 @@
+         );
+         let pools = backend.db().await.unwrap();
+         let name = "resident";
++        #[cfg(target_os = "linux")]
++        let _resident =
++            microsandbox_runtime::ipc::acquire_lifecycle_guard(&backend.config().run_dir(), name)
++                .unwrap();
+         let id = LocalBackend::insert_sandbox_record(pools.write(), &test_config(name))
+             .await
+             .unwrap();
+@@ -2024,6 +2074,9 @@
+                 .await
+                 .is_err()
+         );
++        #[cfg(target_os = "linux")]
++        let mut child = super::spawn_owned_test_runtime(&backend.config().run_dir(), "kill-start");
++        #[cfg(not(target_os = "linux"))]
+         let mut child = Command::new("sleep").arg("30").spawn().unwrap();
+         let pid = child.id() as i32;
+         run_entity::Entity::insert(run_entity::ActiveModel {
+@@ -2484,4 +2537,139 @@
+         unsafe { libc::kill(live_pid, libc::SIGKILL) };
+         waiter.join().unwrap();
+     }
++
++    #[tokio::test]
++    #[cfg(target_os = "linux")]
++    async fn recycled_pid_reconciliation_preserves_history_and_unrelated_process() {
++        let home = tempdir().unwrap();
++        let backend = Arc::new(
++            LocalBackend::builder()
++                .home(home.path())
++                .build()
++                .await
++                .unwrap(),
++        );
++        let pools = backend.db().await.unwrap();
++        let mut config = test_config("recycled-observation");
++        let id = LocalBackend::insert_sandbox_record(pools.write(), &config)
++            .await
++            .unwrap();
++        let mut child = scopeguard::guard(
++            Command::new("sleep").arg("30").spawn().unwrap(),
++            |mut child| {
++                let _ = child.kill();
++                let _ = child.wait();
++            },
++        );
++        let pid = child.id() as i32;
++        run_entity::Entity::insert(run_entity::ActiveModel {
++            sandbox_id: Set(id),
++            pid: Set(Some(pid)),
++            status: Set(run_entity::RunStatus::Running),
++            ..Default::default()
++        })
++        .exec(pools.write())
++        .await
++        .unwrap();
++        LocalBackend::compare_and_set_sandbox_status(
++            pools.write(),
++            id,
++            &[SandboxStatus::Created],
++            SandboxStatus::Running,
++        )
++        .await
++        .unwrap();
++        let reconciled = backend
++            .load_sandbox_record_reconciled(pools, &config.spec.name)
++            .await
++            .unwrap();
++        assert_eq!(reconciled.status, SandboxStatus::Crashed);
++        let history = LocalBackend::load_latest_run(pools.read(), id)
++            .await
++            .unwrap()
++            .unwrap();
++        assert_eq!(history.pid, Some(pid));
++        assert_eq!(history.status, run_entity::RunStatus::Terminated);
++        assert!(child.try_wait().unwrap().is_none());
++        config
++            .spec
++            .env
++            .push(("MSB_INVALID".to_string(), "value".to_string()).into());
++        sandbox_entity::Entity::update_many()
++            .col_expr(
++                sandbox_entity::Column::Config,
++                sea_orm::sea_query::Expr::value(serde_json::to_string(&config).unwrap()),
++            )
++            .filter(sandbox_entity::Column::Id.eq(id))
++            .exec(pools.write())
++            .await
++            .unwrap();
++        let started = std::time::Instant::now();
++        let result = backend
++            .start_sandbox(
++                backend.clone() as Arc<dyn Backend>,
++                &config.spec.name,
++                Some(id),
++                SpawnMode::Detached,
++            )
++            .await;
++        assert!(
++            matches!(result, Err(crate::MicrosandboxError::InvalidConfig(_))),
++            "start error: {:?}",
++            result.err()
++        );
++        assert!(
++            started.elapsed() < Duration::from_secs(2),
++            "recycled history must not incur the five-second owner wait"
++        );
++        assert_eq!(
++            LocalBackend::load_latest_run(pools.read(), id)
++                .await
++                .unwrap()
++                .unwrap()
++                .pid,
++            Some(pid)
++        );
++        assert!(child.try_wait().unwrap().is_none());
++    }
++
++    #[tokio::test]
++    #[cfg(target_os = "linux")]
++    async fn connect_or_start_returns_terminal_start_contention() {
++        let home = tempdir().unwrap();
++        let backend = Arc::new(
++            LocalBackend::builder()
++                .home(home.path())
++                .build()
++                .await
++                .unwrap(),
++        );
++        let pools = backend.db().await.unwrap();
++        let name = "terminal-contention";
++        let id = LocalBackend::insert_sandbox_record(pools.write(), &test_config(name))
++            .await
++            .unwrap();
++        LocalBackend::update_sandbox_status(pools.write(), id, SandboxStatus::Crashed)
++            .await
++            .unwrap();
++        let _resident =
++            microsandbox_runtime::ipc::acquire_lifecycle_guard(&backend.config().run_dir(), name)
++                .unwrap();
++        crate::backend::with_backend(backend as Arc<dyn Backend>, async {
++            let handle = crate::Sandbox::get(name).await.unwrap();
++            let result =
++                tokio::time::timeout(Duration::from_secs(7), handle.connect_or_start_detached())
++                    .await
++                    .expect("terminal contention must return instead of retrying forever");
++            assert!(
++                matches!(
++                    result,
++                    Err(crate::MicrosandboxError::SandboxStillRunning(_))
++                ),
++                "connect/start error: {:?}",
++                result.err()
++            );
++        })
++        .await;
++    }
+ }
+--- a/sdk/rust/lib/sandbox/handle.rs
++++ b/sdk/rust/lib/sandbox/handle.rs
+@@ -485,7 +485,15 @@
+                         // Another caller may have started the same persisted
+                         // sandbox after our refresh. Observe that transition
+                         // and converge instead of exposing the race.
+-                        Err(MicrosandboxError::SandboxStillRunning(_)) => {}
++                        Err(error @ MicrosandboxError::SandboxStillRunning(_)) => {
++                            let latest = self.refresh().await?;
++                            if !matches!(
++                                latest.status_snapshot(),
++                                SandboxStatus::Starting | SandboxStatus::Running
++                            ) {
++                                return Err(error);
++                            }
++                        }
+                         Err(error) => return Err(error),
+                     }
+                 }
+--- a/crates/runtime/lib/client/ipc.rs
++++ b/crates/runtime/lib/client/ipc.rs
+@@ -810,6 +810,100 @@
+     storage.sun_path.len()
+ }
+ 
++/// Check a Linux catalog PID against this sandbox's inherited lifecycle identity.
++///
++/// A pidfd pins the observed process while evidence is read. A matching lock inode
++/// proves ownership; another program or another machine name proves reuse. Missing
++/// proof is an error, never permission to signal or clean up an uncertain runtime.
++/// This observer does not write metadata, signal a process, or reap a child.
++#[cfg(target_os = "linux")]
++pub fn recorded_runtime_is_alive(pid: i32, run_dir: &Path, name: &str) -> std::io::Result<bool> {
++    use std::os::fd::OwnedFd;
++    use std::os::unix::fs::MetadataExt;
++
++    if pid <= 0 {
++        return Ok(false);
++    }
++    let fd = unsafe { libc::syscall(libc::SYS_pidfd_open, pid, 0) };
++    if fd < 0 {
++        let error = std::io::Error::last_os_error();
++        if error.raw_os_error() == Some(libc::ESRCH) {
++            return Ok(false);
++        }
++        // Run PIDs are process leaders. Linux may recycle one as an unrelated
++        // thread ID; pidfd_open cannot pin that TID as a process leader.
++        if error.raw_os_error() == Some(libc::EINVAL) {
++            let status = std::fs::read_to_string(format!("/proc/{pid}/status"))?;
++            let group = status
++                .lines()
++                .find_map(|line| line.strip_prefix("Tgid:")?.trim().parse::<i32>().ok());
++            if group.is_some_and(|group| group != pid) {
++                return Ok(false);
++            }
++        }
++        return Err(error);
++    }
++    let process = unsafe { OwnedFd::from_raw_fd(fd as i32) };
++    let exited = || -> std::io::Result<bool> {
++        let mut poll = libc::pollfd {
++            fd: process.as_raw_fd(),
++            events: libc::POLLIN,
++            revents: 0,
++        };
++        if unsafe { libc::poll(&mut poll, 1, 0) } < 0 {
++            return Err(std::io::Error::last_os_error());
++        }
++        Ok(poll.revents & (libc::POLLIN | libc::POLLHUP) != 0)
++    };
++    if exited()? {
++        return Ok(false);
++    }
++    let inherited = format!("/proc/{pid}/fd/{}", crate::launch::LIFECYCLE_LOCK_FD);
++    match std::fs::metadata(inherited) {
++        Ok(actual) => match std::fs::metadata(lifecycle_lock_path(run_dir, name)) {
++            Ok(expected) if (actual.dev(), actual.ino()) == (expected.dev(), expected.ino()) => {
++                return Ok(!exited()?);
++            }
++            Ok(_) => {}
++            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
++            Err(error) => return Err(error),
++        },
++        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
++        Err(error) => return Err(error),
++    }
++    let executable = match std::fs::read_link(format!("/proc/{pid}/exe")) {
++        Ok(executable) => executable,
++        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
++            // A zombie leader can leave workers finishing kernel teardown.
++            // Ordinary disk admission remains the resource-release barrier.
++            if exited()? || !microsandbox_utils::process::pid_is_alive(pid) {
++                return Ok(false);
++            }
++            return Err(error);
++        }
++        Err(error) => return Err(error),
++    };
++    if !matches!(
++        executable.file_name().and_then(|name| name.to_str()),
++        Some("msb" | "msb (deleted)")
++    ) {
++        return Ok(false);
++    }
++    let command = std::fs::read(format!("/proc/{pid}/cmdline"))?;
++    let args: Vec<_> = command.split(|byte| *byte == 0).collect();
++    let other_machine = args.get(1).copied() == Some(b"machine")
++        && args
++            .windows(2)
++            .find(|pair| pair[0] == b"--name")
++            .is_some_and(|pair| pair[1] != name.as_bytes());
++    if exited()? || other_machine {
++        return Ok(false);
++    }
++    Err(std::io::Error::other(format!(
++        "cannot verify runtime ownership for sandbox {name:?}, recorded pid {pid}"
++    )))
++}
++
+ //--------------------------------------------------------------------------------------------------
+ // Tests
+ //--------------------------------------------------------------------------------------------------
+@@ -1142,3 +1236,85 @@
+         }
+     }
+ }
++
++#[cfg(all(test, target_os = "linux"))]
++mod recorded_runtime_tests {
++    use super::*;
++    struct Child(std::process::Child);
++    impl std::ops::Deref for Child {
++        type Target = std::process::Child;
++        fn deref(&self) -> &Self::Target {
++            &self.0
++        }
++    }
++    impl std::ops::DerefMut for Child {
++        fn deref_mut(&mut self) -> &mut Self::Target {
++            &mut self.0
++        }
++    }
++    impl Drop for Child {
++        fn drop(&mut self) {
++            let _ = self.0.kill();
++            let _ = self.0.wait();
++        }
++    }
++    use std::os::unix::process::CommandExt;
++    use std::process::{Command, Stdio};
++
++    #[test]
++    fn recycled_thread_id_is_not_a_recorded_process_owner() {
++        let home = tempfile::tempdir().unwrap();
++        std::thread::spawn(move || {
++            let tid = unsafe { libc::syscall(libc::SYS_gettid) } as i32;
++            assert_ne!(tid, std::process::id() as i32);
++            assert!(!recorded_runtime_is_alive(tid, home.path(), "thread-reuse").unwrap());
++        })
++        .join()
++        .unwrap();
++    }
++
++    #[test]
++    fn unrelated_process_survives_identity_observation() {
++        let home = tempfile::tempdir().unwrap();
++        let mut child = Child(Command::new("sleep").arg("30").spawn().unwrap());
++        assert!(!recorded_runtime_is_alive(child.id() as i32, home.path(), "recycled").unwrap());
++        assert!(child.try_wait().unwrap().is_none());
++        assert!(!recorded_runtime_is_alive(i32::MAX, home.path(), "missing").unwrap());
++    }
++
++    #[test]
++    fn matching_inherited_inode_proves_owner_even_after_binary_rename() {
++        let home = tempfile::tempdir().unwrap();
++        let guard = acquire_lifecycle_guard(home.path(), "owner").unwrap();
++        let fd = guard.as_raw_fd();
++        let mut command = Command::new("sleep");
++        command.arg("30").stdout(Stdio::null());
++        unsafe {
++            command.pre_exec(move || {
++                let copy = libc::fcntl(fd, libc::F_DUPFD_CLOEXEC, 200);
++                if copy < 0 {
++                    return Err(std::io::Error::last_os_error());
++                }
++                let result = libc::dup2(copy, crate::launch::LIFECYCLE_LOCK_FD);
++                libc::close(copy);
++                if result < 0 {
++                    return Err(std::io::Error::last_os_error());
++                }
++                Ok(())
++            });
++        }
++        let child = Child(command.spawn().unwrap());
++        assert!(recorded_runtime_is_alive(child.id() as i32, home.path(), "owner").unwrap());
++        assert!(!recorded_runtime_is_alive(child.id() as i32, home.path(), "other").unwrap());
++    }
++
++    #[test]
++    fn msb_without_ownership_proof_is_uncertain_and_not_retired() {
++        let home = tempfile::tempdir().unwrap();
++        let executable = home.path().join("msb");
++        std::fs::copy("/bin/sleep", &executable).unwrap();
++        let mut child = Child(Command::new(executable).arg("30").spawn().unwrap());
++        assert!(recorded_runtime_is_alive(child.id() as i32, home.path(), "uncertain").is_err());
++        assert!(child.try_wait().unwrap().is_none());
++    }
++}
+--- a/crates/runtime/lib/client/maintenance.rs
++++ b/crates/runtime/lib/client/maintenance.rs
+@@ -824,13 +824,15 @@
+         return Ok(false);
+     };
+ 
+-    // NOTE: `pid_is_alive` treats zombies as dead, but still cannot
+-    // distinguish a genuinely live runtime from an unrelated process that
+-    // reused the PID after a reboot. A post-reboot stale row whose PID was
+-    // reused therefore stays Running until that PID exits. Addressing this
+-    // needs a boot-id or process-start-time check stored alongside the PID;
+-    // left as a known, pre-existing limitation.
+-    if run.pid.is_some_and(pid_is_alive) {
++    #[cfg(target_os = "linux")]
++    let alive = run
++        .pid
++        .map(|pid| crate::ipc::recorded_runtime_is_alive(pid, run_dir, &sandbox.name))
++        .transpose()?
++        .unwrap_or(false);
++    #[cfg(not(target_os = "linux"))]
++    let alive = run.pid.is_some_and(pid_is_alive);
++    if alive {
+         return Ok(false);
+     }
+ 
+--- a/sdk/rust/lib/backend/local/sandbox/create.rs
++++ b/sdk/rust/lib/backend/local/sandbox/create.rs
+@@ -3372,6 +3372,9 @@
+             .await
+             .unwrap();
+ 
++        #[cfg(target_os = "linux")]
++        let child = super::super::spawn_owned_test_runtime(&temp.path().join("run"), "running");
++        #[cfg(not(target_os = "linux"))]
+         let child = Command::new("sleep").arg("30").spawn().unwrap();
+         let live_pid = child.id() as i32;
+         let waiter = std::thread::spawn(move || {
