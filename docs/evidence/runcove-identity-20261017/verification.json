@@ -140,9 +140,42 @@
     "The SQLite symbol guard rejected an initial bundled 3.46.0 build; the release candidate was rebuilt with pinned static 3.51.3."
   ],
   "production_binary_update": {
-    "status": "pending",
+    "passed": true,
+    "checks": [
+      "production_nine_tool_catalog_and_optional_parameters",
+      "production_text_read_write_edit_compatibility",
+      "production_full_mcp_image_hash_and_default_disabled",
+      "server_private_directory_mcp_and_browser_script_uid_read_write_upload",
+      "production_browser_dom_ax_explicit_result_task_and_screen_sequence",
+      "production_original_png_authenticated_download_hash",
+      "server_page_and_desktop_originals_saved_and_downloaded_under_root_private_parent",
+      "real_server_native_upload_private_unicode_path_received_1mib_sha256",
+      "real_server_playwright_upload_download_and_desktop_download_sha256",
+      "real_server_chromium_desktop_worker_root_environment",
+      "workbench_local_upload_to_workspace_then_website_received_bytes_sha256",
+      "server_artifact_listing_uses_same_workspace_file_permissions",
+      "production_web_publish_handler",
+      "original_users_configuration_volumes_runtime_and_other_services_preserved"
+    ],
+    "health": "healthy",
+    "user_count": 2,
+    "schema": 3,
+    "temporary_account_removed": true,
+    "runtime_error_lines": 0,
+    "original_user_records_preserved": true,
+    "source_revision": "4551dcbf75602c7015119ba85006e3cfe7289c6e",
+    "source_sha256": "04da2346492e085c299b7a74f4cd43afe28ccb996c23302c93d2158ddb29b9e6",
+    "binaries": {
+      "agent-space-mcp": "7ac22ad293d1d13c7289d12497366f27870320b23473360dae80b4c9828a8011",
+      "agent-space-desktop": "f0bb858735979b6a98f779767919584e8635e97a705533d4b7acca734c9f5ae5"
+    },
+    "scope": "Existing container binary override; no new image.",
+    "image_id": "sha256:413c3411b962e140b89f9f1a7195b4350ff92af2f76f3dec5a9fe3a00c129260",
     "backups_created": false,
-    "migration_run": false
+    "migration_run": false,
+    "updated_at": "2026-10-17T09:18:44.552007+00:00",
+    "first_probe_note": "The first supplementary browser-test bundle had an incorrect fixture path; its temporary account was removed normally. The corrected complete probe passed.",
+    "uploaded_binary_staging_removed": true
   },
   "not_qualified": [
     "new release image or offline package",
