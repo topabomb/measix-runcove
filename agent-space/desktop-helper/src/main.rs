@@ -1,6 +1,7 @@
 //! Loopback-only guest browser owner. No MCP or user credentials live here.
 mod desktop;
 mod process;
+mod screen;
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
@@ -36,7 +37,7 @@ struct Job {
     done: Notify,
     directory: String,
     result: Mutex<Option<Value>>,
-    observation: Mutex<Option<Value>>,
+    modifies: bool,
 }
 type Reply = Result<Json<Value>, (StatusCode, Json<Value>)>;
 fn fail(code: &str) -> (StatusCode, Json<Value>) {
@@ -63,8 +64,13 @@ struct Poll {
     summary: bool,
 }
 async fn health(State(app): State<App>) -> Reply {
-    let mut desktop = app.desktop.lock().await;
-    Ok(Json(json!({"desktop":desktop.alive(),"worker_contract":1})))
+    // Helper liveness must remain observable while its desktop is starting.
+    // Waiting behind startup made the host mistake a busy helper for a dead one.
+    let value = match app.desktop.try_lock() {
+        Ok(mut desktop) => json!({"desktop":desktop.alive(),"worker_contract":1}),
+        Err(_) => json!({"desktop":null,"preparing":true,"worker_contract":1}),
+    };
+    Ok(Json(value))
 }
 async fn viewer(State(app): State<App>) -> Reply {
     app.desktop
@@ -122,15 +128,13 @@ fn list_artifacts() -> anyhow::Result<Value> {
     Ok(json!({"files":files}))
 }
 async fn observe(State(app): State<App>, Json(params): Json<Value>) -> Reply {
-    if !matches!(
-        params["view"].as_str(),
-        None | Some("dom" | "page" | "desktop")
-    ) {
+    if !matches!(params["view"].as_str(), None | Some("dom" | "ax")) {
         return Err(fail("INVALID_VIEW"));
     }
     let mut desktop = app.desktop.lock().await;
     desktop.start().await.map_err(|e| fail(&e.to_string()))?;
     desktop.last_used = Instant::now();
+    drop(desktop);
     let value = desktop::node(params)
         .await
         .map_err(|e| fail(&e.to_string()))?;
@@ -151,36 +155,12 @@ async fn run(State(app): State<App>, Json(params): Json<Run>) -> Reply {
     }
     for job in jobs.values() {
         let status = job.status.lock().await;
-        if status["terminal"] != true && status["phase"] != "observing" {
+        if job.modifies && status["terminal"] != true {
             return Err(fail("BUSY"));
         }
     }
     let id = params.task_id.clone();
-    let accepted = Instant::now();
-    let directory = format!(
-        "/tmp/agent-space/{}/job-{id}",
-        std::env::var("AGENT_SPACE_HELPER_INSTANCE").map_err(|_| fail("MISSING_OWNER"))?
-    );
-    std::fs::create_dir(&directory).map_err(|e| fail(&e.to_string()))?;
-    let c = std::ffi::CString::new(directory.clone()).map_err(|_| fail("INVALID_OWNER"))?;
-    unsafe {
-        if libc::chown(c.as_ptr(), 1001, 1001) != 0 {
-            return Err(fail("JOB_OWNERSHIP"));
-        }
-    }
-    let job = Arc::new(Job {
-        id: id.clone(),
-        finished: Mutex::new(None),
-        deadline: accepted + Duration::from_secs(params.timeout_secs),
-        status: Mutex::new(
-            json!({"task_id":id,"state":"running","phase":"preparing","terminal":false}),
-        ),
-        cancel: CancellationToken::new(),
-        done: Notify::new(),
-        directory,
-        result: Mutex::new(None),
-        observation: Mutex::new(None),
-    });
+    let job = new_job(&id, params.timeout_secs, true).map_err(|e| fail(&e.to_string()))?;
     jobs.insert(id.clone(), job.clone());
     drop(jobs);
     tokio::spawn(async move {
@@ -190,6 +170,35 @@ async fn run(State(app): State<App>, Json(params): Json<Run>) -> Reply {
         json!({"task_id":id,"state":"running","phase":"preparing"}),
     ))
 }
+fn new_job(id: &str, timeout: u64, modifies: bool) -> anyhow::Result<Arc<Job>> {
+    anyhow::ensure!(uuid::Uuid::parse_str(id).is_ok(), "INVALID_TASK_ID");
+    let accepted = Instant::now();
+    let directory = format!(
+        "/tmp/agent-space/{}/job-{id}",
+        std::env::var("AGENT_SPACE_HELPER_INSTANCE")?
+    );
+    std::fs::create_dir(&directory)?;
+    let c = std::ffi::CString::new(directory.clone())?;
+    unsafe {
+        if libc::chown(c.as_ptr(), 1001, 1001) != 0 {
+            anyhow::bail!("JOB_OWNERSHIP");
+        }
+    }
+    let job = Arc::new(Job {
+        id: id.to_owned(),
+        finished: Mutex::new(None),
+        deadline: accepted + Duration::from_secs(timeout),
+        status: Mutex::new(
+            json!({"task_id":id,"state":"running","phase":"preparing","terminal":false}),
+        ),
+        cancel: CancellationToken::new(),
+        done: Notify::new(),
+        directory,
+        result: Mutex::new(None),
+        modifies,
+    });
+    Ok(job)
+}
 async fn execute(app: App, job: Arc<Job>, params: Run) {
     let until = tokio::time::Instant::from_std(job.deadline);
     let prepare = async {
@@ -197,7 +206,12 @@ async fn execute(app: App, job: Arc<Job>, params: Run) {
         desktop.start().await?;
         desktop.last_used = Instant::now();
         drop(desktop);
-        desktop::node(json!({"page_id":params.page_id,"create_page":true})).await
+        let value = desktop::node(json!({"page_id":params.page_id,"create_page":true})).await?;
+        if value.get("error").is_some() {
+            *job.result.lock().await = Some(json!({"tabs":value["tabs"]}));
+            anyhow::bail!(value.to_string());
+        }
+        Ok(value)
     };
     let prepared = tokio::select! {
      result=prepare=>result,
@@ -205,12 +219,11 @@ async fn execute(app: App, job: Arc<Job>, params: Run) {
      _=tokio::time::sleep_until(until)=>Err(anyhow::anyhow!("EXECUTION_TIMEOUT")),
     };
     let started = prepared.is_ok();
-    let observed_page = prepared.as_ref().ok().map(|value| value["page_id"].clone());
     let outcome = match prepared {
         Ok(observation) => worker(&job, &params, observation).await,
         Err(error) => {
             let mut desktop = app.desktop.lock().await;
-            if !desktop.alive() {
+            if !desktop.display_alive() {
                 if let Err(cleanup) = desktop.stop().await {
                     drop(desktop);
                     return finish_unconfirmed(
@@ -240,17 +253,6 @@ async fn execute(app: App, job: Arc<Job>, params: Run) {
         desktop::node(json!({"action":"restore"})),
     )
     .await;
-    if outcome.is_ok() {
-        *job.status.lock().await = json!({"task_id":job.id,"state":"running","phase":"observing","terminal":false,"cleanup_confirmed":true});
-        let observed = tokio::time::timeout(
-            Duration::from_secs(5),
-            desktop::node(json!({"view":"dom","page_id":observed_page,"allow_missing_page":true})),
-        )
-        .await;
-        if let Ok(Ok(value)) = observed {
-            *job.observation.lock().await = Some(value);
-        }
-    }
     let error = match outcome {
         Ok(value) => {
             *job.result.lock().await = Some(value);
@@ -357,21 +359,14 @@ async fn worker(job: &Job, params: &Run, observation: Value) -> anyhow::Result<V
     );
     let output: Value = serde_json::from_slice(&bytes)
         .map_err(|e| anyhow::anyhow!("CLEANUP_UNCONFIRMED: invalid worker owner result: {e}"))?;
-    anyhow::ensure!(output["cleanup_confirmed"] == true, "CLEANUP_UNCONFIRMED");
-    anyhow::ensure!(output["cancelled"] != true, "EXECUTION_CANCELLED");
-    anyhow::ensure!(output["timed_out"] != true, "EXECUTION_TIMEOUT");
-    anyhow::ensure!(
-        output["exit_code"] == 0,
-        "SCRIPT_ERROR: {}",
-        output["stderr"].as_str().unwrap_or_default()
-    );
     let stdout = output["stdout"].as_str().unwrap_or_default();
     let stderr = output["stderr"].as_str().unwrap_or_default();
-    let mut result = read_worker_result(
+    let saved = read_worker_result(
         std::path::Path::new(&job.directory)
             .join("result.json")
             .as_path(),
-    )?;
+    );
+    let mut result = saved.as_ref().cloned().unwrap_or_else(|_| json!({}));
     if !stdout.is_empty() || !stderr.is_empty() {
         let mut logs = serde_json::Map::new();
         if !stdout.is_empty() {
@@ -385,6 +380,23 @@ async fn worker(job: &Job, params: &Run, observation: Value) -> anyhow::Result<V
         }
         result["logs"] = Value::Object(logs);
     }
+    *job.result.lock().await = Some(result.clone());
+    anyhow::ensure!(output["cleanup_confirmed"] == true, "CLEANUP_UNCONFIRMED");
+    anyhow::ensure!(output["cancelled"] != true, "EXECUTION_CANCELLED");
+    anyhow::ensure!(output["timed_out"] != true, "EXECUTION_TIMEOUT");
+    if output["exit_code"] != 0 {
+        let cause = stderr
+            .trim()
+            .strip_prefix("Error: ")
+            .unwrap_or(stderr.trim());
+        if cause.split_once(": ").is_some_and(|(code, _)| {
+            !code.is_empty() && code.bytes().all(|c| c.is_ascii_uppercase() || c == b'_')
+        }) {
+            anyhow::bail!(cause.to_owned());
+        }
+        anyhow::bail!("SCRIPT_ERROR: {cause}");
+    }
+    saved?;
     Ok(result)
 }
 fn read_worker_result(path: &std::path::Path) -> anyhow::Result<Value> {
@@ -414,6 +426,13 @@ fn decode_worker_result(bytes: &[u8]) -> anyhow::Result<Value> {
         result.is_object(),
         "SCRIPT_ERROR: worker result must be an object"
     );
+    anyhow::ensure!(
+        result.as_object().unwrap().keys().all(|key| matches!(
+            key.as_str(),
+            "value" | "images" | "files" | "captures" | "output_warning"
+        )),
+        "SCRIPT_ERROR: worker result contains unsupported fields"
+    );
     Ok(result)
 }
 async fn task(State(app): State<App>, Path(id): Path<String>, Query(poll): Query<Poll>) -> Reply {
@@ -428,9 +447,6 @@ async fn task(State(app): State<App>, Path(id): Path<String>, Query(poll): Query
     if status["terminal"] == true && !poll.summary {
         if let Some(value) = job.result.lock().await.as_ref() {
             status["result"] = value.clone();
-        }
-        if let Some(value) = job.observation.lock().await.as_ref() {
-            status["observation"] = value.clone();
         }
     } else if status["terminal"] != true {
         status["remaining_secs"] = json!(job
@@ -487,6 +503,29 @@ async fn main() -> anyhow::Result<()> {
         );
         return desktop::prepare_workspace();
     }
+    if std::env::args().nth(1).as_deref() == Some("--save-capture") {
+        use std::io::Read;
+        anyhow::ensure!(
+            unsafe { libc::geteuid() } == 1001,
+            "capture storage requires desktop ownership"
+        );
+        let mut bytes = vec![];
+        std::io::stdin()
+            .take(agent_engine::media::SOURCE_LIMIT as u64 + 1)
+            .read_to_end(&mut bytes)?;
+        anyhow::ensure!(
+            bytes.len() <= agent_engine::media::SOURCE_LIMIT,
+            "capture too large"
+        );
+        let directory = std::env::args()
+            .nth(2)
+            .unwrap_or_else(|| desktop::ARTIFACTS.into());
+        println!(
+            "{}",
+            screen::store_capture(std::path::Path::new(&directory), &bytes)?
+        );
+        return Ok(());
+    }
     unsafe {
         anyhow::ensure!(
             libc::prctl(libc::PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0) == 0,
@@ -533,7 +572,7 @@ async fn main() -> anyhow::Result<()> {
                             for file in entries.flatten() {
                                 if matches!(
                                     file.file_name().to_str(),
-                                    Some("result.json" | "observation.json")
+                                    Some("result.json" | "result.json.tmp")
                                 ) && file.path().symlink_metadata().is_ok_and(|m| m.is_file())
                                 {
                                     let _ = std::fs::remove_file(file.path());
@@ -569,6 +608,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/input", post(input))
         .route("/artifacts", get(artifacts))
         .route("/run", post(run))
+        .route("/screen", post(screen::start))
         .route("/task/{id}", get(task))
         .route("/task/{id}/cancel", post(cancel))
         .route("/reset", post(reset))
@@ -601,6 +641,9 @@ mod result_tests {
             assert!(decode_worker_result(bytes).is_err());
         }
         assert!(decode_worker_result(b"{\"value\":7}").unwrap().is_object());
+        assert!(
+            decode_worker_result(b"{\"state\":\"succeeded\",\"cleanup_confirmed\":true}").is_err()
+        );
     }
     #[test]
     fn worker_result_never_follows_user_links_or_accepts_non_user_owned_files() {

@@ -31,7 +31,7 @@ pub struct ControlGate {
 }
 pub struct Operation {
     gate: Arc<ControlGate>,
-    id: String,
+    pub(crate) id: String,
     pub cancel: CancellationToken,
     epoch: u64,
 }
@@ -80,6 +80,14 @@ impl Default for ControlGate {
     }
 }
 impl ControlGate {
+    pub(crate) fn active_task_id(&self) -> Option<String> {
+        self.state
+            .lock()
+            .unwrap()
+            .active
+            .as_ref()
+            .map(|active| active.id.clone())
+    }
     fn expire(state: &mut State) {
         if state.mode == Mode::Human && Instant::now() >= state.deadline {
             state.mode = Mode::Ai;

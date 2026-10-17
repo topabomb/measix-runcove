@@ -1,5 +1,6 @@
 """Fault injection for guest cleanup; no VM or /workspace mutation required."""
 import importlib.util
+import json
 import os
 from pathlib import Path
 import tempfile
@@ -88,6 +89,40 @@ class UploadCleanupTests(unittest.TestCase):
         self.child.mkdir()
         self.clean()
         self.assertFalse(self.child.exists())
+
+
+class DesktopJobCleanupTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.item = dict(service="desktop", instanceId=str(uuid.uuid4()), pid=123,
+                         startTicks=1, bootId=str(uuid.uuid4()), executableDevice=1,
+                         executableInode=1, binaryDigest="binary", launchDigest="launch")
+        self.directory = Path(self.temp.name) / self.item["instanceId"]
+        self.directory.mkdir()
+        (self.directory / "instance.json").write_text(json.dumps({"instance": self.item, "settings": {}}))
+        self.job = self.directory / ("job-" + str(uuid.uuid4()))
+        self.job.mkdir()
+        for name in ["result.json", "result.json.tmp", "observation.json"]:
+            (self.job / name).write_text("{}")
+        for patcher in [patch.object(managed, "RUN", self.temp.name),
+                        patch.object(managed, "clean_uploads"),
+                        patch.dict(managed.EXECUTABLES, desktop=str(Path(self.temp.name) / "helper"))]:
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def test_interrupted_checkpoint_and_legacy_observation_are_reclaimed(self):
+        managed.clean_record(self.item)
+        self.assertFalse(self.directory.exists())
+
+    def test_checkpoint_symlink_blocks_cleanup_before_deleting_outputs(self):
+        pending = self.job / "result.json.tmp"
+        pending.unlink()
+        pending.symlink_to(self.directory / "instance.json")
+        with self.assertRaisesRegex(RuntimeError, "unexpected desktop job entry"):
+            managed.clean_record(self.item)
+        self.assertTrue((self.job / "result.json").exists())
+        self.assertTrue((self.directory / "instance.json").exists())
 
 
 if __name__ == "__main__":

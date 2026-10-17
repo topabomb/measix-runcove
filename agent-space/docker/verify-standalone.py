@@ -2,6 +2,7 @@
 """Disposable real-container qualification. No existing container or volume is used."""
 import argparse,hashlib,http.client,json,os,secrets,subprocess,sys,time,uuid
 from pathlib import Path
+from release_identity import source_digest
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -36,6 +37,7 @@ def main():
   config.write_text('[server]\nlisten="0.0.0.0:8932"\n[webdav]\nenabled=true\nlisten="0.0.0.0:8933"\npublic_base_url="   "\n');config.chmod(0o600)
   create=['docker','create','--name',name,'--init','--memory','3g','--cpus','2','--shm-size','512m','--security-opt','seccomp='+str(ROOT/'docker/playwright-seccomp.json'),'-p','127.0.0.1::8932','-p','127.0.0.1::8933','--tmpfs','/tmp:size=256m,mode=1777','--tmpfs','/run:size=64m,mode=755','--env','RUNCOVE_TOKEN','--env','RUNCOVE_DAV_TOKEN','--env','RUNCOVE_PRIVATE_MARKER','--mount','type=volume,src='+volume+',dst=/workspace','--mount','type=bind,src='+str(config)+',dst=/etc/runcove/config.toml,readonly']
   if args.development_assets:
+   report['source_digest']=source_digest()
    for file in ['runcove-standalone','agent-space-static-http','agent-space-webdav','agent-space-desktop']:
     create+=['--mount',f'type=bind,src={ROOT}/target/debug/{file},dst=/usr/local/bin/{file},readonly']
    create+=['--mount',f'type=bind,src={ROOT}/desktop-ui/dist,dst=/opt/agent-space/desktop-ui,readonly','--mount',f'type=bind,src={ROOT}/docker/standalone-entrypoint.sh,dst=/entrypoint.sh,readonly','--env','AGENT_SPACE_DESKTOP_UI=/opt/agent-space/desktop-ui','--entrypoint','/bin/bash',args.image,'/entrypoint.sh','--config','/etc/runcove/config.toml']
@@ -65,14 +67,14 @@ def main():
   sys.path.insert(0,str(ROOT/'tests'))
   from browser_client import Client,text
   client=Client('desktop');client.initialize()
-  assert len(client.call('tools/list')['tools'])==8
+  assert len(client.call('tools/list')['tools'])==9
   def tool(name,args):
    result=client.tool(name,args);assert not result.get('isError'),text(result);return text(result)
   output_value=tool('bash',{'command':"id -u; python3 -c 'import os;print([k for k in os.environ if k.startswith(\"RUNCOVE_\")])'"})
   assert '1001' in json.dumps(output_value) and '[]' in json.dumps(output_value),output_value
   command('docker','exec',container,'bash','-c','umask 077; printf root-private >/tmp/root-private')
   assert client.tool('read',{'path':'/tmp/root-private'}).get('isError')
-  check('shared_eight_tools_and_nonroot_secret_isolation')
+  check('shared_nine_tools_and_nonroot_secret_isolation')
   # Exercise actual root-controller startup against user-prepared symlinks.
   command('docker','exec',container,'bash','-c','mkdir -m 700 /tmp/root-private-directory')
   tool('bash',{'command':'mkdir -p /workspace/.agent-space/desktop/profile; ln -s /tmp/root-private-directory /workspace/.agent-space/desktop/profile/Default'})
@@ -86,8 +88,8 @@ def main():
   check('profile_preparation_cannot_follow_user_links_with_root_privileges')
   observed=client.tool('browser_observe',{'view':'desktop'})
   assert not observed.get('isError'),text(observed)
-  assert text(observed)['health']['browser'] and any(c['type']=='image' for c in observed['content'])
-  check('real_shared_browser_and_desktop_png')
+  assert text(observed)['captured_count']==1 and any(c['type']=='image' for c in observed['content'])
+  check('real_shared_desktop_screenshot')
   attack=tool('browser_run',{'code':"const fs=await import('node:fs');const path=await import('node:path');fs.symlinkSync('/tmp/root-private',path.join(path.dirname(process.env.AGENT_RESULT),'observation.json'));return 'safe';"})
   while attack.get('state')=='running':attack=tool('browser_task',{'task_id':attack['task_id']})
   assert attack['state']=='succeeded',attack
@@ -195,6 +197,7 @@ print('stopped data child reaped after parent death')"""
   observed=client.tool('browser_observe',{});assert not observed.get('isError'),text(observed)
   assert text(observed)['health']['browser']
   check('graceful_restart_preserves_workspace_and_expires_page_session')
+  if args.development_assets:assert source_digest()==report['source_digest'],'source changed during qualification'
   report['passed']=True
  except BaseException as error:
   report['error']=str(error).replace(token,'[REDACTED_SECRET]').replace(dav,'[REDACTED_SECRET]')

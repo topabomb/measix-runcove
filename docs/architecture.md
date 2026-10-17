@@ -14,7 +14,7 @@ Server 是单节点、可独立部署的托管空间服务。它为每个本地�
 
 本文件说明实现的所有权与生命周期；接口、配置、操作和 MEASIX 接入步骤见[功能与接入参考](server-api.md)，容器部署见[Docker 部署](deployment.md)。WebDAV helper 和外部 DAV 入口已实现，固定版本验证范围单独登记；当前不提供平台 quota 或 compute/storage metering。
 
-`[workspace].image` 接受自定义字符串或桌面预设对象。schema3 为每个空间固定镜像选择；自定义类型提供原五工具，桌面预设自动增加三个浏览器工具和 `/u/{username}/desktop/` 工作台。默认值改变不替换已有根盘或能力；详见[浏览器与云桌面合同](browser-desktop.md)。
+`[workspace].image` 接受自定义字符串或桌面预设对象。schema3 为每个空间固定镜像选择；自定义类型提供原五工具，桌面预设自动增加三个浏览器工具、screen_observe 和 `/u/{username}/desktop/` 工作台。默认值改变不替换已有根盘或能力；详见[浏览器与云桌面合同](browser-desktop.md)。
 
 ## 1. 组件和权威状态
 

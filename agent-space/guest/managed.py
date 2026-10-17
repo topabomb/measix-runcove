@@ -191,7 +191,9 @@ def clean_record(item):
                 if not stat.S_ISDIR(os.lstat(child).st_mode):
                     raise RuntimeError("invalid desktop job directory")
                 files = os.listdir(child)
-                if any(f not in {"result.json", "observation.json"} or not stat.S_ISREG(os.lstat(child + "/" + f).st_mode) for f in files):
+                # observation.json remains recognized only for retiring helpers
+                # from before explicit-output checkpoints were introduced.
+                if any(f not in {"result.json", "result.json.tmp", "observation.json"} or not stat.S_ISREG(os.lstat(child + "/" + f).st_mode) for f in files):
                     raise RuntimeError("unexpected desktop job entry; retained")
                 owned.append((child, files))
         for child, files in owned:

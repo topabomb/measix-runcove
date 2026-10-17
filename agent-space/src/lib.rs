@@ -4,6 +4,7 @@ pub mod control;
 pub mod desktop;
 pub mod engine;
 pub mod image;
+pub mod media;
 pub mod publication;
 pub mod resources;
 pub mod session;

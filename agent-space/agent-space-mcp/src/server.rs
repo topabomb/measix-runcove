@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::file_read::ReadParams;
 use crate::publish_params::{self, WebPublishParams};
 use agent_engine::auth;
 use agent_engine::config::{Config, ToolConfig};
@@ -34,24 +35,6 @@ struct BashParams {
 }
 
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
-struct ReadParams {
-    #[schemars(description = "Path of the text file to read in Runcove's remote workspace.")]
-    path: String,
-    #[schemars(
-        description = "First line to return, counting from 1. Defaults to 1; use a positive integer."
-    )]
-    #[serde(default)]
-    #[schemars(range(min = 1))]
-    offset: Option<u64>,
-    #[schemars(
-        description = "Maximum number of lines to return. Defaults to 500; use a positive integer."
-    )]
-    #[serde(default)]
-    #[schemars(range(min = 1))]
-    limit: Option<u64>,
-}
-
-#[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 struct WriteParams {
     #[schemars(description = "Destination file path in Runcove's remote workspace.")]
     path: String,
@@ -75,6 +58,7 @@ struct EditParams {
 #[serde(rename_all = "snake_case")]
 enum BrowserView {
     Dom,
+    Ax,
     Page,
     Desktop,
 }
@@ -82,32 +66,72 @@ enum BrowserView {
 struct ObserveParams {
     #[serde(default)]
     #[schemars(
-        description = "Optional target tab. Usually omit this parameter. Use a page_id from tabs only when targeting a specific tab. Omit or use JSON null to select the focused tab, falling back to an available tab. Applies to dom and page views; desktop captures the full desktop regardless of page_id."
+        description = "Target tab ID. Omit or use null to select the focused tab, falling back to an available tab."
     )]
     #[serde(deserialize_with = "publish_params::optional_string")]
     page_id: Option<String>,
     #[serde(default)]
     #[schemars(
-        description = "Choose the JSON string \"dom\" for semantic page content, \"page\" for a webpage screenshot, or \"desktop\" for the full desktop, including browser controls and native dialogs. Omit to use \"dom\"."
+        description = "Choose dom for visible content and controls, or ax for the accessibility tree. Defaults to dom. Use screen_observe for screenshots; legacy page and desktop views remain supported."
     )]
     #[serde(deserialize_with = "publish_params::optional_choice")]
     view: Option<BrowserView>,
     #[serde(default)]
     #[schemars(
-        description = "Number of recent task summaries, newest first; defaults to 3, range 1-10."
+        description = "Number of recent task summaries to include, newest first. Defaults to zero, which omits task history."
     )]
-    #[schemars(range(min = 1, max = 10))]
+    #[schemars(range(min = 0, max = 10))]
     recent_tasks_limit: Option<usize>,
+}
+#[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
+#[serde(rename_all = "snake_case")]
+enum ScreenView {
+    Desktop,
+    Page,
+}
+#[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
+struct ScreenParams {
+    #[schemars(
+        description = "Choose desktop for the entire desktop, including native dialogs, or page for the selected tab's viewport."
+    )]
+    view: ScreenView,
+    #[serde(default, deserialize_with = "publish_params::optional_string")]
+    #[schemars(
+        description = "Optional target tab ID for page view. Omit or use null to select the focused tab once, falling back to an available tab; the sequence keeps that tab. Ignored for desktop view."
+    )]
+    page_id: Option<String>,
+    #[serde(default)]
+    #[schemars(
+        description = "Optional number of screenshots, from 1 to 8. Defaults to 1.",
+        range(min = 1, max = 8)
+    )]
+    count: Option<usize>,
+    #[serde(default)]
+    #[schemars(
+        description = "Optional minimum milliseconds between capture starts. Defaults to 1000; zero captures back to back. Applies when count exceeds one; the whole observation must fit within 600 seconds.",
+        range(min = 0)
+    )]
+    interval_ms: Option<u64>,
+    #[serde(default)]
+    #[schemars(
+        description = "Optional: save each original PNG before viewing optimizations. Defaults to false. Saved file paths are returned in files, in capture order."
+    )]
+    save_original: bool,
+    #[serde(default, deserialize_with = "publish_params::optional_string")]
+    #[schemars(
+        description = "Optional absolute directory in the remote workspace for saved originals. Requires save_original=true; defaults to /workspace/agent-space/artifacts. Missing directories are created. Files use screen-<10 random letters or digits>.png without overwriting existing files."
+    )]
+    save_dir: Option<String>,
 }
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 struct RunParams {
     #[schemars(
-        description = "JavaScript async function body or async function to run in Runcove's remote workspace, up to 65,536 UTF-8 bytes. The script receives page, context, desktop, output, and artifacts. artifacts is the default artifact directory path; use it to construct file paths. Import Node.js modules with await import(...), await asynchronous operations, and return a JSON-serializable value."
+        description = "JavaScript async function body or async function, up to 65,536 UTF-8 bytes. Receives page and context (Playwright), desktop, output, and artifacts (a writable directory path). Import modules with await import(...), await operations, and return JSON facts. Navigate with await page.goto(url); prefer element, URL, or event waits. Upload with locator.setInputFiles(path), or await page.waitForEvent('filechooser') registered before the triggering action. Register page.waitForEvent('download') before triggering a download, then await output.download(download). output.file(path) registers file metadata; output.image(bufferOrCapture) emits a PNG, JPEG, or WebP image; output.saveMhtml(page, path) saves and registers an MHTML file. Use writable paths, normally under artifacts. Desktop helpers: await desktop.screenshot() returns a Capture; await output.image(capture) displays it. Pointer signatures are desktop.click({image_id,x,y,button?}), desktop.drag({image_id,x,y,to_x,to_y}), desktop.scroll({image_id,x,y,delta}); coordinates use a desktop screenshot's returned pixels, with an image_id less than 60 seconds old and the same foreground window. Other helpers: desktop.type(text), desktop.press(key), desktop.setWindowMode('normal'|'maximized'|'fullscreen'). Use desktop helpers for native dialogs or an unresponsive tab."
     )]
     code: String,
     #[serde(default)]
     #[schemars(
-        description = "Optional target tab. Usually omit this parameter. Use a page_id from tabs only when targeting a specific tab. Omit or use JSON null to select the focused tab, falling back to an available tab. Selecting a tab does not bring it to the foreground."
+        description = "Target tab ID. Omit or use null to select the focused tab, falling back to an available tab. Selection does not bring a tab to the foreground."
     )]
     #[serde(deserialize_with = "publish_params::optional_string")]
     page_id: Option<String>,
@@ -126,9 +150,7 @@ enum TaskAction {
 }
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 struct TaskParams {
-    #[schemars(
-        description = "ID returned when a browser task was accepted in Runcove's remote workspace."
-    )]
+    #[schemars(description = "ID returned by browser_run or screen_observe.")]
     task_id: String,
     #[serde(default)]
     #[schemars(
@@ -365,7 +387,8 @@ impl AgentSpaceMcpServer {
 
 impl AgentSpaceMcpServer {
     fn tool_enabled(&self, name: &str) -> bool {
-        !name.starts_with("browser_") || self.browser.load(std::sync::atomic::Ordering::SeqCst)
+        !(name.starts_with("browser_") || name == "screen_observe")
+            || self.browser.load(std::sync::atomic::Ordering::SeqCst)
     }
     async fn desktop(&self) -> Result<std::sync::Arc<agent_engine::desktop::DesktopHub>, McpError> {
         self.recheck_bound().await?;
@@ -400,30 +423,48 @@ impl AgentSpaceMcpServer {
 #[tool_router]
 impl AgentSpaceMcpServer {
     #[tool(
-        description = "Inspect the shared browser in Runcove's remote workspace, starting the desktop when needed. Call with {} to inspect the current browser and list open tabs; no page_id is required. Returns page IDs, browser health, recent task summaries, and semantic content or a screenshot while preserving the current page and focus. Use browser_run to interact with the observed page and browser_task to check progress, retrieve results, or cancel a task. Browser operations and workspace tools share files under /workspace."
+        description = "Read page content and controls in Runcove's remote workspace. Returns the selected page, available tabs, browser health, and control mode."
     )]
     async fn browser_observe(
         &self,
         Parameters(params): Parameters<ObserveParams>,
     ) -> Result<CallToolResult, McpError> {
+        if params.recent_tasks_limit.is_some_and(|limit| limit > 10) {
+            return Err(McpError::invalid_params(
+                "recent_tasks_limit must be 0..10",
+                None,
+            ));
+        }
         let hub = self.desktop().await?;
         let view = match params.view.unwrap_or(BrowserView::Dom) {
             BrowserView::Dom => "dom",
+            BrowserView::Ax => "ax",
             BrowserView::Page => "page",
             BrowserView::Desktop => "desktop",
         };
         Ok(browser_result(
-            hub.observe(params.page_id, view, params.recent_tasks_limit.unwrap_or(3))
+            hub.observe(params.page_id, view, params.recent_tasks_limit.unwrap_or(0))
                 .await,
         ))
     }
     #[tool(
-        description = "Run an asynchronous JavaScript task with the provided Playwright page and context. Provide code; usually omit page_id. Navigate the selected tab with await page.goto(url). Reuse it whenever possible. Open another tab with await context.newPage() only when the task requires keeping multiple pages open; use await tab.bringToFront() when it needs to be visible. Close tabs you created when no longer needed, preserving pre-existing tabs and unfinished work. Ordinary browser tasks create a blank tab when none are open. The final observation describes the initially selected tab; if it was closed, it reports the remaining tabs without substituting another page. Use desktop helpers for native dialogs or an unresponsive page. The service manages the shared browser and allows one browser task at a time while AI control is active. Returns the completed result or a task_id while execution continues. Keep each task focused on a clear outcome. Prefer waiting for a relevant element, URL, or event over fixed delays. After a timeout or partial failure, inspect the current state before retrying; earlier actions may already have completed.\n\nUpload workspace files with locator.setInputFiles(path), or register a filechooser listener before the triggering action. For downloads, register the download listener before triggering the download. Use await output.download(download) to save it in the workspace and return its file metadata. For a specific destination, save it under /workspace and register it with await output.file(path). Return an existing workspace file with await output.file(path), a PNG with await output.image(buffer), or a desktop screenshot with await output.image(await desktop.screenshot()). Save an MHTML snapshot with await output.saveMhtml(page, path).\n\nFor desktop coordinates, use the image_id and original pixel coordinates from a desktop screenshot captured within the last 60 seconds while the same window remains in the foreground. Use desktop.click, desktop.drag, and desktop.scroll for pointer actions, desktop.type(text) for text, and desktop.press(key) for keys."
+        description = "Run an asynchronous JavaScript task in Runcove's remote workspace using the provided browser page, context, and desktop helpers. Returns your value and explicitly emitted outputs, or a task_id to continue with browser_task. One browser task runs at a time while AI control is active. Inspect the current state after a failure before repeating actions."
     )]
     async fn browser_run(
         &self,
         Parameters(params): Parameters<RunParams>,
     ) -> Result<CallToolResult, McpError> {
+        if params.code.is_empty()
+            || params.code.len() > 65536
+            || params
+                .timeout_secs
+                .is_some_and(|timeout| !(1..=600).contains(&timeout))
+        {
+            return Err(McpError::invalid_params(
+                "code must be 1..65536 UTF-8 bytes and timeout_secs must be 1..600",
+                None,
+            ));
+        }
         let hub = self.desktop().await?;
         let session = self.ensure_session().await?;
         Ok(browser_result(
@@ -437,12 +478,61 @@ impl AgentSpaceMcpServer {
         ))
     }
     #[tool(
-        description = "Retrieve a browser task's status and available result, optionally waiting for completion, or cancel its remaining execution. Failed tasks return a concise error and any available outputs. Cancellation stops remaining execution; website actions already submitted retain their effects. Results remain available for 30 minutes after completion within the current host session."
+        description = "Observe the desktop or a browser page in Runcove's remote workspace as screenshots. Captures preserve the current page, focus, scroll position, and control ownership. Images are optimized for viewing and returned in capture order with timing and dimensions. Optionally save original PNG files for later reading or downloading. Returns the completed observation or a task_id to continue with browser_task."
+    )]
+    async fn screen_observe(
+        &self,
+        Parameters(params): Parameters<ScreenParams>,
+    ) -> Result<CallToolResult, McpError> {
+        let count = params.count.unwrap_or(1);
+        let interval = params.interval_ms.unwrap_or(1000);
+        if !(1..=8).contains(&count) || (count as u64 - 1).saturating_mul(interval) >= 600000 {
+            return Err(McpError::invalid_params(
+                "count must be 1..8 and the capture schedule must fit within 600 seconds",
+                None,
+            ));
+        }
+        if let Some(directory) = &params.save_dir {
+            if !params.save_original
+                || !std::path::Path::new(directory).is_absolute()
+                || directory.contains('\0')
+            {
+                return Err(McpError::invalid_params(
+                    "save_dir requires save_original=true and an absolute directory path in the remote workspace",
+                    None,
+                ));
+            }
+        }
+        let hub = self.desktop().await?;
+        let session = self.ensure_session().await?;
+        Ok(browser_result(
+            hub.screen(
+                session,
+                agent_engine::desktop::ScreenOptions {
+                    page_id: params.page_id,
+                    view: match params.view {
+                        ScreenView::Desktop => "desktop".into(),
+                        ScreenView::Page => "page".into(),
+                    },
+                    count,
+                    interval_ms: interval,
+                    save_original: params.save_original,
+                    save_dir: params.save_dir,
+                },
+            )
+            .await,
+        ))
+    }
+    #[tool(
+        description = "Wait for or cancel a browser or screen-observation task in Runcove's remote workspace. Returns progress or the task's final result. Cancellation stops remaining work and preserves available outputs; website actions already completed remain in effect. Results are cached for up to 30 minutes after completion."
     )]
     async fn browser_task(
         &self,
         Parameters(params): Parameters<TaskParams>,
     ) -> Result<CallToolResult, McpError> {
+        if params.wait_secs.is_some_and(|wait| wait > 20) {
+            return Err(McpError::invalid_params("wait_secs must be 0..20", None));
+        }
         let hub = self.desktop().await?;
         Ok(browser_result(
             hub.task(
@@ -665,7 +755,7 @@ impl AgentSpaceMcpServer {
 
     #[instrument(skip(self, params), fields(workspace), level = "info")]
     #[tool(
-        description = "Run Bash commands in Runcove's remote workspace. Use /workspace for persistent files, read to inspect text, write to create or replace files, edit for precise changes, and web_publish to share files or running HTTP services. Each call runs in a separate, non-interactive shell and returns the exit code and bounded output. Set workdir for the working directory. When starting a background service, redirect its standard input and output streams. Keep Runcove-managed files in /opt/agent-space, /tmp/agent-space, and /workspace/.agent-space intact. Runcove handles managed service lifecycle and internal cleanup."
+        description = "Run Bash commands in Runcove's remote workspace. Use /workspace for persistent files, read to inspect files, write to create or replace files, edit for precise changes, and web_publish to share files or running HTTP services. Each call runs in a separate, non-interactive shell and returns the exit code and bounded output. Set workdir for the working directory. When starting a background service, redirect its standard input and output streams. Keep Runcove-managed files in /opt/agent-space, /tmp/agent-space, and /workspace/.agent-space intact. Runcove handles managed service lifecycle and internal cleanup."
     )]
     async fn bash(
         &self,
@@ -771,54 +861,19 @@ impl AgentSpaceMcpServer {
         }
     }
 
-    #[instrument(skip(self, params), fields(workspace), level = "info")]
+    #[instrument(skip(self, params, context), fields(workspace), level = "info")]
     #[tool(
-        description = "Read a text file and return its contents with line numbers. Use offset and limit to read a selected range or continue through a large file."
+        description = "Read a file in Runcove's remote workspace. Text is returned with line numbers; offset and limit select a line range. Set multimodal to true to view supported images."
     )]
     async fn read(
         &self,
         Parameters(params): Parameters<ReadParams>,
+        context: RequestContext<RoleServer>,
     ) -> Result<CallToolResult, McpError> {
         self.recheck_bound().await?;
         let session = self.ensure_session().await?;
         tracing::Span::current().record("workspace", session.workspace_name.as_str());
-        let offset = params.offset.unwrap_or(1);
-        let limit = params.limit.unwrap_or(500);
-        if offset == 0 || limit == 0 {
-            return Err(McpError::invalid_params(
-                "offset and limit must be positive integers",
-                None,
-            ));
-        }
-        let cmd = file_command(
-            serde_json::json!({"operation":"read", "path":params.path, "offset":offset, "limit":limit}),
-        );
-
-        match session.exec_file(&cmd, self.default_exec_timeout()).await {
-            Ok(result) => match result.stdout.trim() {
-                "FILE_NOT_FOUND" => Ok(CallToolResult::error(vec![Content::text(compact_error(&format!(
-                    "File not found: {}",
-                    params.path
-                )))])),
-                "NOT_A_FILE" => Ok(CallToolResult::error(vec![Content::text(
-                    "The path refers to a directory or another non-regular file. Provide the path of a text file.",
-                )])),
-                "EMPTY" => Ok(CallToolResult::success(vec![Content::text("(empty)")])),
-                "NO_CONTENT" => Ok(CallToolResult::success(vec![Content::text(
-                    "(no content in range)",
-                )])),
-                _ if result.exit_code != 0 => Ok(CallToolResult::error(vec![Content::text(
-                    compact_error(&format!("read failed: {}", result.stderr)),
-                )])),
-                _ => {
-                    let output = if result.truncated {
-                        format!("{}\n[output truncated] Request a smaller line range using offset and limit.", result.stdout)
-                    } else { result.stdout };
-                    Ok(CallToolResult::success(vec![Content::text(output)]))
-                },
-            },
-            Err(error) => Ok(CallToolResult::error(vec![Content::text(file_error("read", &error))])),
-        }
+        crate::file_read::read_file(session, params, self.default_exec_timeout(), context.ct).await
     }
 
     #[instrument(skip(self, params), fields(workspace), level = "info")]
@@ -908,7 +963,7 @@ impl ServerHandler for AgentSpaceMcpServer {
                 format!("Agent Space MCP — persistent workspace with command execution.\n\
                  Built-in tools: bash, read, write, edit, web_publish.\n\
                  Command and file tool execution defaults to workspace.exec_timeout_secs; bash.timeout_secs may override it per call. Web publication transfers use separate startup and I/O idle timeouts.\n\
-                 Host-managed services are documented in /opt/agent-space/README.md when installed; do not modify their reserved files or stop them manually. web_publish publishes selected files, directories or running HTTP services; it does not control DAV.{}",if self.browser.load(std::sync::atomic::Ordering::SeqCst) {"\nThis space also provides browser_observe, browser_run and browser_task for one shared visible browser. Browser task deadlines include preparation; polling does not extend them. Tool descriptions contain all required usage guidance."} else {""}),
+                 Host-managed services are documented in /opt/agent-space/README.md when installed; do not modify their reserved files or stop them manually. web_publish publishes selected files, directories or running HTTP services; it does not control DAV.{}",if self.browser.load(std::sync::atomic::Ordering::SeqCst) {"\nThis space also provides browser_observe, screen_observe, browser_run and browser_task for one shared visible browser. Browser task deadlines include preparation; polling does not extend them. Tool descriptions contain all required usage guidance."} else {""}),
             )
     }
 
@@ -948,6 +1003,7 @@ impl ServerHandler for AgentSpaceMcpServer {
         })
     }
 
+    #[instrument(skip_all, fields(tool = %request.name), level = "info")]
     async fn call_tool(
         &self,
         request: CallToolRequestParams,
@@ -960,9 +1016,19 @@ impl ServerHandler for AgentSpaceMcpServer {
                 None,
             ));
         }
-        self.tool_router
+        let request_id = context.id.clone();
+        let started = std::time::Instant::now();
+        let result = self
+            .tool_router
             .call(ToolCallContext::new(self, request, context))
             .await
+            .map(|result| budget_result(result, &request_id));
+        info!(
+            duration_ms = started.elapsed().as_millis(),
+            protocol_error = result.is_err(),
+            "tool completed"
+        );
+        result
     }
 
     fn get_tool(&self, name: &str) -> Option<Tool> {
@@ -994,7 +1060,7 @@ impl ServerHandler for AgentSpaceMcpServer {
 }
 
 /// Bound diagnostic text, not command output, file contents, or structured results.
-fn compact_error(message: &str) -> String {
+pub(crate) fn compact_error(message: &str) -> String {
     let mut clean = String::new();
     let mut chars = message.chars().peekable();
     while let Some(c) = chars.next() {
@@ -1040,7 +1106,7 @@ fn compact_error(message: &str) -> String {
         .collect()
 }
 
-fn file_error(operation: &str, error: &agent_engine::engine::EngineError) -> String {
+pub(crate) fn file_error(operation: &str, error: &agent_engine::engine::EngineError) -> String {
     use agent_engine::engine::EngineError;
     match error {
         EngineError::ExecutionEnded { timed_out, cleanup_confirmed, .. } => compact_error(&format!(
@@ -1049,6 +1115,57 @@ fn file_error(operation: &str, error: &agent_engine::engine::EngineError) -> Str
         )),
         _ => compact_error(&format!("{operation} failed: {error}")),
     }
+}
+
+pub(crate) fn internal_error(error: impl std::fmt::Display) -> McpError {
+    McpError::internal_error(compact_error(&error.to_string()), None)
+}
+pub(crate) fn media_error(code: &str, message: &str) -> CallToolResult {
+    let (code, message) = message
+        .split_once(": ")
+        .filter(|(code, _)| code.bytes().all(|c| c.is_ascii_uppercase() || c == b'_'))
+        .unwrap_or((code, message));
+    CallToolResult::error(vec![Content::text(
+        json!({"error":{"code":code,"message":message}}).to_string(),
+    )])
+}
+
+const TOOL_RESULT_BUDGET: usize = 12 * 1024 * 1024;
+// Reserve space for JSON-RPC and SSE framing, including the request ID.
+fn budget_result(result: CallToolResult, request_id: &RequestId) -> CallToolResult {
+    struct Counter {
+        bytes: usize,
+        limit: usize,
+    }
+    impl std::io::Write for Counter {
+        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+            self.bytes += bytes.len();
+            if self.bytes > self.limit {
+                return Err(std::io::ErrorKind::FileTooLarge.into());
+            }
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+    let framing = serde_json::to_vec(&json!({"jsonrpc":"2.0","id":request_id,"result":{}}))
+        .unwrap()
+        .len()
+        + 4096;
+    let mut counter = Counter {
+        bytes: 0,
+        limit: TOOL_RESULT_BUDGET.saturating_sub(framing),
+    };
+    if serde_json::to_writer(&mut counter, &result).is_err() {
+        return media_error("TOOL_RESULT_TOO_LARGE", "Tool result exceeds the 12 MiB transport budget; request fewer images or smaller output");
+    }
+    tracing::info!(
+        result_bytes = counter.bytes,
+        is_error = result.is_error.unwrap_or(false),
+        "tool result"
+    );
+    result
 }
 
 fn browser_result(
@@ -1061,32 +1178,24 @@ fn browser_result(
                 agent_engine::engine::EngineError::Other(message) => message.clone(),
                 _ => error.to_string(),
             };
-            return CallToolResult::error(vec![Content::text(json!({"error":"BROWSER_ERROR","message":compact_error(&message),"side_effects":"unknown"}).to_string())]);
+            let value = serde_json::from_str::<serde_json::Value>(&message).unwrap_or_else(
+                |_| json!({"error":browser_error(&message),"side_effects":"unknown"}),
+            );
+            return CallToolResult::error(vec![Content::text(value.to_string())]);
         }
     };
     if let Some(error) = value.get("error").and_then(|v| v.as_str()) {
-        value["error"] = json!(compact_error(error));
+        value["error"] = browser_error(error);
     }
     let mut images = vec![];
-    for path in ["", "/result", "/observation"] {
-        let container = if path.is_empty() {
-            Some(&mut value)
-        } else {
-            value.pointer_mut(path)
-        };
-        if let Some(container) = container {
-            if let Some(items) = container
-                .as_object_mut()
-                .and_then(|o| o.remove("images"))
-                .and_then(|v| v.as_array().cloned())
-            {
-                for image in items {
-                    if let (Some(data), Some(mime)) =
-                        (image["data"].as_str(), image["mimeType"].as_str())
-                    {
-                        images.push(Content::image(data, mime));
-                    }
-                }
+    if let Some(items) = value
+        .as_object_mut()
+        .and_then(|object| object.remove("images"))
+        .and_then(|items| items.as_array().cloned())
+    {
+        for item in items {
+            if let (Some(data), Some(mime)) = (item["data"].as_str(), item["mimeType"].as_str()) {
+                images.push(Content::image(data.to_owned(), mime.to_owned()));
             }
         }
     }
@@ -1094,14 +1203,24 @@ fn browser_result(
         object.remove("window");
         object.remove("nativeWindow");
     }
-    if let Some(object) = value.get_mut("observation").and_then(|v| v.as_object_mut()) {
-        object.remove("window");
-        object.remove("nativeWindow");
+    // Capture ownership stays in the host cache; callers need only the public
+    // identity and dimensions used for pointer actions.
+    if let Some(captures) = value["captures"].as_array_mut() {
+        for capture in captures {
+            if let Some(object) = capture.as_object_mut() {
+                object.remove("window");
+                object.remove("at");
+            }
+        }
     }
-    let failed = matches!(
-        value["state"].as_str(),
-        Some("failed" | "timed_out" | "cancelled")
-    );
+    if value.get("frames").is_some() {
+        value.as_object_mut().unwrap().remove("captures");
+    }
+    let failed = value.get("error").is_some()
+        || matches!(
+            value["state"].as_str(),
+            Some("failed" | "timed_out" | "cancelled")
+        );
     let mut content = vec![Content::text(value.to_string())];
     content.extend(images);
     if failed {
@@ -1109,6 +1228,24 @@ fn browser_result(
     } else {
         CallToolResult::success(content)
     }
+}
+fn browser_error(message: &str) -> serde_json::Value {
+    if let Ok(value) = serde_json::from_str::<serde_json::Value>(message) {
+        if value.get("error").is_some() {
+            return value["error"].clone();
+        }
+    }
+    let message = compact_error(message);
+    if !message.is_empty() && message.bytes().all(|c| c.is_ascii_uppercase() || c == b'_') {
+        return json!({"code":message,"message":message});
+    }
+    let (code, detail) = message
+        .split_once(": ")
+        .filter(|(code, _)| {
+            !code.is_empty() && code.bytes().all(|c| c.is_ascii_uppercase() || c == b'_')
+        })
+        .unwrap_or(("BROWSER_ERROR", &message));
+    json!({"code":code,"message":detail})
 }
 
 fn auth_error(error: StateError) -> McpError {
@@ -1120,7 +1257,7 @@ fn auth_error(error: StateError) -> McpError {
     }
 }
 
-fn file_command(spec: serde_json::Value) -> String {
+pub(crate) fn file_command(spec: serde_json::Value) -> String {
     format!(
         "python3 -I -c {} {}",
         shell_escape(include_str!("../../guest/file.py")),
@@ -1139,6 +1276,36 @@ fn shell_escape(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn tool_result_budget_counts_base64_json_and_framing_without_truncation() {
+        use base64::Engine;
+        let bytes = vec![137; 8 * 1024 * 1024];
+        let encoded = base64::engine::general_purpose::STANDARD.encode(&bytes);
+        let result = budget_result(
+            CallToolResult::success(vec![
+                Content::text("complete"),
+                Content::image(encoded.clone(), "image/png"),
+            ]),
+            &RequestId::Number(7),
+        );
+        assert_ne!(result.is_error, Some(true));
+        let wire = serde_json::to_value(result).unwrap();
+        assert_eq!(wire["content"][1]["data"], encoded);
+        assert!(
+            serde_json::to_vec(&json!({"jsonrpc":"2.0","id":7,"result":wire}))
+                .unwrap()
+                .len()
+                < TOOL_RESULT_BUDGET
+        );
+        let oversized = budget_result(
+            CallToolResult::success(vec![Content::text("x".repeat(TOOL_RESULT_BUDGET))]),
+            &RequestId::Number(7),
+        );
+        assert_eq!(oversized.is_error, Some(true));
+        assert!(serde_json::to_string(&oversized)
+            .unwrap()
+            .contains("TOOL_RESULT_TOO_LARGE"));
+    }
 
     #[test]
     fn error_text_is_bounded_without_dropping_the_cause_or_tail() {
@@ -1169,7 +1336,10 @@ mod tests {
         let wire = serde_json::to_value(result).unwrap();
         let body: serde_json::Value =
             serde_json::from_str(wire["content"][0]["text"].as_str().unwrap()).unwrap();
-        assert_eq!(body["error"].as_str().unwrap().chars().count(), 2048);
+        assert_eq!(
+            body["error"]["message"].as_str().unwrap().chars().count(),
+            2048
+        );
         assert_eq!(body["side_effects"], "may_have_occurred");
         assert_eq!(body["cleanup_confirmed"], false);
         assert_eq!(body["value"]["partial"], true);

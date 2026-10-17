@@ -52,9 +52,9 @@ def main():
   value=json.loads(c.tool('browser_run',code=code))
   while value.get('state')=='running':value=json.loads(c.tool('browser_task',task_id=value['task_id']))
   assert value['state']=='succeeded',value;return value.get('value')
- def verify_space(name,port,dav_port,token,dav_token,original):
+ def verify_space(name,port,dav_port,token,dav_token,original,expected_tools):
   assert snapshot(name)==original,'persistent identity/credential/resource/image changed'
-  c=client(port,token);assert len(c.request('tools/list')['tools'])==8
+  c=client(port,token);assert {tool['name'] for tool in c.request('tools/list')['tools']}==expected_tools
   text=c.tool('bash',command='cat /root/runcove-migration-marker /workspace/runcove-migration-marker')
   assert 'root-before' in text and 'workspace-before' in text
   c.tool('bash',command='nohup python3 -m http.server 8128 --bind 127.0.0.1 --directory /workspace/migration-site >/tmp/migration-site.log 2>&1 </dev/null &')
@@ -69,6 +69,7 @@ def main():
   user=admin(port,'POST','',{'username':'desktop'});token=user['token'];space=user['agentSpaceId']
   dav_token=admin(port,'POST','/desktop/dav-token',{'agentSpaceId':space})['token']
   c=client(port,token)
+  original_tools={tool['name'] for tool in c.request('tools/list')['tools']}
   c.tool('bash',command="printf root-before >/root/runcove-migration-marker; printf workspace-before >/workspace/runcove-migration-marker; mkdir -p /workspace/migration-site; printf '<title>Migration</title>' >/workspace/migration-site/index.html; nohup python3 -m http.server 8128 --bind 127.0.0.1 --directory /workspace/migration-site >/tmp/migration-site.log 2>&1 </dev/null &")
   browser(c,"await page.goto('http://127.0.0.1:8128/');await page.evaluate(()=>localStorage.setItem('migration-profile','preserved'));return true;")
   original=snapshot(source);original_hash=hashlib.sha256(json.dumps(original,sort_keys=True).encode()).hexdigest();stop(source)
@@ -82,7 +83,8 @@ def main():
    assert json.loads(result)['applied']==apply
    if not apply:assert not converted.exists()
   candidate,port,dav_port=launch(a.image,data,converted,'candidate')
-  c=verify_space(candidate,port,dav_port,token,dav_token,original);check('original_credentials_and_identity');check('workspace_profile_and_files')
+  current_tools={'bash','read','write','edit','web_publish','browser_observe','screen_observe','browser_run','browser_task'}
+  c=verify_space(candidate,port,dav_port,token,dav_token,original,current_tools);check('original_credentials_and_identity');check('workspace_profile_and_files')
   publication=json.loads(c.tool('web_publish',action='publish',name='migration',file='/workspace/runcove-migration-marker'))
   assert '/u/desktop/pub/migration/' in json.dumps(publication)
   c.tool('write',path='/workspace/candidate-only',content='preserve candidate separately')
@@ -94,7 +96,7 @@ def main():
   docker('run','--rm','--entrypoint','tar','-v',rollback_data+':/data','-v',str(root)+':/backup:ro',a.old_image,'xzf','/backup/'+backup.name,'-C','/data',timeout=600)
   rollback,port,dav_port=launch(a.old_image,rollback_data,cfg,'rollback');c=client(port,token)
   c.tool('bash',command='nohup python3 -m http.server 8128 --bind 127.0.0.1 --directory /workspace/migration-site >/tmp/migration-site.log 2>&1 </dev/null &')
-  verify_space(rollback,port,dav_port,token,dav_token,original)
+  verify_space(rollback,port,dav_port,token,dav_token,original,original_tools)
   assert 'backup-boundary-ok' in c.tool('bash',command='test ! -e /workspace/candidate-only && echo backup-boundary-ok')
   stop(rollback);check('isolated_complete_backup_rollback');report['passed']=True
  except BaseException as error:

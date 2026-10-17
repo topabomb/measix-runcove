@@ -4,6 +4,7 @@ pub mod server;
 pub mod transport;
 pub mod web_publish;
 
+mod file_read;
 mod guest_http;
 pub mod webdav;
 

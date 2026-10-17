@@ -27,4 +27,12 @@ function compactAX(nodes){
   for(const n of picked.length?picked:roots.length?roots:nodes.slice(0,1))visit(n);
   return {text:lines.join('\n'),truncated};
 }
-module.exports={domExpression,compactAX};
+function desktopCapture(){
+  const cp=require('node:child_process');
+  const front=()=>{try{return cp.execFileSync('xdotool',['getactivewindow'],{encoding:'utf8',timeout:1500,maxBuffer:65536}).trim();}catch{return null;}};
+  let window=front();const at=Date.now();
+  const bytes=cp.execFileSync('/opt/agent-tools/python/bin/python',['-c',"import mss,mss.tools,sys; s=mss.mss(); im=s.grab(s.monitors[0]); sys.stdout.buffer.write(mss.tools.to_png(im.rgb,im.size))"],{timeout:4000,maxBuffer:10*1024*1024});
+  if(front()!==window)window=null;
+  return {image_id:require('node:crypto').randomUUID(),width:bytes.readUInt32BE(16),height:bytes.readUInt32BE(20),window,at,source:'desktop',bytes};
+}
+module.exports={domExpression,compactAX,desktopCapture};

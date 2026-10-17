@@ -329,7 +329,7 @@ async fn optional_placeholders_and_irrelevant_fields_do_not_block_actions() {
 async fn desktop_catalog_and_permissive_arguments_reach_the_mcp_handlers() {
     let h = Harness::with_browser(true).await;
     let tools = h.client.list_all_tools().await.unwrap();
-    assert_eq!(tools.len(), 8);
+    assert_eq!(tools.len(), 9);
     for tool in &tools {
         let description = tool.description.as_deref().unwrap();
         let schema_json = serde_json::to_string(&tool.input_schema).unwrap();
@@ -349,7 +349,7 @@ async fn desktop_catalog_and_permissive_arguments_reach_the_mcp_handlers() {
     let schema = |name: &str| &tools.iter().find(|t| t.name == name).unwrap().input_schema;
     assert_eq!(
         schema("browser_observe")["$defs"]["BrowserView"]["enum"],
-        json!(["dom", "page", "desktop"])
+        json!(["dom", "ax", "page", "desktop"])
     );
     assert_eq!(
         schema("browser_task")["$defs"]["TaskAction"]["enum"],
@@ -367,6 +367,18 @@ async fn desktop_catalog_and_permissive_arguments_reach_the_mcp_handlers() {
         schema("browser_observe")["properties"]["recent_tasks_limit"]["maximum"],
         10
     );
+    assert_eq!(
+        schema("browser_observe")["properties"]["recent_tasks_limit"]["minimum"],
+        0
+    );
+    assert_eq!(schema("read")["properties"]["multimodal"]["default"], false);
+    assert_eq!(schema("screen_observe")["required"], json!(["view"]));
+    for name in ["page_id", "count", "interval_ms"] {
+        assert!(schema("screen_observe")["properties"][name]["description"]
+            .as_str()
+            .unwrap()
+            .starts_with("Optional"));
+    }
     assert_eq!(
         schema("browser_task")["properties"]["wait_secs"]["maximum"],
         20
@@ -401,16 +413,6 @@ async fn desktop_catalog_and_permissive_arguments_reach_the_mcp_handlers() {
             None,
         ),
         (
-            "browser_observe",
-            json!({"view":" ","page_id":null,"recent_tasks_limit":0,"extra":1}),
-            Some("INVALID_ARGUMENT"),
-        ),
-        (
-            "browser_run",
-            json!({"code":"","page_id":"","timeout_secs":null,"extra":{}}),
-            Some("INVALID_ARGUMENT"),
-        ),
-        (
             "browser_task",
             json!({"task_id":"missing","action":" ","wait_secs":0,"extra":true}),
             Some("TASK_NOT_FOUND"),
@@ -442,6 +444,17 @@ async fn desktop_catalog_and_permissive_arguments_reach_the_mcp_handlers() {
             json!({"path":"/workspace/a", "content":null,"extra":true}),
         ),
         ("browser_observe", json!({"view":"unknown"})),
+        ("browser_observe", json!({"recent_tasks_limit":11})),
+        (
+            "browser_run",
+            json!({"code":"","page_id":null,"timeout_secs":null,"extra":{}}),
+        ),
+        ("screen_observe", json!({"view":"desktop","count":9})),
+        (
+            "screen_observe",
+            json!({"view":"page","count":8,"interval_ms":100000}),
+        ),
+        ("screen_observe", json!({})),
         (
             "browser_task",
             json!({"task_id":"missing","action":"unknown"}),

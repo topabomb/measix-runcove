@@ -174,6 +174,7 @@ struct Owned {
     identity: Identity,
     critical: bool,
     browser: bool,
+    display: bool,
 }
 pub struct Desktop {
     children: Vec<Owned>,
@@ -192,15 +193,27 @@ impl Default for Desktop {
     }
 }
 impl Desktop {
+    pub fn display_alive(&mut self) -> bool {
+        self.ready
+            && self
+                .children
+                .iter_mut()
+                .any(|p| p.display && matches!(p.child.try_wait(), Ok(None)))
+    }
     pub fn alive(&mut self) -> bool {
-        self.ready && self.children_alive()
+        self.ready
+            && self.children_alive()
+            && self
+                .children
+                .iter_mut()
+                .any(|p| p.browser && matches!(p.child.try_wait(), Ok(None)))
     }
     fn children_alive(&mut self) -> bool {
         !self.children.is_empty()
             && self
                 .children
                 .iter_mut()
-                .all(|p| !p.critical || matches!(p.child.try_wait(), Ok(None)))
+                .all(|p| p.browser || !p.critical || matches!(p.child.try_wait(), Ok(None)))
     }
     async fn spawn(&mut self, name: &str, args: &[&str], critical: bool) -> anyhow::Result<()> {
         let mut command = Command::new(args[0]);
@@ -279,11 +292,12 @@ impl Desktop {
             identity,
             critical,
             browser: name == "browser",
+            display: name == "vnc",
         });
         Ok(())
     }
-    pub async fn start(&mut self) -> anyhow::Result<()> {
-        if self.alive() {
+    pub async fn start_display(&mut self) -> anyhow::Result<()> {
+        if self.display_alive() {
             return Ok(());
         }
         self.stop().await?;
@@ -328,28 +342,6 @@ impl Desktop {
             self.spawn("desktop", &["dbus-run-session", "--", "startlxqt"], true)
                 .await?;
             self.spawn("terminal", &["qterminal"], false).await?;
-            let profile = format!("--user-data-dir={ROOT}/profile");
-            // No launch URL: wake restores tabs without appending about:blank.
-            self.spawn(
-                "browser",
-                &[
-                    "/opt/agent-tools/browsers/chromium-1243/chrome-linux64/chrome",
-                    "--remote-debugging-address=127.0.0.1",
-                    "--remote-debugging-port=9222",
-                    &profile,
-                    "--no-first-run",
-                    "--disable-infobars",
-                    "--no-default-browser-check",
-                    "--password-store=basic",
-                    "--restore-last-session",
-                ],
-                true,
-            )
-            .await?;
-            self.ready(9222, false, Duration::from_secs(15)).await?;
-            self.generation += 1;
-            self.last_used = Instant::now();
-            node(serde_json::json!({"maximize":true})).await?;
             self.ready = true;
             Ok::<_, anyhow::Error>(())
         }
@@ -358,6 +350,48 @@ impl Desktop {
             self.stop().await?;
         }
         result
+    }
+    pub async fn start(&mut self) -> anyhow::Result<()> {
+        if self.ready && !self.children_alive() {
+            self.stop().await?;
+        }
+        self.start_display().await?;
+        if self.alive() {
+            return Ok(());
+        }
+        let mut index = 0;
+        while index < self.children.len() {
+            if self.children[index].browser {
+                let mut owned = self.children.remove(index);
+                process::stop_tree(owned.identity).await?;
+                let _ = owned.child.wait().await;
+            } else {
+                index += 1;
+            }
+        }
+        let profile = format!("--user-data-dir={ROOT}/profile");
+        // No launch URL: wake restores tabs without appending about:blank.
+        self.spawn(
+            "browser",
+            &[
+                "/opt/agent-tools/browsers/chromium-1243/chrome-linux64/chrome",
+                "--remote-debugging-address=127.0.0.1",
+                "--remote-debugging-port=9222",
+                &profile,
+                "--no-first-run",
+                "--disable-infobars",
+                "--no-default-browser-check",
+                "--password-store=basic",
+                "--restore-last-session",
+            ],
+            true,
+        )
+        .await?;
+        self.ready(9222, false, Duration::from_secs(15)).await?;
+        self.generation += 1;
+        self.last_used = Instant::now();
+        node(serde_json::json!({"maximize":true})).await?;
+        Ok(())
     }
     async fn ready(&mut self, port: u16, rfb: bool, timeout: Duration) -> anyhow::Result<()> {
         let until = Instant::now() + timeout;
@@ -428,7 +462,7 @@ impl Desktop {
     }
 }
 pub async fn node(value: serde_json::Value) -> anyhow::Result<serde_json::Value> {
-    let spec = serde_json::json!({"program":"node","args":[format!("{NODE}/observe-worker.cjs"),value.to_string()],"timeout_secs":5,"max_bytes":12*1024*1024,"max_lines":10000,"uid":1001});
+    let spec = serde_json::json!({"program":"node","args":[format!("{NODE}/observe-worker.cjs"),value.to_string()],"timeout_secs":5,"max_bytes":agent_engine::media::REPORT_LIMIT,"max_lines":10000,"uid":1001});
     let mut command = Command::new("python3");
     command
         .args([
@@ -443,6 +477,10 @@ pub async fn node(value: serde_json::Value) -> anyhow::Result<serde_json::Value>
     let output = command.output().await?;
     anyhow::ensure!(output.status.success(), "observation owner failed");
     let result: serde_json::Value = serde_json::from_slice(&output.stdout)?;
+    anyhow::ensure!(
+        result["truncated"] != true && result["stdout"].is_string(),
+        "INVALID_OBSERVATION_REPORT: truncated or incomplete report"
+    );
     anyhow::ensure!(
         result["exit_code"] == 0,
         "{}",

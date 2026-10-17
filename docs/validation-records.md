@@ -6,6 +6,16 @@
 
 公开 Git 历史从整理后的首次提交开始，未保留此前的私有开发历史。下列旧报告及其证据中的 Git SHA 是当时输入的标识，不能在公开仓库中检出，也不能据此复现旧构建；源码摘要和镜像 ID 继续标识原始验证对象。首次提交包含之后的修复和文档整理，不能直接沿用旧镜像的资格结论；发布前仍须按当前源码重新构建并验证。
 
+## 浏览器与图片工具调整（2026-10-17）
+
+基线 `61dbf67` 加本轮实现，最终构建输入 SHA-256 为 `0c48b4974e55c4ae8a87a9626dbd95aeea27bcee6c5a618ce344428f1acb33b4`。两个入口继续共用工具、任务和文件执行链路。`browser_observe` 分开 DOM/AX，`browser_run` 只返回显式输出，`browser_task` 同时管理截图序列；新增 `screen_observe`，默认单张、最多8张，可选间隔及原始 PNG 保存目录，返回各帧和已保存路径。`read` 增加默认关闭的 multimodal 图片读取，Rust 统一有界处理；工具结果预算为12 MiB，默认文本输出上限保持不变。合同见[浏览器与图片工具](browser-desktop.md#浏览器与截图工具)。
+
+完整 Rust workspace 串行 **315 passed / 0 failed / 0 ignored**，最终受影响模块另通过 MCP 27 项、desktop helper 6 项；两种构建的 Clippy、Server/无 MSB Standalone 构建、无 MSB 依赖检查和 UI 构建通过。Python 清理8项、执行所有权5项、MSB补丁4项、协议8项、DAV验证器3项、打包5项通过；独立 root 容器中的工作区导入9项通过。检查和二进制摘要见[验证摘要](evidence/runcove-tools-20261017/verification.json)。
+
+按用户要求收缩为快速验收，只使用一个新建容器及卷，绑定当前开发二进制：真实 MCP 浏览器11项、媒体8项、文件流3项通过，另通过短流程启动、权限、退出和重启检查。媒体覆盖四格式、方向和透明度、GIF/APNG/WebP首帧、接近10 MiB源文件、超过50 KiB的完整图片、多 MiB工具结果、1..8帧和间隔、页面关闭、Chromium卡住时的桌面观察、原图紧凑命名及路径、认证HTTP下载、保存权限失败、并发和取消保留输出。
+
+长流程在上述三个套件通过后按用户要求停止，300秒休眠及真实UI套件未完成，未启动第二个部署验收；隔离容器与卷已清理。本次是源码及开发资产验证，没有重建发布镜像、部署生产、推送镜像或完成外部Agent/模型/网关的多模态联调，不能作为最终镜像资格报告。
+
 ## 工具描述与生产二进制更新（2026-10-16）
 
 提交 `7e3f206` 统一八个 MCP 工具的远程工作区归属说明：`bash`、`browser_observe` 保留工具描述，`read`、`write`、`edit` 的 `path`、`browser_run` 的 `code` 和 `browser_task` 的 `task_id` 补充归属，`web_publish` 在工具描述首句补充。每个工具的描述与参数描述合计出现一次 `Runcove's remote workspace`；未改执行逻辑或参数结构。`cargo fmt --check` 及无 MSB 构建下的 `test_web_publish_mcp` 五项测试通过。

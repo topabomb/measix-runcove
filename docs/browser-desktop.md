@@ -24,7 +24,7 @@ exec_timeout_secs = 30
 | 空间选择 | 工具目录 | 桌面入口 |
 |---|---|---|
 | 自定义字符串，包括与预设相同的 OCI 地址 | bash、read、write、edit、web_publish | 不提供 |
-| runcove-desktop 预设 | 原五工具加 browser_observe、browser_run、browser_task | 提供 |
+| runcove-desktop 预设 | 原五工具加 browser_observe、screen_observe、browser_run、browser_task | 提供 |
 
 初始化和工具发现不启动 VM。目录与调用按同一持久镜像能力鉴权；绕过目录直接调用浏览器工具也被拒绝。镜像 lock 记录真实 linux/amd64 OCI manifest digest，发布包离线携带该镜像；不能将 Docker config ID 当作 manifest，也不自动回退任意 tag。
 
@@ -46,54 +46,91 @@ helper 二进制内嵌匹配的五份 JS 源码，启动时原子安装到 `/opt
 
 公开目录是默认落盘位置，Agent仍可在其他工作区路径组织文件；不自动创建 `/workspace/agent-space/README.md`。桌面启动时把旧默认产物目录中的普通文件移到新目录，同名冲突以UUID前缀保留两份，未知子目录/符号链接留在原处。仅将Chromium原默认下载路径改到新位置，用户自选路径保留。旧绝对产物链接不提供永久别名，迁移后从产物列表取得当前路径。
 
-## 三个浏览器工具
+## 浏览器与截图工具
 
-工具及参数描述全部英文，完整放在 `tools/list`，客户端丢弃 initialize.instructions 仍可使用。`view`和`action`描述明确要求JSON字符串（如`"dom"`、`"wait"`）；省略可选项使用默认值。没有 open/close 工具、script_path、强制 observation_id 或新的选择器语言。
+工具及参数说明由 `tools/list` 完整提供，客户端不依赖 initialize.instructions。桌面空间共九个工具，自定义非桌面空间仍为五个；`screen_observe` 与三个 browser 工具使用同一镜像能力校验，不能绕过目录直接调用。
 
 | 工具 | 参数与默认值 | 返回 |
 |---|---|---|
-| browser_observe | page_id 可选；view=`dom`，可选 page/desktop；recent_tasks_limit=3，1..10 | 当前页、标签、健康、受限 DOM/AX；指定视图的 PNG；最近任务摘要和控制状态 |
-| browser_run | code 必填，1..65536 UTF-8 bytes；page_id 可选；timeout_secs=60，1..600 | 8秒内完成则最终结果；否则 task_id/state/phase/remaining_secs |
-| browser_task | task_id 必填；action=`wait` 或 cancel；wait_secs=20，0..20 | 只查询/取消该任务；运行中简短状态，成功保留结果、产物和最终观察，失败仅保留错误及已有结果 |
+| browser_observe | page_id 可选；view=`dom` 或 ax；recent_tasks_limit=0，0..10 | 当前页、可用标签、已知健康、控制模式，以及一种语义视图 |
+| screen_observe | view 必填 desktop/page；page_id 可选；count=1，1..8；interval_ms=1000，非负；save_original=false；save_dir 可选 | 完成结果或 task_id；终态含帧说明和按捕获顺序排列的 MCP 图像块；保存原图时附 files |
+| browser_run | code 必填，1..65536 UTF-8 bytes；page_id 可选；timeout_secs=60，1..600 | 脚本返回值和显式输出；超过首次8秒等待则返回任务句柄 |
+| browser_task | task_id 必填；action=`wait` 或 cancel；wait_secs=20，0..20 | 浏览器任务或截图序列的进度、最终结果或取消状态 |
 
-`browser_observe` 可直接传 `{}`，不导航、不聚焦，人工接管期间也可读取。省略page_id或传JSON null时优先聚焦标签页，否则选择已有标签页；显式无效ID报错并给出修正方法，不转而操作其他页面。desktop视图不使用page_id，不因网页ID失效阻断桌面截图。dom 是默认语义快照；page 只截网页；desktop 截整个桌面，包括浏览器工具栏、原生对话框。最近任务按 Host 接受时间从新到旧筛选，包括成功、失败及运行中任务，30分钟后过期。
+`browser_observe` 可直接传 `{}`，不导航、不聚焦，人工接管期间也可读取。省略 page_id 或传 null 时优先聚焦标签页，否则选择已有标签页；显式无效 ID 返回 PAGE_NOT_FOUND 和 tabs，不替换目标。dom 返回可见正文、控件及当前值；ax 单独返回可访问性树，二者不同时返回。默认不附带任务历史；指定 recent_tasks_limit 后按 Host 接受时间从新到旧列出摘要。工具中的控制信息只投影模式 AI/HUMAN/TRANSITION/BLOCKED，工作台的人类输入权限不混入 Agent 观察结果。
 
-`browser_run` 注入 `page`、`context`、`desktop`、`output`、`artifacts`，接受 async 函数或带 await 的函数体。`page_id` 通常省略；选择指定标签页不自动聚焦。普通运行没有标签页且无原生窗口时创建空白页，不创建第二个浏览器或 context。优先复用已有标签页导航，仅需同时保留多个页面时使用context.newPage()；bringToFront()用于显式切到前台。自己创建的临时标签页用完关闭，保留原有标签页和未完成工作。优先等待元素、URL或事件，部分失败后先确认当前状态再重试。页面已无响应或原生对话框在前台时，避免新的 Playwright 附着；这时 page/context 不可用，使用 desktop helpers 恢复后再观察。
+### 截图与连续观察
 
-```javascript
-await page.getByRole('button', {name:'Import'}).click();
-await page.locator('input[type=file]').setInputFiles('/workspace/article.md');
-return {url:page.url()};
+```json
+{"view":"desktop"}
 ```
 
-没有 input[type=file] 时，先监听 filechooser 再点击并 `chooser.setFiles(path)`。下载同样先监听，最后仅保存一次：
+`screen_observe` 的 page_id、count、interval_ms、save_original、save_dir 均为可选参数，工具参数说明明确标注 Optional。desktop 捕获完整桌面及原生窗口，忽略 page_id；page 捕获选定标签页的可视区域，不滚动、不聚焦、不建立 Playwright 附着，也不先读取 DOM/AX。序列只在首次选择目标，同一标签可以导航；目标关闭则失败并保留前面已完成的帧，不替换为其他页面。旧 `browser_observe` 的 page/desktop 视图兼容转到这一实现，返回截图任务结构。
+
+第一帧准备好即捕获，后续按捕获起始时间保持至少 interval_ms 间隔；处理较慢时顺延，不并行补拍，零表示连续捕获。最多8帧，整个序列含准备、等待和图片处理最多600秒；无法容纳的时间安排在接受前拒绝。超过首次8秒等待后用 browser_task 查询或取消。运行中只回进度；终态返回 view/requested_count/captured_count/frames，frames 含 index/image_id/elapsed_ms/width/height/resized，图片只放在对应顺序的 MCP image 块。失败、取消和超时仍保留已完成帧及具体错误。
+
+桌面截图只要求可用显示服务，Chromium/CDP 崩溃或卡住不阻断它，也不为截图重启现有桌面。页面截图失败明确报错，由 Agent 决定是否改观察桌面。截图不占浏览器修改槽，不跨帧间隔持有桌面锁，人工控制及浏览器任务运行期间仍可观察；取消序列只停止剩余观察。观察调用刷新桌面工作活动，轮询不续期。
+
+序列的返回图片编码合计最多2 MiB，按请求帧数分配单帧预算。对同一次捕获做有界压缩：JPEG 质量80、70，再按需把最长边缩到1600、1280；初始最长边不超过2000，不重新捕获。仍超预算时明确 IMAGE_BUDGET_EXCEEDED，已有帧保留，不静默丢图或无限降质。默认不落盘；只有显式启用保存时才保留原图文件。
+
+需要下载原图时设置 `save_original=true`，可选 `save_dir` 指定空间内可写的绝对目录，默认 `/workspace/agent-space/artifacts`，缺失目录自动创建。未启用保存却指定目录属于参数错误。每帧捕获的原始 PNG 字节按 `screen-<10位Base62随机串>.png` 原子保存，不覆盖已有文件；观察返回的图片仍按上述预算优化。终态 `files` 按捕获顺序包含 `frame_index/image_id/path/width/height/bytes/mime_type`，尺寸和字节数对应原图。可通过现有工作台文件流或 DAV 下载工作区内的文件，也可用 `read(multimodal=true)` 读取。保存失败返回 `SCREEN_SAVE_FAILED` 并保留可显示的当前帧；取消、超时或后续失败保留已保存文件及其路径。
+
+```json
+{"view":"desktop","count":3,"interval_ms":1000,"save_original":true,"save_dir":"/workspace/screenshots"}
+```
+
+桌面 image_id 的有效期从实际捕获算起60秒，并绑定捕获前后相同的前台窗口；无法确认窗口时仍返回图片，但拒绝据此进行指针动作。坐标使用返回图片的像素，服务自动换算到原桌面尺寸。长序列中较早帧可能在返回时已过期，应重新观察后再操作。
+
+### JavaScript 执行与显式输出
+
+`browser_run` 注入 `page`、`context`、`desktop`、`output`、`artifacts`，接受 async 函数或带 await 的函数体；模块用 `await import(...)` 导入。artifacts 是默认可写目录路径，其他目标也须具有写权限。普通运行没有标签页且无原生窗口时创建空白页，不创建第二个浏览器或 context。选择 page_id 不自动聚焦；优先复用已有页，仅有并行页面需求时新建标签，用完关闭自己创建的临时页。
+
+上传可用 `locator.setInputFiles(path)`，或先登记 `page.waitForEvent('filechooser')`，触发后调用 `chooser.setFiles(path)`。下载同样先登记事件再触发：
 
 ```javascript
 const pending = page.waitForEvent('download');
-await page.getByRole('button', {name:'Download', exact:true}).click();
+await page.getByRole('link', {name:'Download', exact:true}).click();
 const file = await output.download(await pending);
 return {path:file.path, bytes:file.bytes};
 ```
 
-`output.file(path)` 登记现有工作区文件，不复制同体积文件；`output.saveMhtml(page,path)` 保存 MHTML。`output.image(PNG Buffer)` 或 `output.image(await desktop.screenshot())` 输出图片。桌面动作使用 `desktop.click({image_id,x,y})`、drag、scroll、type(text)、press(key)，窗口可 setWindowMode(normal/maximized/fullscreen)。坐标绑定截图像素及前台窗口，60秒过期，不能将缩放后的 VNC CSS 坐标直接传入。
+`output.file(path)` 只登记现有工作区文件的元数据，不复制或自动预览；`output.image(bufferOrCapture)` 显式返回 PNG/JPEG/WebP；`output.download(download)` 保存并登记下载；`output.saveMhtml(page,path)` 保存并登记 MHTML。`desktop.screenshot()` 返回 Capture，使用 `await output.image(await desktop.screenshot())` 显示。已登记输出原子检查点保存，后续脚本报错、超时或取消仍返回可用产物和日志。成功只表示脚本完成，不解释返回值中业务字段的含义；不自动采集最终 DOM、AX 或截图。
 
-## 任务、超时和输出
+指针接口为 `desktop.click({image_id,x,y,button?})`、`desktop.drag({image_id,x,y,to_x,to_y})`、`desktop.scroll({image_id,x,y,delta})`；其他接口为 `desktop.type(text)`、`desktop.press(key)`、`desktop.setWindowMode('normal'|'maximized'|'fullscreen')`。原生对话框或页面无响应时不新建 Playwright 附着，改用 desktop helpers。参数形状错误给出真实签名，截图过期或前台窗口改变给出 STALE_OBSERVATION。
 
-期限从 Host 接受任务起计，包含启动准备；等待工具不延长期限。guest 独立监督 Node worker，超时/取消先 TERM 后 KILL，并核对进程身份及后代；Host HTTP 等待者断开不释放仍在执行的所有权，也不重放动作。修改清理最多8秒，最终观察最多5秒；控制权必须等修改清理确认才可移交。无法证明清理时进入 BLOCKED，禁止新修改，由服务管理者核对并恢复该空间运行时。
+### 任务、错误与输出预算
 
-终态有 task_id/state，加非空的 value/files/images/logs/output_warning/captures/observation。成功不夹带空 error、side_effects 或内部 cleanup_confirmed；失败保留实际错误和 `side_effects=may_have_occurred|not_started`，清理不确定时保留 false 证明。成功时的最终 observation 对应执行开始时选定的标签页；若已关闭，则返回剩余标签与健康状态，不替换为其他页面正文。最终观察保留最近3个任务的简短摘要；失败、超时和取消不自动采集或附带完整页面观察，按需显式观察当前页面。顶层不再重复任务列表。错误原因明确时直接提炼并提供必要的英文修正引导，否则去除ANSI控制序列后截断至2048字符，保留头尾并标记 `[error truncated]`；不增加诊断参数或错误字段。已有结果和产物不受错误文本上限影响；脚本中途未写入结果文件的产物不保证返回。不会返回全部历史日志或任务。
+期限从 Host 接受起计，覆盖准备和执行；等待不延长期限。guest 监督 Node worker，超时或取消时按进程身份先 TERM 后 KILL 并核对后代；HTTP 等待者断开不释放实际工作所有权，也不重放动作。修改清理确认后才能移交控制权，无法确认时进入 BLOCKED，禁止新修改。
+
+运行中返回 task_id/state/phase/remaining_secs；终态加非空的 value/files/logs/output_warning/captures 或截图帧说明，图片单独放 MCP image 块，不重复进文字或 structuredContent。成功省略空字段及内部清理标记；失败使用 `error:{code,message}`，任务执行失败有 `isError=true`，修改任务保留有意义的 side_effects，BUSY 附 active_task_id。参数错误使用协议 InvalidParams。未知错误保留有界原始原因，去除控制序列后最多2048字符；定位器错误保留目标和主因，不重复返回重试日志。
 
 | 输出 | 限制 |
 |---|---|
+| 工具结果传输 | 每次12 MiB，计入 Base64、JSON 和协议封装预留；超限明确报错，不截断图片 |
 | DOM / AX | controls≤60、text≤4000、AX≤100行/6000字符、tabs≤50；显式 truncated |
-| JS 返回值 | JSON≤32KiB；超出落为 JSON 产物；不可序列化报告 warning |
-| 每任务图片 | ≤4张，合计≤8MiB；作为 MCP image blocks，文本不重复 base64 |
-| 每任务文件 | ≤16项，只回元数据及路径 |
-| worker stdout/stderr | 各≤32KiB / 500行，有截断标记；不含每轮累计日志 |
-| 截图坐标元数据 | 保存最近≤32张，输出仅包含本轮实际发出的截图 |
-| 任务缓存 | 完成后30分钟；Host重启句柄消失，网站副作用不回滚 |
+| JS 返回值 | JSON≤32 KiB；超出保存为 JSON 产物，不可序列化返回 warning |
+| browser_run 图片 / 文件 | ≤4张，图片原始编码合计≤8 MiB；文件≤16项，只回元数据 |
+| worker stdout/stderr | 各≤32 KiB / 500行，有截断标记 |
+| 截图坐标缓存 | 最近≤32张，生命周期从实际捕获起计 |
+| 任务缓存 | 完成后最多30分钟，Host 重启失效；网站副作用不回滚 |
 
-TASK_NOT_FOUND、超时、断连和失败不能证明网站尚未收到请求。先观察页面/已有任务，再决定下一步；bash 不纳入 browser_task。
+TASK_NOT_FOUND、超时、断连和失败不能证明网站尚未收到请求，应观察当前状态和产物后再决定下一步。bash 不纳入 browser_task。接入方须允许至少12 MiB的工具结果与 SSE 数据帧；外部 Agent、模型或网关是否完整接收图片需独立联调，本仓库的验证不代表外部系统已经兼容。
+
+## read 的图片读取
+
+read 保留 path/offset/limit，新增 `multimodal`，默认 false；自定义非桌面空间同样支持，不新增文件查看工具。
+
+| 输入 | 行为 |
+|---|---|
+| 文本文件，任意 multimodal | 保持行号、offset/limit、默认500行及现有文本截断，不施加图片源大小限制 |
+| 图片，默认关闭 | MULTIMODAL_REQUIRED，提示设置 multimodal=true |
+| 支持图片，multimodal=true | 文件与尺寸说明加一个标准 MCP image 块 |
+| 图片同时指定 offset/limit | 协议 InvalidParams，说明行范围只适用于文本；显式传1/500也拒绝 |
+| 不支持、损坏或超限媒体 | 具体执行错误，isError=true；不退回文本读取 |
+
+按内容识别 JPEG、PNG、WebP、GIF，扩展名不决定处理方式。GIF、动态 WebP、APNG 只取首个合成帧并注明；不调用额外模型做 OCR 或图片描述。源文件≤10 MiB，解码画布≤1600万像素，返回最长边≤2000像素、不放大，输出≤4,500,000字节，每次一张。完整解码前检查尺寸、像素与解码预算；无需变换时尽量保留原编码，需要方向修正、抽帧或缩放时再编码，保留透明度，有界压缩失败明确报错。
+
+文件脚本复用真实路径、同一打开句柄、共享读锁和有界二进制读取；沿用原文件准入、四路队列、期限、取消及活动租约。内部图片报文有独立预算，包含 Base64/JSON；50 KiB 默认文本上限不变，媒体报文截断、缺失或解析失败直接报错。Rust 共享模块负责识别、校验、方向、缩放和编码，无需 Workspace 安装 Pillow。每个处理进程的图片管线最多并行两项，等待及处理计入请求期限；取消或超时不会提前释放仍在执行的同步解码/编码所占许可及活动租约，实际处理结束后回收。Server、Standalone 共用实现。
 
 ## 控制权及生命周期
 

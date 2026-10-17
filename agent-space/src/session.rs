@@ -1432,9 +1432,21 @@ impl Session {
     /// Only the fixed read/write/edit implementations use this bounded concurrent lane.
     /// The owned request retains workspace activity until actual guest completion.
     pub async fn exec_file(&self, cmd: &str, timeout: Duration) -> Result<ExecResult, EngineError> {
+        self.exec_file_report(cmd, timeout, None, CancellationToken::new())
+            .await
+            .map(|r| self.apply_truncation(r))
+    }
+    /// Internal fixed file script reports can carry bounded binary data. Their
+    /// caller validates the complete report before constructing MCP content.
+    pub async fn exec_file_report(
+        &self,
+        cmd: &str,
+        timeout: Duration,
+        report_bytes: Option<usize>,
+        cancel: CancellationToken,
+    ) -> Result<ExecResult, EngineError> {
         self.check_admission()?;
         let deadline = tokio::time::Instant::now() + timeout;
-        let cancel = CancellationToken::new();
         // 0 queued/preparing, 1 submitted, 2 abandoned before submission.
         let phase = Arc::new(std::sync::atomic::AtomicU8::new(0));
         let (resp, mut rx) = oneshot::channel();
@@ -1445,7 +1457,7 @@ impl Session {
             file_phase: Some(phase.clone()),
             cancel: cancel.clone(),
             max_lines: self.max_output_lines,
-            max_bytes: self.max_output_bytes,
+            max_bytes: report_bytes.unwrap_or(self.max_output_bytes),
             admission: self.admission.clone(),
             resp,
             _lease: ActivityLease::acquire(&self.workspace),
@@ -1473,11 +1485,47 @@ impl Session {
                 rx.await
             },
         };
-        result
-            .map_err(|_| {
-                EngineError::Other("file response lost: inspect the file before retrying".into())
-            })?
-            .map(|r| self.apply_truncation(r))
+        result.map_err(|_| {
+            EngineError::Other("file response lost: inspect the file before retrying".into())
+        })?
+    }
+    pub fn truncate_text(&self, result: ExecResult) -> ExecResult {
+        let mut result = result;
+        // Reproduce the execution owner's byte tail and keep-ended line tail
+        // before the existing host guard. A larger media-report lane must not
+        // change text output (including its final newline).
+        if result.stdout.len() > self.max_output_bytes {
+            let mut start = result.stdout.len() - self.max_output_bytes;
+            while !result.stdout.is_char_boundary(start) {
+                start += 1;
+            }
+            result.stdout = result.stdout[start..].to_owned();
+            result.truncated = true;
+        }
+        let mut ends = Vec::new();
+        let mut chars = result.stdout.char_indices().peekable();
+        while let Some((index, c)) = chars.next() {
+            if matches!(
+                c,
+                '\n' | '\r' | '\u{b}' | '\u{c}' | '\u{1c}'
+                    ..='\u{1e}' | '\u{85}' | '\u{2028}' | '\u{2029}'
+            ) {
+                let mut end = index + c.len_utf8();
+                if c == '\r' && chars.peek().is_some_and(|(_, c)| *c == '\n') {
+                    end = chars.next().unwrap().0 + 1;
+                }
+                ends.push(end);
+            }
+        }
+        if !result.stdout.is_empty() && ends.last() != Some(&result.stdout.len()) {
+            ends.push(result.stdout.len());
+        }
+        if ends.len() > self.max_output_lines {
+            result.stdout =
+                result.stdout[ends[ends.len() - self.max_output_lines - 1]..].to_owned();
+            result.truncated = true;
+        }
+        self.apply_truncation(result)
     }
     pub async fn exec_read(&self, cmd: &str, timeout: Duration) -> Result<ExecResult, EngineError> {
         self.submit(Some(cmd.into()), timeout)
@@ -2857,5 +2905,23 @@ mod tests {
             "should contain last line: {}",
             result.stdout
         );
+    }
+    #[test]
+    fn media_lane_text_tail_matches_owner_newlines_and_unicode_boundaries() {
+        assert_eq!(
+            make_session(2000, 5)
+                .truncate_text(make_result("abcdef\n"))
+                .stdout,
+            "cdef\n"
+        );
+        assert_eq!(
+            make_session(2000, 7)
+                .truncate_text(make_result("中hello\n"))
+                .stdout,
+            "hello\n"
+        );
+        let result = make_session(2, 100).truncate_text(make_result("one\r\ntwo\u{2028}three\n"));
+        assert_eq!(result.stdout, "two\u{2028}three\n");
+        assert!(result.truncated);
     }
 }

@@ -31,6 +31,15 @@ struct Job {
     cancel: tokio_util::sync::CancellationToken,
     finished: Mutex<Option<Instant>>,
 }
+#[derive(serde::Serialize)]
+pub struct ScreenOptions {
+    pub view: String,
+    pub page_id: Option<String>,
+    pub count: usize,
+    pub interval_ms: u64,
+    pub save_original: bool,
+    pub save_dir: Option<String>,
+}
 impl DesktopHub {
     pub fn new(session: Session) -> Self {
         Self {
@@ -153,13 +162,28 @@ impl DesktopHub {
         Ok(())
     }
     pub async fn observe(
-        &self,
+        self: &Arc<Self>,
         page_id: Option<String>,
         view: &str,
         recent: usize,
     ) -> Result<Value, EngineError> {
-        if !["dom", "page", "desktop"].contains(&view) || !(1..=10).contains(&recent) {
+        if !["dom", "ax", "page", "desktop"].contains(&view) || recent > 10 {
             return Err(EngineError::Other("INVALID_ARGUMENT".into()));
+        }
+        if ["page", "desktop"].contains(&view) {
+            return self
+                .screen(
+                    self.session.clone(),
+                    ScreenOptions {
+                        view: view.into(),
+                        page_id,
+                        count: 1,
+                        interval_ms: 0,
+                        save_original: false,
+                        save_dir: None,
+                    },
+                )
+                .await;
         }
         let _lease = self.session.activity_lease()?;
         let port = self.ensure().await?;
@@ -172,11 +196,10 @@ impl DesktopHub {
             Duration::from_secs(35),
         )
         .await?;
-        if let Some(capture) = value.get("capture") {
-            self.record_capture(capture).await;
+        if recent > 0 {
+            value["recent_tasks"] = json!(self.recent_jobs(recent).await);
         }
-        value["recent_tasks"] = json!(self.recent_jobs(recent).await);
-        value["control"] = serde_json::to_value(self.control.view("")).unwrap();
+        value["control"] = json!({"mode":self.control.view("").control});
         Ok(value)
     }
     pub async fn run(
@@ -191,17 +214,75 @@ impl DesktopHub {
                 "INVALID_ARGUMENT: code is 1..65536 UTF-8 bytes; timeout_secs is 1..600".into(),
             ));
         }
+        self.submit(
+            admitted,
+            json!({"code":code,"page_id":page_id}),
+            timeout,
+            true,
+        )
+        .await
+    }
+    pub async fn screen(
+        self: &Arc<Self>,
+        admitted: Session,
+        options: ScreenOptions,
+    ) -> Result<Value, EngineError> {
+        if !["page", "desktop"].contains(&options.view.as_str())
+            || !(1..=8).contains(&options.count)
+            || (options.count as u64 - 1).saturating_mul(options.interval_ms) >= 600000
+            || options.save_dir.as_ref().is_some_and(|directory| {
+                !options.save_original
+                    || !std::path::Path::new(directory).is_absolute()
+                    || directory.contains('\0')
+            })
+        {
+            return Err(EngineError::Other(
+                "INVALID_ARGUMENT: invalid screenshot count, schedule, or save directory".into(),
+            ));
+        }
+        self.submit(
+            admitted,
+            serde_json::to_value(options).map_err(|e| EngineError::Other(e.to_string()))?,
+            600,
+            false,
+        )
+        .await
+    }
+    async fn submit(
+        self: &Arc<Self>,
+        admitted: Session,
+        mut body: Value,
+        timeout: u64,
+        modifies: bool,
+    ) -> Result<Value, EngineError> {
         let lease = admitted.activity_lease()?;
-        let operation = self
-            .control
-            .begin()
-            .map_err(|e| EngineError::Other(e.into()))?;
+        let operation = if modifies {
+            match self.control.begin() {
+                Ok(operation) => Some(operation),
+                Err(error) => {
+                    let mut value = json!({"error":{"code":error,"message":error}});
+                    if error == "BUSY" {
+                        value["active_task_id"] = json!(self.control.active_task_id());
+                    }
+                    return Err(EngineError::Other(value.to_string()));
+                }
+            }
+        } else {
+            None
+        };
+        let cancellation = operation
+            .as_ref()
+            .map(|op| op.cancel.clone())
+            .unwrap_or_default();
         let job = Arc::new(Job {
-            id: uuid::Uuid::new_v4().to_string(),
+            id: operation
+                .as_ref()
+                .map(|operation| operation.id.clone())
+                .unwrap_or_else(|| uuid::Uuid::new_v4().to_string()),
             accepted: Instant::now(),
             status: Mutex::new(json!({"state":"running","phase":"preparing","terminal":false})),
             done: Notify::new(),
-            cancel: operation.cancel.clone(),
+            cancel: cancellation.clone(),
             finished: Mutex::new(None),
         });
         self.prune_jobs().await;
@@ -210,32 +291,36 @@ impl DesktopHub {
         let running = job.clone();
         tokio::spawn(async move {
             let _lease = lease;
-            let mut operation = Some(operation);
-            let cancellation = operation.as_ref().unwrap().cancel.clone();
+            let mut operation = operation;
             let deadline =
                 tokio::time::Instant::from_std(running.accepted) + Duration::from_secs(timeout);
             let mut submitted_port = None;
             let prepare = async {
                 let port = hub.ensure().await?;
                 admitted.authorize()?;
-                operation
-                    .as_ref()
-                    .unwrap()
-                    .check()
-                    .map_err(|e| EngineError::Other(e.into()))?;
+                if let Some(operation) = &operation {
+                    operation
+                        .check()
+                        .map_err(|e| EngineError::Other(e.into()))?;
+                }
                 let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
                 if remaining.is_zero() {
                     return Err(EngineError::Timeout(
                         "browser preparation deadline exceeded".into(),
                     ));
                 }
-                let body = json!({"task_id":running.id,"code":code,"page_id":page_id,"timeout_secs":remaining.as_secs()+u64::from(remaining.subsec_nanos()>0),"captures":hub.captures.lock().await.clone()});
+                body["task_id"] = json!(running.id);
+                body["timeout_secs"] =
+                    json!(remaining.as_secs() + u64::from(remaining.subsec_nanos() > 0));
+                if modifies {
+                    body["captures"] = json!(hub.captures.lock().await.clone());
+                }
                 submitted_port = Some(port);
                 request(
                     &hub.session,
                     port,
                     "POST",
-                    "/run",
+                    if modifies { "/run" } else { "/screen" },
                     Some(body),
                     Duration::from_secs(3),
                 )
@@ -274,8 +359,7 @@ impl DesktopHub {
                                 )
                                 .await
                                 .is_ok_and(|v| {
-                                    v["cleanup_confirmed"] == true
-                                        && (v["terminal"] == true || v["phase"] == "observing")
+                                    v["cleanup_confirmed"] == true && v["terminal"] == true
                                 }) {
                                     return;
                                 }
@@ -285,7 +369,9 @@ impl DesktopHub {
                         .await
                         .is_ok();
                         if !cleaned {
-                            operation.as_ref().unwrap().cleanup_failed();
+                            if let Some(operation) = &operation {
+                                operation.cleanup_failed();
+                            }
                         }
                     }
                     Err(error)
@@ -330,13 +416,23 @@ impl DesktopHub {
                                     value["state"] = json!("timed_out");
                                     value["error"] = json!("EXECUTION_TIMEOUT");
                                 }
-                                if value["phase"] == "observing" {
-                                    if value["cleanup_confirmed"] != true {
-                                        if let Some(op) = &operation {
-                                            op.cleanup_failed();
+                                if value["terminal"] == true {
+                                    if let Ok(details) = request(
+                                        &hub.session,
+                                        port,
+                                        "GET",
+                                        &format!("/task/{}", running.id),
+                                        None,
+                                        Duration::from_secs(5),
+                                    )
+                                    .await
+                                    {
+                                        if let Some(result) = details.get("result") {
+                                            value["result"] = result.clone();
                                         }
+                                    } else {
+                                        value["output_warning"] = json!("Task ended, but its outputs could not be retrieved. Inspect saved artifacts before repeating actions.");
                                     }
-                                    operation.take();
                                 }
                                 *running.status.lock().await = value.clone();
                                 if value["terminal"] == true {
@@ -384,6 +480,9 @@ impl DesktopHub {
                     "failed"
                 };
                 let mut status = json!({"task_id":running.id,"state":state,"terminal":true,"error":error.to_string(),"side_effects":if submitted_port.is_some(){"may_have_occurred"}else{"not_started"}});
+                if !modifies {
+                    status.as_object_mut().unwrap().remove("side_effects");
+                }
                 if hub.control.view("").control == crate::control::Mode::Blocked {
                     status["cleanup_confirmed"] = json!(false);
                 }
@@ -422,30 +521,7 @@ impl DesktopHub {
             .await;
         }
         let status = job.status.lock().await.clone();
-        let helper = self.helper.lock().await.clone();
         let mut value = status;
-        if value["terminal"] == true {
-            if let Some(helper) = helper {
-                if let Ok(details) = request(
-                    &self.session,
-                    helper.port,
-                    "GET",
-                    &format!("/task/{id}"),
-                    None,
-                    Duration::from_secs(5),
-                )
-                .await
-                {
-                    // Host acceptance/deadline is authoritative; fetch only the
-                    // large completed details from the guest cache.
-                    for key in ["result", "observation"] {
-                        if let Some(item) = details.get(key) {
-                            value[key] = item.clone();
-                        }
-                    }
-                }
-            }
-        }
         value["task_id"] = json!(id);
         if value["terminal"] == true {
             if let Some(result) = value.as_object_mut().and_then(|o| o.remove("result")) {
@@ -454,12 +530,6 @@ impl DesktopHub {
                         value[key] = item.clone();
                     }
                 }
-            }
-            if value["state"] != "succeeded" {
-                value.as_object_mut().unwrap().remove("observation");
-            }
-            if value["observation"].is_object() {
-                value["observation"]["recent_tasks"] = json!(self.recent_jobs(3).await);
             }
             if value["cleanup_confirmed"] == true {
                 value.as_object_mut().unwrap().remove("cleanup_confirmed");
@@ -474,9 +544,13 @@ impl DesktopHub {
         Ok(value)
     }
     async fn record_capture(&self, capture: &Value) {
+        if capture["source"] != "desktop" {
+            return;
+        }
         let mut captures = self.captures.lock().await;
         captures.retain(|c| c["image_id"] != capture["image_id"]);
         captures.push(capture.clone());
+        captures.sort_by_key(|capture| capture["at"].as_u64().unwrap_or_default());
         if captures.len() > 32 {
             captures.remove(0);
         }

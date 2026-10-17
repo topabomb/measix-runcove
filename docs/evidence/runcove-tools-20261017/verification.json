@@ -1,0 +1,127 @@
+{
+  "date": "2026-10-17",
+  "baseline_git": "61dbf67",
+  "source_sha256": "0c48b4974e55c4ae8a87a9626dbd95aeea27bcee6c5a618ce344428f1acb33b4",
+  "scope": "Source regression and one disposable Standalone with current development binaries; not final-image qualification or deployment.",
+  "rust_workspace": {
+    "passed": 315,
+    "failed": 0,
+    "ignored": 0,
+    "log_sha256": "12565adc97db2c97380ceb48561f07e6224053cc767a4f3adf451731bebb0cc7"
+  },
+  "final_affected_units": {
+    "mcp": {
+      "passed": 27,
+      "failed": 0,
+      "ignored": 0,
+      "log_sha256": "db6e05e86aa17a4f32981d3b637cfa87540f872d29c0b948fa9b1f2e005f7892"
+    },
+    "desktop_helper": {
+      "passed": 6,
+      "failed": 0,
+      "ignored": 0,
+      "log_sha256": "6f98e31693cb1a589aacfb5c423da87cbb8f77a22467a4c818d8f3f9fe0a1fec"
+    }
+  },
+  "python": {
+    "managed_cleanup": {
+      "passed": 8,
+      "log_sha256": "637ad693971420b70a01476cd5d51065ecc3c7af270c41cfe91899ec8c2db4bd"
+    },
+    "exec_owner": {
+      "passed": 5,
+      "log_sha256": "73e9778998561bc157ef945f748ff99d60fdb2e0e2994e82ebdca7c4b31c59e0"
+    },
+    "msb_patches": {
+      "passed": 4,
+      "log_sha256": "47a931010cc145b343b49a586ec395a22e69907259d77569f49cbaabc8197df6"
+    },
+    "protocol": {
+      "passed": 8,
+      "log_sha256": "f20104a77e52b3401cd617a708bf58c8fdf110fb69e936e241a67222334eb39f"
+    },
+    "dav_driver": {
+      "passed": 3,
+      "log_sha256": "edb4e2159c923ea45a32656078835cdf531c3d7b414c670dd786978875cb0678"
+    },
+    "package": {
+      "passed": 5,
+      "log_sha256": "1683faffcdfbe110d76dbff5223ec6c50e28683becee8feb448717707418bee4"
+    },
+    "workspace_transfer_root": {
+      "passed": 9,
+      "log_sha256": "0b91efbf18bf599405ac2d4b15a2eefd01b926339e841af31a3da4aa2361e4f9"
+    }
+  },
+  "build_checks": {
+    "tools-save-clippy.log": "b6aac7b527dfbe51d6b1c9222b008890399e5fe794b64550c7088d2a4eac0831",
+    "tools-save-standalone-clippy.log": "05327e1cb98a4e7ad2e0a43b11c75fb31db921981ef6ef00874bfd9cc22a4b9f",
+    "tools-save-server-build.log": "e6be4ab20e7b0b96dd9e320c1dc6b03453bb421e8b4339e1c82bd6984a5e5dea",
+    "tools-save-standalone-build.log": "fa689e0d0c5a8b304f8b43554691ca0f274fbcbad4b3992f207b08947f51569d",
+    "tools-save-ui-build.log": "7644f3abfae8062380e2c4466566521c6781da7698ef40fd28bc1927bb65f705"
+  },
+  "binaries_sha256": {
+    "agent-space-mcp": "e3e79bc41d0dc5f51f336fbd9841e9a7cc6f16409fbdd9ea521798dafadc2063",
+    "runcove-standalone": "a25ff5e86235d00050d0cb70062bddb7c0ecb1c83f00df14e6b443de837a075a",
+    "agent-space-static-http": "b0c9556df7201e5ee21cdc62bb86fbff2df33310cac787c241ddd49cc9c6174f",
+    "agent-space-webdav": "07b5311e02c716948f7e2d02037fb732e421a03b875e55d65216a06009c29d36",
+    "agent-space-desktop": "9d824d7a609818b5fe27fe78c878c4c7e7661c14cb9d53006eac4e8efecff479"
+  },
+  "standalone_quick": {
+    "scope": "development assets",
+    "image_id": "sha256:b13c172f4e8a21c42d256dbbea21ecb6fcd4a578847851c85e98fd47a25c2993",
+    "source_digest": "0c48b4974e55c4ae8a87a9626dbd95aeea27bcee6c5a618ce344428f1acb33b4",
+    "checks": [
+      "starts_without_kvm_msb_or_docker_socket",
+      "single_space_routes_have_no_management_or_user_selection",
+      "shared_nine_tools_and_nonroot_secret_isolation",
+      "profile_preparation_cannot_follow_user_links_with_root_privileges",
+      "real_shared_desktop_screenshot",
+      "root_task_owner_keeps_final_results_in_memory_without_following_user_paths",
+      "dav_workbench_and_mcp_edits_share_writable_user_ownership",
+      "artifact_listing_respects_payload_permissions_through_user_symlinks",
+      "publication_uses_single_space_address",
+      "stopped_data_child_dies_with_killed_control_owner_and_helper_recovers",
+      "rewritten_host_workbench_preserves_own_origin_and_nonce_checks",
+      "lost_desktop_owner_blocks_recreation_and_control_until_container_restart",
+      "active_mcp_sse_closes_on_graceful_shutdown",
+      "graceful_restart_preserves_workspace_and_expires_page_session"
+    ],
+    "passed": true,
+    "full": false,
+    "cleanup_passed": true
+  },
+  "standalone_live_suites": {
+    "test_browser_vm.py": {
+      "passed": 11,
+      "log_sha256": "4e28d1a000e3d48a9f5620162b7a63b01e4253bb300a29da2b7ca24bd133701d"
+    },
+    "test_media_vm.py": {
+      "passed": 8,
+      "log_sha256": "3637a93e4b4427bbc5d5c2ba6099445a4a9313cc96ef5d57f1162955db06fda7"
+    },
+    "test_desktop_files_vm.py": {
+      "passed": 3,
+      "log_sha256": "095b7f1c207c1c14fc317e7f11d6bd6d1b3d73d4776f0acd154ac8b560e32ef3"
+    }
+  },
+  "coverage": [
+    "read text compatibility and default-off multimodal",
+    "JPEG, PNG, WebP, GIF, EXIF orientation, alpha, animated GIF/APNG/WebP first frame",
+    "content sniffing, invalid and oversized input, near-10-MiB report, complete image over 50 KiB",
+    "DOM/AX separation, explicit browser outputs preserved on error/cancel/timeout, full multi-MiB MCP image result",
+    "one to eight timed desktop/page frames, pinned target closure, desktop capture with stopped Chromium",
+    "optional raw PNG storage, compact unique names, per-frame paths, authenticated HTTP download, storage denial and cancellation",
+    "parallel image reads and actual MCP cancellation behind an exclusive file lock"
+  ],
+  "full_driver": {
+    "status": "Stopped at user request after the three passing suites above; 300-second idle and UI suites not completed.",
+    "cleanup_passed": true
+  },
+  "not_run": [
+    "second deployment acceptance, per user request",
+    "final release image build and qualification",
+    "production change or registry push",
+    "external agent/model/gateway multimodal acceptance"
+  ]
+}
