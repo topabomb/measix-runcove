@@ -229,5 +229,34 @@
       },
       "sqlite": "3.51.3 linked symbol verified before stripping"
     }
+  },
+  "production_binary_update": {
+    "passed": true,
+    "checks": [
+      "production_nine_tool_catalog_and_optional_parameters",
+      "production_text_read_write_edit_compatibility",
+      "production_full_mcp_image_hash_and_default_disabled",
+      "production_browser_dom_ax_explicit_result_task_and_screen_sequence",
+      "production_original_png_authenticated_download_hash",
+      "production_web_publish_handler",
+      "original_users_configuration_volumes_runtime_and_other_services_preserved"
+    ],
+    "health": "healthy",
+    "user_count": 2,
+    "schema": 3,
+    "temporary_account_removed": true,
+    "runtime_error_lines": 0,
+    "original_user_records_preserved": true,
+    "source_revision": "b083dc4cdd348e32eced2d15be5a7b8358a8fa4f",
+    "source_sha256": "83fe72521872f94f191aa99b2c10a6131491ca59769a18b832466e1b2f4f873b",
+    "binaries": {
+      "agent-space-mcp": "623dc2a6198fcc3e48ad4e7e74f7ed5be6a4ea3231349a8672741106d0300196",
+      "agent-space-desktop": "75f3d3c182a6a579f53e0e442f0d68ed515bc96f197260385ab9d43420854292"
+    },
+    "scope": "Existing container binary override; no new image.",
+    "image_id": "sha256:413c3411b962e140b89f9f1a7195b4350ff92af2f76f3dec5a9fe3a00c129260",
+    "backups_created": false,
+    "migration_run": false,
+    "image_recreation_caveat": "Changes are in the existing container writable layer; recreating it from the unchanged base image requires reapplying the binaries."
   }
 }
