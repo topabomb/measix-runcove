@@ -4,7 +4,7 @@
 
 > Rust workspace: `agent-engine` + `agent-space-mcp` + `agent-space-static-http` + `agent-space-webdav` + `agent-space-desktop`
 
-权限遵循[执行身份与环境管理](docs/architecture.md#执行身份与环境管理)：Standalone 的 root 服务控制进程与 UID/GID1001 用户执行隔离，系统依赖由镜像提供；Server 的命令和文件操作在 VM 内使用 root。新增工具的文件访问沿用所在空间的命令/文件身份。
+权限遵循[执行身份与环境管理](docs/architecture.md#执行身份与环境管理)：Standalone 的 root 服务控制进程与 UID/GID1001 用户执行隔离，系统依赖由镜像提供；Server 的工具、浏览器和桌面在 VM 内统一使用 root，Chromium 使用 `--no-sandbox`，隔离边界是 VM。新增工具的文件访问沿用所在空间的命令/文件身份。
 
 ## Environment
 

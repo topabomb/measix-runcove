@@ -57,12 +57,12 @@ impl JsonSchema for WebPublishParams {
         let value: Value = json!({
             "type":"object",
             "properties":{
-                "action":{"type":"string","enum":["publish","get","list","unpublish"],"description":"Choose the JSON string \"publish\" to create or update a publication, \"get\" to retrieve one, \"list\" to list publications, or \"unpublish\" to remove one. For \"publish\", provide name and exactly one of file, directory, or port. For \"get\" and \"unpublish\", provide name."},
-                "name":{"type":["string","null"],"description":"Required for publish, get, and unpublish: 1-64 ASCII letters, digits, underscores, or hyphens."},
-                "file":{"type":["string","null"],"description":"For publish: absolute file path, such as /workspace/report.html."},
-                "directory":{"type":["string","null"],"description":"For publish: absolute directory path, such as /workspace/site."},
-                "port":{"type":["integer","null"],"description":"For publish: port of a running HTTP service that supports the published base path. Range: 1024-65535, with 2222, 5353, and 8080 reserved."},
-                "keep_alive_minutes":{"type":["integer","null"],"description":"Workspace keepalive duration in minutes for \"publish\". Defaults to the server setting, normally 10; accepts 1-1440 within server limits. Expiry ends the keepalive period; the publication remains available while the workspace is running."}
+                "action":{"type":"string","enum":["publish","get","list","unpublish"],"description":"\"publish\" creates or updates a publication; provide name and exactly one of file, directory, or port. \"get\" returns one publication and its credentials; provide name. \"list\" returns publications without credentials. \"unpublish\" removes the named publication without deleting files or stopping the application; provide name. get/list do not renew keepalive."},
+                "name":{"type":["string","null"],"description":"Publication name, required for publish, get, and unpublish: 1-64 ASCII letters, digits, underscores, or hyphens."},
+                "file":{"type":["string","null"],"description":"For publish: absolute path of an existing regular file, e.g. /workspace/report.html. The returned URL serves that file only, without exposing its parent directory."},
+                "directory":{"type":["string","null"],"description":"For publish: absolute path of an existing directory, e.g. /workspace/site. Publishes its contents, serving index.html if present or a directory listing otherwise."},
+                "port":{"type":["integer","null"],"description":"For publish: port of an HTTP application you have already started. Range 1024-65535; 2222, 5353, 8080, and ports used by Runcove services are reserved. Assets, API URLs, and redirects must work under the returned URL's path prefix; hard-coded root paths are not rewritten."},
+                "keep_alive_minutes":{"type":["integer","null"],"description":"For publish: minutes of protection from automatic idle shutdown, not a link lifetime. Omit or pass JSON null for the configured default; accepts 1-1440 within configured limits. Re-publishing can extend protection without accumulating durations. Expiry removes protection, not the publication."}
             },
             "required":["action"],"additionalProperties":true
         });

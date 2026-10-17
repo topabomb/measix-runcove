@@ -56,23 +56,25 @@ mod tests {
 }
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 pub(crate) struct ReadParams {
-    #[schemars(description = "Path of the file to read.")]
+    #[schemars(
+        description = "Path of a regular file in the connected Runcove space. Absolute paths are recommended; /workspace is the persistent work directory."
+    )]
     pub(crate) path: String,
     #[schemars(
-        description = "First text line to return, counting from 1. Defaults to 1; use a positive integer."
+        description = "Optional first text line, counted from 1; positive integer, default 1."
     )]
     #[serde(default)]
     #[schemars(range(min = 1))]
     pub(crate) offset: Option<u64>,
     #[schemars(
-        description = "Maximum number of text lines to return. Defaults to 500; use a positive integer."
+        description = "Optional maximum number of text lines to return; positive integer, default 500. Output size limits can shorten the result."
     )]
     #[serde(default)]
     #[schemars(range(min = 1))]
     pub(crate) limit: Option<u64>,
     #[serde(default)]
     #[schemars(
-        description = "Optional; defaults to false. Set to true to view JPEG, PNG, WebP, and GIF. Omit offset and limit for images. Animated images return only the first frame; text files retain normal text-reading behavior. Images allow at most 10 MiB source data and 16 million decoded pixels, and return at most 2000 pixels on the longest edge and 4,500,000 bytes."
+        description = "Optional; default false. Set true to return a JPEG, PNG, WebP, or GIF as an image with metadata. Omit offset and limit for images; animations return only the first frame. Images may be resized or compressed. Text reading is unchanged."
     )]
     pub(crate) multimodal: bool,
 }

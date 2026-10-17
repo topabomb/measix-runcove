@@ -294,6 +294,7 @@ async fn worker(job: &Job, params: &Run, observation: Value) -> anyhow::Result<V
     let spec = json!({"program":"node","args":[format!("{}/browser-worker.cjs",desktop::NODE)],"uid":process::workspace_uid(),
     "timeout_secs":remaining.as_secs_f64(),"max_bytes":32768,"max_lines":500,"cleanup_on_exit":true});
     let mut command = Command::new("python3");
+    process::workspace_env(&mut command);
     command
         .args([
             "-I",
@@ -302,7 +303,6 @@ async fn worker(job: &Job, params: &Run, observation: Value) -> anyhow::Result<V
             &spec.to_string(),
         ])
         .env("DISPLAY", ":1")
-        .env("HOME", "/home/desktop")
         .env("AGENT_TASK", worker_spec.to_string())
         .env("AGENT_RESULT", format!("{}/result.json", job.directory))
         .stdin(Stdio::null())
@@ -499,8 +499,8 @@ async fn main() -> anyhow::Result<()> {
     }
     if std::env::args().nth(1).as_deref() == Some("--prepare-workspace") {
         anyhow::ensure!(
-            unsafe { libc::geteuid() } == 1001,
-            "workspace preparation requires UID1001"
+            unsafe { libc::geteuid() } == process::workspace_uid(),
+            "workspace preparation requires workspace ownership"
         );
         return desktop::prepare_workspace();
     }
@@ -533,7 +533,7 @@ async fn main() -> anyhow::Result<()> {
             "subreaper failed"
         );
     }
-    // Desktop observers and Standalone scripts use UID1001. Permit traversal
+    // Standalone observers and scripts use UID1001. Permit traversal
     // while keeping the controller's identity and logs private in Standalone.
     if let Ok(instance) = std::env::var("AGENT_SPACE_HELPER_INSTANCE") {
         use std::os::unix::fs::PermissionsExt;

@@ -42,7 +42,7 @@ helper 二进制内嵌匹配的五份 JS 源码，启动时原子安装到 `/opt
 | `/workspace/.agent-space/desktop/profile/` | 持久浏览器 profile，包含敏感登录信息 |
 | `/workspace/agent-space/artifacts/` | 截图、下载、MHTML、大返回值等产物 |
 
-默认桌面 1440×900；VNC 5901、CDP 9222、helper 随机端口仅限 guest 回环，并禁止作为 web_publish 端口发布。Chromium、LXQt 和内部观察进程使用 UID1001。`browser_run` 用户脚本、截图保存及产物列表与 bash、文件工具使用相同的空间文件身份：Server 在 VM 内使用 root，Standalone 使用 UID1001，后者的 root 控制器保持私有。guest root 命令仍可修改这些目录，内部协作约束不构成对抗 root 的安全边界。
+默认桌面 1440×900；VNC 5901、CDP 9222、helper 随机端口仅限 guest 回环，并禁止作为 web_publish 端口发布。Chromium、LXQt、内部观察、`browser_run` 用户脚本、截图保存及产物列表与 bash、文件工具使用相同的空间文件身份：Server 在 VM 内统一使用 root，Standalone 使用 UID1001，后者的 root 控制器保持私有。Server 的 Chromium 使用 `--no-sandbox`，由 VM 隔离空间；Standalone 保持原有非 root 浏览器沙箱，详见[身份合同](architecture.md#执行身份与环境管理)。guest root 命令仍可修改这些目录，内部协作约束不构成对抗 root 的安全边界。
 
 Standalone 的 Agent 可管理项目和用户态依赖，系统依赖由部署镜像提供；root 服务控制进程与用户任务的权限边界见[架构说明](architecture.md#执行身份与环境管理)。
 
@@ -51,6 +51,8 @@ Standalone 的 Agent 可管理项目和用户态依赖，系统依赖由部署�
 ## 浏览器与截图工具
 
 工具及参数说明由 `tools/list` 完整提供，客户端不依赖 initialize.instructions。桌面空间共九个工具，自定义非桌面空间仍为五个；`screen_observe` 与三个 browser 工具使用同一镜像能力校验，不能绕过目录直接调用。
+
+工具说明中的 connected Runcove space 指当前连接绑定的命令执行环境和文件系统；`/workspace` 是其中的持久工作目录。desktop 指该空间的可见桌面，browser 指桌面上人和 Agent 共用的浏览器，tab 指其中的标签页。两组工具共享文件路径，路径按所属空间解释；与本地同名工具使用相同路径字符串不代表同一文件。截图帧由 image_id 标识，浏览器或截图任务由 task_id 标识，分别与标签页的 page_id 区分。
 
 | 工具 | 参数与默认值 | 返回 |
 |---|---|---|
@@ -96,9 +98,9 @@ const file = await output.download(await pending);
 return {path:file.path, bytes:file.bytes};
 ```
 
-`output.file(path)` 只登记现有工作区文件的元数据，不复制或自动预览；`output.image(bufferOrCapture)` 显式返回 PNG/JPEG/WebP；`output.download(download)` 保存并登记下载；`output.saveMhtml(page,path)` 保存并登记 MHTML。`desktop.screenshot()` 返回 Capture，使用 `await output.image(await desktop.screenshot())` 显示。已登记输出原子检查点保存，后续脚本报错、超时或取消仍返回可用产物和日志。成功只表示脚本完成，不解释返回值中业务字段的含义；不自动采集最终 DOM、AX 或截图。
+`output.file(path)` 只登记 `/workspace` 内现有普通文件的元数据，不复制或自动预览；`output.image(bufferOrCapture)` 显式返回 PNG/JPEG/WebP；`output.download(download)` 保存到 artifacts 并登记下载，返回文件元数据；`output.saveMhtml(page,path)` 保存并登记 MHTML，目标路径须在 `/workspace` 内。`desktop.screenshot()` 返回 Capture，使用 `await output.image(await desktop.screenshot())` 显示。已登记输出原子检查点保存，后续脚本报错、超时或取消仍返回可用产物和日志。成功只表示脚本完成，不解释返回值中业务字段的含义；不自动采集最终 DOM、AX 或截图。
 
-指针接口为 `desktop.click({image_id,x,y,button?})`、`desktop.drag({image_id,x,y,to_x,to_y})`、`desktop.scroll({image_id,x,y,delta})`；其他接口为 `desktop.type(text)`、`desktop.press(key)`、`desktop.setWindowMode('normal'|'maximized'|'fullscreen')`。原生对话框或页面无响应时不新建 Playwright 附着，改用 desktop helpers。参数形状错误给出真实签名，截图过期或前台窗口改变给出 STALE_OBSERVATION。
+指针接口为 `desktop.click({image_id,x,y,button?})`、`desktop.drag({image_id,x,y,to_x,to_y})`、`desktop.scroll({image_id,x,y,delta})`；click 的 button 为1左键（默认）、2中键、3右键，drag 按住左键，scroll 的 delta 为-30..30的整数滚轮步数，正数向下、负数向上。其他接口为 `desktop.type(text)`、`desktop.press(key)`、`desktop.setWindowMode('normal'|'maximized'|'fullscreen')`，键名示例为 `Enter`、`Escape`、`ctrl+a`。对某个标签页进行桌面输入前，先调用 `page.bringToFront()`，再捕获桌面确认目标。若任务开始时已有原生对话框或所选页面无响应，该次任务的 page/context 不可用，不新建 Playwright 附着，改用 desktop helpers 恢复后再观察；窗口模式设置也要求 page/context 可用。参数形状错误给出真实签名，截图过期或前台窗口改变给出 STALE_OBSERVATION。
 
 ### 任务、错误与输出预算
 
@@ -116,7 +118,7 @@ return {path:file.path, bytes:file.bytes};
 | 截图坐标缓存 | 最近≤32张，生命周期从实际捕获起计 |
 | 任务缓存 | 完成后最多30分钟，Host 重启失效；网站副作用不回滚 |
 
-TASK_NOT_FOUND、超时、断连和失败不能证明网站尚未收到请求，应观察当前状态和产物后再决定下一步。bash 不纳入 browser_task。接入方须允许至少12 MiB的工具结果与 SSE 数据帧；外部 Agent、模型或网关是否完整接收图片需独立联调，本仓库的验证不代表外部系统已经兼容。
+browser_task 的 cancel 是取消请求，wait_secs 对 wait/cancel 均适用；本次等待结束后仍可能返回运行中状态，按公开 state 字段判断：running 表示尚未结束，succeeded/failed/timed_out/cancelled 为终态。TASK_NOT_FOUND、超时、断连和失败不能证明网站尚未收到请求，应观察当前状态和产物后再决定下一步。bash 不纳入 browser_task。接入方须允许至少12 MiB的工具结果与 SSE 数据帧；外部 Agent、模型或网关是否完整接收图片需独立联调，本仓库的验证不代表外部系统已经兼容。
 
 ## read 的图片读取
 
@@ -159,6 +161,10 @@ read 保留 path/offset/limit，新增 `multimodal`，默认 false；自定义�
 登录使用现有空间 MCP Token，不使用 DAV token。服务端只保留 space/keyId 绑定，页面随机会话 Cookie 为 HttpOnly、SameSite=Strict、12小时绝对有效；HTTPS Origin 使用 Secure。写 API/WS 还验证随机 nonce，拒绝跨站请求；每次请求重验空间状态和凭据，撤销也关闭连接。Host 重启页面会话失效，UI明确要求重新登录。Token 不写 URL、localStorage、日志或 guest；配置面板仅在当前页面内存可显式展示/复制/二维码分享，应按凭据对待。
 
 工作台文件 GET/HEAD/PUT 复用现有 DAV helper 的受限文件系统与流式代理。上传全程持有VM活动租约，不占用浏览器控制门禁，原子提交且禁止覆盖；断开不提交半文件。下载支持 Range。1GiB文件通过真实HTTP流传输，模型/MCP不拼接原始字节。浏览器网站上传引用 guest 中的 `/workspace/...` 路径；这与本机上传到空间是两个连续步骤。
+
+本机文件先通过工作台上传，默认落在 `/workspace/<文件名>`；Agent 已生成的文件直接使用空间内绝对路径。网站上传优先 `locator.setInputFiles(path)`；需要网页文件选择事件时先等待 `page.waitForEvent('filechooser')`，再点击并 `setFiles(path)`。原生上传对话框已经打开时，先 `screen_observe(view='desktop')`，使用 `desktop.press('ctrl+l')`、`desktop.type(绝对路径)`，再基于新桌面截图点击“打开”；本次任务仅使用 desktop 控件，关闭对话框后重新观察页面。以网站实际接收的字节或成功状态确认完成，不能只凭文件名已显示判断。
+
+自动化下载先注册 `page.waitForEvent('download')`，触发后调用 `output.download(download)`，保存并登记到 `/workspace/agent-space/artifacts`。人工桌面触发的普通下载使用 Chromium 的下载目录，默认也是该产物目录；自选路径继续保留。浏览器的临时下载目录与浏览器进程使用同一空间身份，避免下载被临时目录权限拒绝。
 
 文件面板不列 profile，但空间拥有者通过原文件工具有权读工作区。Web发布只允许可信内容；同源页面不能依赖 Cookie Path 实现脚本隔离。外网TLS和网关由部署方负责，入口要求见[部署指南](deployment.md)。
 

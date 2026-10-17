@@ -1,0 +1,152 @@
+{
+  "date": "2026-10-17",
+  "source_base": "5c850aea527a4cfe5672012ea31d24f509323015",
+  "source_sha256": "04da2346492e085c299b7a74f4cd43afe28ccb996c23302c93d2158ddb29b9e6",
+  "scope": "Server root execution unification; Standalone identity retained; current tool descriptions preserved.",
+  "frozen_files_sha256": {
+    "target/debug/agent-space-mcp": "c61dc902ee4237493861469b07822cf9cf975bec4e54183f94fb0516483da49b",
+    "target/debug/agent-space-desktop": "b4688a6359ae0b8d4ac56b771c73f0c66ee063dad437503ca1efcdd865b4c8da",
+    "target/debug/agent-space-static-http": "8974c38bcb0ac62b9a300768fa0de02889fc986ff3ca28d18570230799a17f45",
+    "target/debug/agent-space-webdav": "3b06db27a6de3f3046b682f1e7627569fe8a9d83d74b6d230c9fcbfb49a39c85",
+    "target/debug/runcove-standalone": "e3352a7b2e23b075b99ec38312910865ce0711f55421568657a67493bf836f13",
+    "target/identity-20261017/agent-space-mcp": "7ac22ad293d1d13c7289d12497366f27870320b23473360dae80b4c9828a8011",
+    "target/identity-20261017/agent-space-desktop": "f0bb858735979b6a98f779767919584e8635e97a705533d4b7acca734c9f5ae5",
+    "tests/test_browser_vm.py": "c84e702691ee1ee2bb140926b79f32e786681170b00ff32af73294c86bf6ba9f"
+  },
+  "source_checks": {
+    "rust_unit_passed": 124,
+    "mcp_contract_passed": 5,
+    "managed_cleanup_passed": 8,
+    "exec_owner_passed": 5,
+    "package_passed": 5,
+    "workspace_all_target_clippy": true,
+    "standalone_no_default_lib_bin_clippy": true,
+    "standalone_no_msb_build_and_dependency_graph": true,
+    "fmt": true,
+    "logs_sha256": {
+      "unit.log": "656dd33ff19b29381ade82febc2daf0a76a42921d37faee36606f125a0b2d96f",
+      "desktop-unit.log": "20e494cf9c9263c89c94c61392213174ec6a6e312217e341899bdb8a95861f10",
+      "frozen-contracts.log": "8d97be15ca0d3a7b84647a1ff3cc94a658014b1c90396372959c506b489594aa",
+      "managed.log": "322e9bec5d6bbde47d6476008f309469c1e42048ed96320a3bae52af8811e27a",
+      "exec.log": "44ccf28f396c89db8cc44b157ffb0aa1eecc277902e949a6eb918b7157469546",
+      "package.log": "e7b106218234ce20024c04efc8fc28a1c396fadd7703e3e0a18a28b6821c90e8",
+      "frozen-clippy.log": "148008a3dc2c6b75a26c1aeb8523e537a1b87f96be0df0e649a3ed5d2efd948f",
+      "frozen-standalone-clippy.log": "60752725ea6f194f20ebc7150276eef9d351f09c52a8c6e784e05f6a10ca45df"
+    }
+  },
+  "release": {
+    "sqlite_linked_version": "3.51.3",
+    "binaries": {
+      "agent-space-mcp": "7ac22ad293d1d13c7289d12497366f27870320b23473360dae80b4c9828a8011",
+      "agent-space-desktop": "f0bb858735979b6a98f779767919584e8635e97a705533d4b7acca734c9f5ae5"
+    }
+  },
+  "server": {
+    "target": "server",
+    "image": "runcove-server:runcove-fc010ed2726e9bec",
+    "image_id": "sha256:413c3411b962e140b89f9f1a7195b4350ff92af2f76f3dec5a9fe3a00c129260",
+    "scope": "development assets",
+    "full": false,
+    "checks": [
+      "shared_test_browser_vm.py",
+      "shared_test_media_vm.py"
+    ],
+    "passed": true,
+    "source_digest": "04da2346492e085c299b7a74f4cd43afe28ccb996c23302c93d2158ddb29b9e6",
+    "suite_logs": {
+      "test_browser_vm.py.log": "a19d595bcafbee5a334994d263c9b6ed48e656ebad988538a43c7ce893c25beb",
+      "test_media_vm.py.log": "4dc01d819c38aac09887003a8644fa92469eb3056b1fce793ba2af1d83abcdba"
+    },
+    "cleanup_passed": true,
+    "browser_tests_passed": 14,
+    "media_tests_passed": 9,
+    "upload_bytes": 1048576,
+    "upload_sha256": "92833255be33851d2c390470aed862f886ab8f471a61385ff809aafd6cd9da8f",
+    "native_upload": "Real GTK chooser; private 0700 directory, 0600 file; Unicode and spaces in absolute path; HTTP receiver verified bytes and SHA-256.",
+    "download": "Playwright event/output.download and desktop keypress; SHA-256 checked; ordinary download also checked after script failure."
+  },
+  "standalone": {
+    "target": "standalone",
+    "scope": "development assets",
+    "image": "runcove-standalone:qualify",
+    "checks": [
+      "starts_without_kvm_msb_or_docker_socket",
+      "single_space_routes_have_no_management_or_user_selection",
+      "shared_nine_tools_and_nonroot_secret_isolation",
+      "profile_preparation_cannot_follow_user_links_with_root_privileges",
+      "real_shared_desktop_screenshot",
+      "root_task_owner_keeps_final_results_in_memory_without_following_user_paths",
+      "dav_workbench_and_mcp_edits_share_writable_user_ownership",
+      "artifact_listing_respects_payload_permissions_through_user_symlinks",
+      "publication_uses_single_space_address",
+      "stopped_data_child_dies_with_killed_control_owner_and_helper_recovers",
+      "shared_test_browser_vm.py",
+      "shared_test_media_vm.py",
+      "rewritten_host_workbench_preserves_own_origin_and_nonce_checks",
+      "lost_desktop_owner_blocks_recreation_and_control_until_container_restart",
+      "active_mcp_sse_closes_on_graceful_shutdown",
+      "graceful_restart_preserves_workspace_and_expires_page_session"
+    ],
+    "passed": true,
+    "image_id": "sha256:b13c172f4e8a21c42d256dbbea21ecb6fcd4a578847851c85e98fd47a25c2993",
+    "source_digest": "04da2346492e085c299b7a74f4cd43afe28ccb996c23302c93d2158ddb29b9e6",
+    "suite_logs": {
+      "test_browser_vm.py.log": "8196871246e53ece6a782d4a7ebca9e982e32679daf152d0aaa1b8847b5672fa",
+      "test_media_vm.py.log": "6888416375a71363f291a8c5a7339e7f652c024916f234f7bdf6dd108157930d"
+    },
+    "full": false,
+    "tools_only": true,
+    "cleanup_passed": true,
+    "browser_tests_passed": 13,
+    "browser_tests_skipped": 1,
+    "skip_reason": "Server-only UID1001 profile reopening test",
+    "media_tests_passed": 9
+  },
+  "legacy_profile": {
+    "target": "server",
+    "image": "runcove-server:runcove-fc010ed2726e9bec",
+    "image_id": "sha256:413c3411b962e140b89f9f1a7195b4350ff92af2f76f3dec5a9fe3a00c129260",
+    "scope": "development assets",
+    "full": false,
+    "checks": [
+      "legacy_helper_real_uid1001_chromium_profile_created",
+      "root_helper_restores_legacy_uid1001_tabs_cookie_and_localstorage_after_server_restart"
+    ],
+    "passed": true,
+    "source_digest": "04da2346492e085c299b7a74f4cd43afe28ccb996c23302c93d2158ddb29b9e6",
+    "suite_logs": {},
+    "cleanup_passed": true,
+    "old_helper_sha256": "368f1172de756180ef0ee0b88d2e409ccb907631788bd27ab513524dab23a121",
+    "new_helper_sha256": "b4688a6359ae0b8d4ac56b771c73f0c66ee063dad437503ca1efcdd865b4c8da",
+    "old_uid": 1001,
+    "new_uid": 0,
+    "tabs_cookie_localstorage_preserved": true
+  },
+  "review": {
+    "completed": true,
+    "unresolved_findings": 0,
+    "checked": [
+      "All hardcoded UID1001 call sites are Standalone-only or central identity selection.",
+      "Server Chromium root requires --no-sandbox; VM isolation and root HOME documented.",
+      "Only reserved directories prepared; existing profile and workspace contents retained.",
+      "Standalone secret, root-path, symlink, payload and controller boundaries verified.",
+      "Production staging, dependency checks, atomic replacement, preservation checks and temporary-account cleanup procedure reviewed."
+    ]
+  },
+  "earlier_attempts": [
+    "Description edits during an early qualification failed its source-input consistency check; final source and binaries were frozen and rerun.",
+    "A profile test incorrectly expected a Chromium-only reopen to rewrite directory ownership; corrected to require retained UID1001 ownership and intact data.",
+    "Docker Desktop cached a replaced bind inode in the first legacy-profile probe; the stopped-container asset now updates in place, and the probe refreshes its ephemeral port and HTTP fixture after restart; failed resources cleaned.",
+    "The SQLite symbol guard rejected an initial bundled 3.46.0 build; the release candidate was rebuilt with pinned static 3.51.3."
+  ],
+  "production_binary_update": {
+    "status": "pending",
+    "backups_created": false,
+    "migration_run": false
+  },
+  "not_qualified": [
+    "new release image or offline package",
+    "long idle and full UI suite",
+    "third-party website or external model integration"
+  ]
+}

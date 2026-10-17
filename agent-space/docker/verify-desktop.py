@@ -9,13 +9,18 @@ from qualification import run_shared
 from release_identity import source_digest
 ROOT=Path(__file__).resolve().parents[1]
 def main():
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--image',required=True);p.add_argument('--lifecycle',type=Path,required=True)
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--image',required=True);p.add_argument('--lifecycle',type=Path)
+ p.add_argument('--tools-only',action='store_true',help='Run real VM browser and image regressions; not full release qualification')
  p.add_argument('--development-assets',action='store_true',help='Bind current debug binaries/UI for source regression; not release qualification')
  a=p.parse_args()
- image_id=docker('image','inspect',a.image,'--format','{{.Id}}').strip();lifecycle=json.loads(a.lifecycle.read_text())
- assert lifecycle.get('passed') and lifecycle.get('cleanup_passed') and lifecycle.get('image_id')==image_id and lifecycle.get('idle_seconds',0)>300,'matching complete lifecycle qualification required'
+ image_id=docker('image','inspect',a.image,'--format','{{.Id}}').strip()
+ if not a.tools_only:
+  assert a.lifecycle,'matching complete lifecycle qualification required'
+  lifecycle=json.loads(a.lifecycle.read_text())
+  assert lifecycle.get('passed') and lifecycle.get('cleanup_passed') and lifecycle.get('image_id')==image_id and lifecycle.get('idle_seconds',0)>300,'matching complete lifecycle qualification required'
  name='runcove-desktop-'+uuid.uuid4().hex[:10];output=ROOT/'target/server-desktop-verification'/name;output.mkdir(parents=True,mode=0o700)
- report={'target':'server','image':a.image,'image_id':image_id,'scope':'development assets' if a.development_assets else 'final image','full':True,'checks':[],'passed':False,'idle_seconds':lifecycle['idle_seconds'],'lifecycle_report_sha256':hashlib.sha256(a.lifecycle.read_bytes()).hexdigest()}
+ report={'target':'server','image':a.image,'image_id':image_id,'scope':'development assets' if a.development_assets else 'final image','full':not a.tools_only,'checks':[],'passed':False}
+ if not a.tools_only:report.update(idle_seconds=lifecycle['idle_seconds'],lifecycle_report_sha256=hashlib.sha256(a.lifecycle.read_bytes()).hexdigest())
  a.image=image_id
  previous_token=os.environ.get('AGENT_SPACE_ADMIN_TOKEN')
  token=secrets.token_urlsafe(40);os.environ['AGENT_SPACE_ADMIN_TOKEN']=token;volume=None;container=None;users={}
@@ -48,7 +53,7 @@ def main():
    body={'username':name,'image':image if name=='desktop' else 'nikolaik/python-nodejs:python3.12-nodejs22-slim'}
    status,raw=request(port,'POST','/admin/v1/users',body);assert status==201,(status,raw.decode(errors='replace'));users[name]=json.loads(raw)
   (output/'port').write_text(str(port));(output/'target').write_text('server');secret=output/'users.json';secret.write_text(json.dumps(users));secret.chmod(0o600)
-  report['suite_logs']=run_shared(output,os.environ,check)
+  report['suite_logs']=run_shared(output,os.environ,check,tools_only=a.tools_only)
   if a.development_assets:assert source_digest()==report['source_digest'],'source changed during qualification'
   report['passed']=True
  finally:

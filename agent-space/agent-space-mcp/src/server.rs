@@ -21,14 +21,18 @@ use tracing::{error, info, instrument, warn};
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 struct BashParams {
     #[schemars(
-        description = "Bash command or script to execute. Supply input through arguments, files, or shell redirection."
+        description = "Bash command or script. Put command arguments in this string; provide stdin with a pipe, here-document, or redirection."
     )]
     command: String,
-    #[schemars(description = "Execution timeout in seconds; defaults to the workspace setting.")]
+    #[schemars(
+        description = "Optional command execution limit in seconds; positive integer. Omit or pass JSON null to use the configured default."
+    )]
     #[serde(default)]
     #[schemars(range(min = 1))]
     timeout_secs: Option<u64>,
-    #[schemars(description = "Working directory; defaults to /workspace.")]
+    #[schemars(
+        description = "Optional working directory, used only for this call; defaults to /workspace. Absolute paths are recommended. An invalid directory prevents command execution."
+    )]
     #[serde(default)]
     #[serde(deserialize_with = "publish_params::optional_string")]
     workdir: Option<String>,
@@ -36,21 +40,29 @@ struct BashParams {
 
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 struct WriteParams {
-    #[schemars(description = "Destination file path in Runcove's remote workspace.")]
+    #[schemars(
+        description = "Destination file path in the connected Runcove space. Absolute paths are recommended; /workspace is the persistent work directory."
+    )]
     path: String,
-    #[schemars(description = "Complete text contents to save as UTF-8.")]
+    #[schemars(
+        description = "Complete new text, saved as UTF-8; an empty string writes an empty file."
+    )]
     content: String,
 }
 
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 struct EditParams {
-    #[schemars(description = "Path of the text file to edit in Runcove's remote workspace.")]
+    #[schemars(
+        description = "Path of the existing UTF-8 file in the connected Runcove space. Absolute paths are recommended."
+    )]
     path: String,
     #[schemars(
-        description = "Exact text to replace, including whitespace and line breaks; must occur once."
+        description = "Exact text to match, including whitespace and line breaks. Exclude the line-number prefixes displayed by read."
     )]
     old_text: String,
-    #[schemars(description = "Replacement text; an empty string removes the matched text.")]
+    #[schemars(
+        description = "Text to insert in place of old_text; an empty string deletes the match."
+    )]
     new_text: String,
 }
 
@@ -66,19 +78,19 @@ enum BrowserView {
 struct ObserveParams {
     #[serde(default)]
     #[schemars(
-        description = "Target tab ID. Omit or use null to select the focused tab, falling back to an available tab."
+        description = "Optional tab ID from tabs[].page_id. Omit or pass JSON null to choose the focused tab, falling back to an available tab. Invalid IDs return PAGE_NOT_FOUND without choosing another tab. Ignored for compatibility view=\"desktop\"."
     )]
     #[serde(deserialize_with = "publish_params::optional_string")]
     page_id: Option<String>,
     #[serde(default)]
     #[schemars(
-        description = "Choose dom for visible content and controls, or ax for the accessibility tree. Defaults to dom. Use screen_observe for screenshots; legacy page and desktop views remain supported."
+        description = "Optional content view: \"dom\" (default) returns visible text, controls, and current values; \"ax\" returns the accessibility tree. Use screen_observe for screenshots. Compatibility values \"page\" and \"desktop\" return that tool's screenshot-task result."
     )]
     #[serde(deserialize_with = "publish_params::optional_choice")]
     view: Option<BrowserView>,
     #[serde(default)]
     #[schemars(
-        description = "Number of recent task summaries to include, newest first. Defaults to zero, which omits task history."
+        description = "Optional number of recent task summaries, newest first: 0-10, default 0 (no history)."
     )]
     #[schemars(range(min = 0, max = 10))]
     recent_tasks_limit: Option<usize>,
@@ -92,12 +104,12 @@ enum ScreenView {
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 struct ScreenParams {
     #[schemars(
-        description = "Choose desktop for the entire desktop, including native dialogs, or page for the selected tab's viewport."
+        description = "Required target: \"desktop\" captures the desktop of the connected Runcove space, including native dialogs; \"page\" captures a tab's viewport in its browser."
     )]
     view: ScreenView,
     #[serde(default, deserialize_with = "publish_params::optional_string")]
     #[schemars(
-        description = "Optional target tab ID for page view. Omit or use null to select the focused tab once, falling back to an available tab; the sequence keeps that tab. Ignored for desktop view."
+        description = "Optional tab ID for view=\"page\", from browser_observe's tabs[].page_id. Omit or pass JSON null to choose the focused tab, falling back to an available tab. Selected once for the sequence; invalid or closed targets cause an error without switching tabs. Ignored for view=\"desktop\"."
     )]
     page_id: Option<String>,
     #[serde(default)]
@@ -108,36 +120,55 @@ struct ScreenParams {
     count: Option<usize>,
     #[serde(default)]
     #[schemars(
-        description = "Optional minimum milliseconds between capture starts. Defaults to 1000; zero captures back to back. Applies when count exceeds one; the whole observation must fit within 600 seconds.",
+        description = "Optional minimum time between capture starts, in milliseconds; default 1000. Used only when count exceeds 1. Zero captures back to back; actual gaps may be longer. The whole observation, including preparation and waiting, must fit within 600 seconds.",
         range(min = 0)
     )]
     interval_ms: Option<u64>,
     #[serde(default)]
     #[schemars(
-        description = "Optional: save each original PNG before viewing optimizations. Defaults to false. Saved file paths are returned in files, in capture order."
+        description = "Optional: save original PNG files in addition to returned images; default false. Saved paths appear in files in capture order."
     )]
     save_original: bool,
     #[serde(default, deserialize_with = "publish_params::optional_string")]
     #[schemars(
-        description = "Optional absolute writable directory for saved originals. Requires save_original=true; defaults to /workspace/agent-space/artifacts. Missing directories are created when the parent is writable. Files use screen-<10 random letters or digits>.png without overwriting existing files."
+        description = "Optional absolute directory for original PNGs; requires save_original=true. Defaults to /workspace/agent-space/artifacts. Uses the same filesystem as this space's command and file tools. Creates missing directories if permitted and never overwrites files. Choose a path under /workspace for downloadable files."
     )]
     save_dir: Option<String>,
 }
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 struct RunParams {
     #[schemars(
-        description = "JavaScript async function body or async function, up to 65,536 UTF-8 bytes. Receives page and context (Playwright), desktop, output, and artifacts (a writable directory path). Import modules with await import(...), await operations, and return JSON facts. Navigate with await page.goto(url); prefer element, URL, or event waits. Upload with locator.setInputFiles(path), or await page.waitForEvent('filechooser') registered before the triggering action. Register page.waitForEvent('download') before triggering a download, then await output.download(download). output.file(path) registers file metadata; output.image(bufferOrCapture) emits a PNG, JPEG, or WebP image; output.saveMhtml(page, path) saves and registers an MHTML file. Use writable paths, normally under artifacts. Desktop helpers: await desktop.screenshot() returns a Capture; await output.image(capture) displays it. Pointer signatures are desktop.click({image_id,x,y,button?}), desktop.drag({image_id,x,y,to_x,to_y}), desktop.scroll({image_id,x,y,delta}); coordinates use a desktop screenshot's returned pixels, with an image_id less than 60 seconds old and the same foreground window. Other helpers: desktop.type(text), desktop.press(key), desktop.setWindowMode('normal'|'maximized'|'fullscreen'). Use desktop helpers for native dialogs or an unresponsive tab."
+        description = r#"JavaScript async function body or async function, 1-65,536 UTF-8 bytes. Receives page (the selected Playwright tab), context (the shared browser context), desktop (desktop controls), output (explicit outputs), and artifacts (the output directory path, /workspace/agent-space/artifacts). Await async calls, import modules with await import(...), and return a JSON-serializable value. Variables do not persist between calls.
+
+Browser: reuse page; navigate with await page.goto(url). Use await context.newPage() when additional tabs are needed, and close temporary tabs you create. Do not launch another browser, create another context, or close the shared browser or context. Wait for elements, URLs, or events. Use await page.evaluate(...) for code that runs inside the web page. Before desktop input to a tab, bring it forward with await page.bringToFront(). If the task starts with a native dialog or an unresponsive tab, page/context are unavailable for that task; recover with desktop controls, then observe again.
+
+Files use absolute paths in this space, not paths on the caller's computer. Prefer await locator.setInputFiles(path) for uploads. For a file chooser, register before clicking:
+const chooser = page.waitForEvent('filechooser');
+await locator.click();
+await (await chooser).setFiles(path);
+If a native upload dialog is already open, observe it with screen_observe(view='desktop'), use await desktop.press('ctrl+l') and await desktop.type(absolutePath), then click Open using a fresh desktop capture. Verify the website received the file; a selected filename alone does not confirm an upload.
+For downloads, register before triggering:
+const pending = page.waitForEvent('download');
+await locator.click();
+const file = await output.download(await pending);
+output.download saves under artifacts and returns registered file metadata.
+
+Outputs: await output.file(path) registers an existing regular file under /workspace and returns metadata, not its contents. await output.image(bufferOrCapture) emits a PNG, JPEG, or WebP image from a Buffer or desktop Capture. await output.saveMhtml(page, path) saves and registers MHTML under /workspace. Use artifacts for generated files. Per task: 16 registered files and 4 images totaling 8 MiB of image data. JSON return values over 32 KiB are saved as files. Already emitted outputs survive a later error, timeout, or cancellation.
+
+Desktop: await desktop.screenshot() returns a Capture; await output.image(capture) emits its image. Pointer calls: await desktop.click({image_id,x,y,button?}), await desktop.drag({image_id,x,y,to_x,to_y}), await desktop.scroll({image_id,x,y,delta}). Use image_id from a screen_observe desktop frame or a desktop Capture, with coordinates in the returned image's pixels. The capture must be under 60 seconds old with the same foreground window; otherwise capture again. Page screenshots cannot supply desktop coordinates. Click buttons: 1=left (default), 2=middle, 3=right. Drag holds the left button. Scroll delta: integer -30..30 wheel steps, positive down, negative up.
+
+Other controls: await desktop.type(text), await desktop.press(key), await desktop.setWindowMode('normal'|'maximized'|'fullscreen'). Key examples: 'Enter', 'Escape', 'ctrl+a'. Window mode changes require page/context to be available."#
     )]
     code: String,
     #[serde(default)]
     #[schemars(
-        description = "Target tab ID. Omit or use null to select the focused tab, falling back to an available tab. Selection does not bring a tab to the foreground."
+        description = "Optional tab ID from browser_observe's tabs[].page_id. Omit or pass JSON null to choose the focused tab, falling back to an available tab. Creates a blank tab if automatic selection finds none and no native dialog is open. Invalid IDs return PAGE_NOT_FOUND without switching tabs. Selection does not bring the tab to the foreground."
     )]
     #[serde(deserialize_with = "publish_params::optional_string")]
     page_id: Option<String>,
     #[serde(default)]
     #[schemars(
-        description = "Total task deadline in seconds, including preparation and execution. Defaults to 60; accepts 1-600. Waiting for a result leaves this deadline unchanged."
+        description = "Optional total task deadline in seconds, including preparation and execution: 1-600, default 60."
     )]
     #[schemars(range(min = 1, max = 600))]
     timeout_secs: Option<u64>,
@@ -150,17 +181,19 @@ enum TaskAction {
 }
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 struct TaskParams {
-    #[schemars(description = "ID returned by browser_run or screen_observe.")]
+    #[schemars(
+        description = "ID of a task started by browser_run or screen_observe in the connected Runcove space."
+    )]
     task_id: String,
     #[serde(default)]
     #[schemars(
-        description = "Choose the JSON string \"wait\" to retrieve status or wait for completion, or \"cancel\" to stop remaining execution. Omit to use \"wait\"."
+        description = "Optional action: \"wait\" (default) retrieves status or waits for completion; \"cancel\" requests cancellation. The call can return before cancellation finishes."
     )]
     #[serde(deserialize_with = "publish_params::optional_choice")]
     action: Option<TaskAction>,
     #[serde(default)]
     #[schemars(
-        description = "Maximum wait for this call in seconds; defaults to 20, range 0-20. Use 0 for an immediate status check."
+        description = "Optional maximum wait in seconds for either action: 0-20, default 20. Zero returns current status immediately. Does not extend the task deadline."
     )]
     #[schemars(range(min = 0, max = 20))]
     wait_secs: Option<u64>,
@@ -423,7 +456,7 @@ impl AgentSpaceMcpServer {
 #[tool_router]
 impl AgentSpaceMcpServer {
     #[tool(
-        description = "Read page content and controls in Runcove's remote workspace. Returns the selected page, available tabs, browser health, and control mode."
+        description = "Read content from a tab in the shared browser of the connected Runcove space. Returns content when available, tab details, open tabs, browser status, and control mode. Does not navigate, change focus, or take control; available during human control."
     )]
     async fn browser_observe(
         &self,
@@ -448,7 +481,7 @@ impl AgentSpaceMcpServer {
         ))
     }
     #[tool(
-        description = "Run an asynchronous JavaScript task in Runcove's remote workspace using the provided browser page, context, and desktop helpers. Returns your value and explicitly emitted outputs, or a task_id to continue with browser_task. One browser task runs at a time while AI control is active. Inspect the current state after a failure before repeating actions."
+        description = "Run JavaScript to automate the browser and desktop of the connected Runcove space. Requires AI control; one browser_run task at a time. Returns the script's value and explicit outputs, without an automatic page observation or screenshot. If still running after up to 8 seconds, use the returned task_id with browser_task. After an error or lost response, inspect current state before repeating actions."
     )]
     async fn browser_run(
         &self,
@@ -478,7 +511,7 @@ impl AgentSpaceMcpServer {
         ))
     }
     #[tool(
-        description = "Observe the desktop or a browser page in Runcove's remote workspace as screenshots. Captures preserve the current page, focus, scroll position, and control ownership. Images are optimized for viewing and returned in capture order with timing and dimensions. Optionally save original PNG files for later reading or downloading. Returns the completed observation or a task_id to continue with browser_task."
+        description = "Capture one or more screenshots without navigating, changing focus, scrolling, or taking control. Can run during human control or browser_run. Returns progress while state=\"running\", then captured images in order with timing and dimensions, including partial results after failure or cancellation. Images may be resized or compressed. If still running after up to 8 seconds, use the returned task_id with browser_task."
     )]
     async fn screen_observe(
         &self,
@@ -498,7 +531,7 @@ impl AgentSpaceMcpServer {
                 || directory.contains('\0')
             {
                 return Err(McpError::invalid_params(
-                    "save_dir requires save_original=true and an absolute directory path in the remote workspace",
+                    "save_dir requires save_original=true and an absolute directory path",
                     None,
                 ));
             }
@@ -524,7 +557,7 @@ impl AgentSpaceMcpServer {
         ))
     }
     #[tool(
-        description = "Wait for or cancel a browser or screen-observation task in Runcove's remote workspace. Returns progress or the task's final result. Cancellation stops remaining work and preserves available outputs; website actions already completed remain in effect. Results are cached for up to 30 minutes after completion."
+        description = "Check, wait for, or request cancellation of an automation or screenshot task. state=\"running\" means work is ongoing; \"succeeded\", \"failed\", \"timed_out\", and \"cancelled\" are final states. Cancellation preserves available outputs and does not undo website actions. Results remain available for up to 30 minutes after completion and are lost on service restart. If a task is unavailable, inspect the page and files before repeating actions."
     )]
     async fn browser_task(
         &self,
@@ -544,7 +577,7 @@ impl AgentSpaceMcpServer {
         ))
     }
     #[tool(
-        description = "Publish a file, directory, or running HTTP service from Runcove's remote workspace through an authenticated web URL. Publishing under an existing name updates its target while preserving the URL and credentials. Share the returned URL and HTTP Basic username and password with the user. Access remains available while the publication exists and the workspace is running."
+        description = "Publish and manage authenticated web access to files, directories, or running HTTP services in the connected Runcove space. Updating an existing name preserves the URL and credentials. Share the returned URL, HTTP Basic username, and password with the user. Publications end when the space stops or the Runcove service restarts."
     )]
     async fn web_publish(
         &self,
@@ -755,7 +788,7 @@ impl AgentSpaceMcpServer {
 
     #[instrument(skip(self, params), fields(workspace), level = "info")]
     #[tool(
-        description = "Run Bash commands in Runcove's remote workspace. Use /workspace for persistent files, read to inspect files, write to create or replace files, edit for precise changes, and web_publish to share files or running HTTP services. Each call runs in a separate, non-interactive shell and returns the exit code and bounded output. Set workdir for the working directory. When starting a background service, redirect its standard input and output streams. Keep Runcove-managed files in /opt/agent-space, /tmp/agent-space, and /workspace/.agent-space intact. Runcove handles managed service lifecycle and internal cleanup."
+        description = "Run Bash commands in the connected Runcove space. Each call uses a separate non-interactive shell; variables and directory changes do not carry over. Use /workspace for persistent files. Returns the exit code and size-limited, merged stdout/stderr; check the exit code to determine command success. For background services, redirect stdin and send stdout/stderr to a log file. After a timeout or lost response, inspect state before retrying. Keep reserved paths /opt/agent-space, /tmp/agent-space, and /workspace/.agent-space intact."
     )]
     async fn bash(
         &self,
@@ -863,7 +896,7 @@ impl AgentSpaceMcpServer {
 
     #[instrument(skip(self, params, context), fields(workspace), level = "info")]
     #[tool(
-        description = "Read a file in Runcove's remote workspace. Text is returned with line numbers; offset and limit select a line range. Set multimodal to true to view supported images."
+        description = "Read text lines or view a supported image from a file. Text is decoded as UTF-8 with line numbers; invalid bytes become replacement characters. Text output is bounded; request a smaller line range if truncated."
     )]
     async fn read(
         &self,
@@ -878,7 +911,7 @@ impl AgentSpaceMcpServer {
 
     #[instrument(skip(self, params), fields(workspace), level = "info")]
     #[tool(
-        description = "Create a UTF-8 text file or atomically replace its complete contents. Creates parent directories as needed and returns the number of bytes written."
+        description = "Create a UTF-8 text file or replace its full contents. Creates missing parent directories and returns the number of bytes written. After a timeout or lost response, read the file before retrying."
     )]
     async fn write(
         &self,
@@ -908,7 +941,7 @@ impl AgentSpaceMcpServer {
 
     #[instrument(skip(self, params), fields(workspace), level = "info")]
     #[tool(
-        description = "Replace one exact text occurrence in a file and commit the change atomically. Choose a unique passage, preserving its whitespace and line breaks."
+        description = "Replace one exact text passage in an existing UTF-8 file. A missing or non-unique match returns an error without changing the file. Returns a replacement confirmation on success. After a timeout or lost response, read the file before retrying."
     )]
     async fn edit(
         &self,

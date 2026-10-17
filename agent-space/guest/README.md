@@ -56,8 +56,9 @@ project-local environments, such as a Python virtual environment or a local npm
 project. System packages belong in the deployment image; Agent tasks have no
 runtime root or unrestricted sudo access.
 
-On Server, commands, file operations, browser scripts and saved screenshots use
-root inside the VM; the core service is outside the VM. Chromium, desktop apps
-and internal observers use UID1001 in both deployments. Managed-service
+On Server, tools, Chromium, desktop apps and internal observers all use root
+inside the VM with HOME=/root; the core service is outside the VM. Chromium uses
+--no-sandbox and relies on the VM isolation boundary. Standalone keeps all user
+execution at UID/GID1001 with HOME=/home/desktop and its browser sandbox. Managed-service
 conventions prevent accidental interference; they do not isolate guest helpers
 from root commands inside a VM.

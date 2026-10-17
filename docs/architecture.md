@@ -23,13 +23,13 @@ Server 是单节点、可独立部署的托管空间服务。它为每个本地�
 | Runcove 核心服务 | 位于用户 VM 外的 Host 服务 | 本容器内的 root 服务 |
 | 受管 helper 控制进程 | VM 内 root | 容器内 root |
 | bash、文件工具、browser_run 用户脚本、原图保存及产物枚举 | VM 内 root | UID/GID1001 |
-| Chromium、桌面应用和内部观察进程 | VM 内 UID/GID1001 | 容器内 UID/GID1001 |
+| Chromium、桌面应用和内部观察进程 | VM 内 root | 容器内 UID/GID1001 |
 
 Standalone 保持一个使用者、一个空间、一个容器。Agent 可以管理工作文件、用户应用和项目依赖；Python 虚拟环境、项目内 npm 依赖等使用可写目录。系统依赖由部署维护者在镜像构建时提供，Agent 没有运行时 root 或任意 sudo 权限。root 控制进程负责服务入口、凭据和运行记录，UID 隔离用于防止普通用户权限下的任务直接读写控制文件或终止控制进程；资源耗尽和程序故障仍由资源限额、任务期限及进程清理处理。
 
 Standalone 的 root 控制进程不把访问凭据传给 payload。桌面 profile 准备和产物枚举在降权子进程内完成，包括对用户可修改的父路径进行遍历，最终任务结果与观察保存在现有 Job 内存中，读取 worker 结果使用不跟随链接的固定文件句柄、归属和大小校验。DAV/static-http 的 root 身份父进程管理 UID1001 数据子进程；父死强杀子进程，正常停服仍先 TERM 后有界收敛。
 
-Server 的 Agent 可以在 VM 内使用 root 管理系统依赖。Host 核心服务由 VM 边界隔离；guest root 仍能修改 VM 内的 helper 和桌面文件，受管进程约定用于协作和防误操作。新增工具的文件访问沿用所在空间的命令/文件身份，避免对同一路径产生额外的权限差异。
+Server 的 Agent 可以在 VM 内使用 root 管理系统依赖。命令、文件、浏览器和桌面统一使用 root，HOME=/root；Chromium 因 root 运行使用 `--no-sandbox`，浏览器自身的进程沙箱关闭，空间隔离由 MSB VM 提供。Standalone 保持 UID/GID1001、HOME=/home/desktop，不增加此参数。Host 核心服务由 VM 边界隔离；guest root 仍能修改 VM 内的 helper 和桌面文件，受管进程约定用于协作和防误操作。新增工具的文件访问沿用所在空间的命令/文件身份，避免对同一路径产生额外的权限差异。
 
 ## 1. 组件和权威状态
 
@@ -206,7 +206,7 @@ Server 中以上为 **guest 路径**；Standalone 复用同名容器路径，用
 
 目录默认 `0755`、二进制 `0755`、说明 `0644`；配置、运行记录及内部日志仅授予启动器/helper 所需权限。当前 guest 可运行 root 命令，这些规则用于防误操作，不能构成对抗 guest root 的安全隔离。
 
-桌面profile持久保存在 `/workspace/.agent-space/desktop/profile`；用户产物位于公开目录 `/workspace/agent-space/artifacts`。helper与worker仍在opt；任务JSON和日志仅在tmp实例目录，不作为跨重启任务恢复。Chromium、桌面应用和内部观察worker使用UID1001；用户脚本、截图保存和产物枚举复用空间文件身份，Server为VM内root，Standalone为UID1001。任务目录和结果校验使用同一身份，实例目录仅给遍历权限0711，身份/日志保持root权限。
+桌面profile持久保存在 `/workspace/.agent-space/desktop/profile`；用户产物位于公开目录 `/workspace/agent-space/artifacts`。helper与worker仍在opt；任务JSON和日志仅在tmp实例目录，不作为跨重启任务恢复。Chromium、桌面应用、内部观察worker、用户脚本、截图保存和产物枚举复用空间文件身份，Server为VM内root，Standalone为UID1001。桌面准备仅调整固定受管目录的归属，不递归修改工作区；既有profile继续使用。任务目录和结果校验使用同一身份，实例目录仅给遍历权限0711，身份/日志保持root权限。
 
 ### 配置与运行状态
 

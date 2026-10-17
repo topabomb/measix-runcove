@@ -113,6 +113,7 @@ fn migrate_artifacts(old: &Path, new: &Path) -> anyhow::Result<()> {
 }
 
 pub fn prepare_workspace() -> anyhow::Result<()> {
+    let uid = process::workspace_uid();
     if let Err(error) = migrate_artifacts(
         Path::new(&format!("{ROOT}/artifacts")),
         Path::new(ARTIFACTS),
@@ -134,7 +135,7 @@ pub fn prepare_workspace() -> anyhow::Result<()> {
         let c = std::ffi::CString::new(path.clone())?;
         unsafe {
             anyhow::ensure!(
-                (libc::geteuid() != 0 || libc::chown(c.as_ptr(), 1001, 1001) == 0),
+                (libc::geteuid() != 0 || libc::chown(c.as_ptr(), uid, uid) == 0),
                 "directory ownership failed"
             );
         }
@@ -151,7 +152,7 @@ pub fn prepare_workspace() -> anyhow::Result<()> {
                 fs::rename(temporary, &preferences)?;
                 let c = std::ffi::CString::new(preferences.clone())?;
                 anyhow::ensure!(
-                    unsafe { libc::chown(c.as_ptr(), 1001, 1001) } == 0,
+                    unsafe { libc::chown(c.as_ptr(), uid, uid) } == 0,
                     "preferences ownership failed"
                 );
             }
@@ -162,7 +163,10 @@ pub fn prepare_workspace() -> anyhow::Result<()> {
         let c = std::ffi::CString::new(preferences)?;
         unsafe {
             if libc::geteuid() == 0 {
-                libc::chown(c.as_ptr(), 1001, 1001);
+                anyhow::ensure!(
+                    libc::chown(c.as_ptr(), uid, uid) == 0,
+                    "preferences ownership failed"
+                );
             }
         }
     }
@@ -217,11 +221,9 @@ impl Desktop {
     }
     async fn spawn(&mut self, name: &str, args: &[&str], critical: bool) -> anyhow::Result<()> {
         let mut command = Command::new(args[0]);
+        process::workspace_env(&mut command);
         command
             .args(&args[1..])
-            .env("HOME", "/home/desktop")
-            .env("USER", "desktop")
-            .env("LOGNAME", "desktop")
             .env("DISPLAY", ":1")
             .env("XDG_RUNTIME_DIR", "/tmp/runtime-desktop")
             .env_remove("AGENT_SPACE_HELPER")
@@ -231,7 +233,7 @@ impl Desktop {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .kill_on_drop(true);
-        process::isolate(&mut command, Some(1001));
+        process::isolate(&mut command, Some(process::workspace_uid()));
         let mut child = command.spawn()?;
         let identity = process::identity(
             child
@@ -309,7 +311,8 @@ impl Desktop {
                 .stdout(Stdio::null())
                 .stderr(Stdio::piped())
                 .kill_on_drop(true);
-            process::isolate(&mut command, Some(1001));
+            process::workspace_env(&mut command);
+            process::isolate(&mut command, Some(process::workspace_uid()));
             let output = tokio::time::timeout(Duration::from_secs(15), command.output()).await??;
             anyhow::ensure!(
                 output.status.success(),
@@ -371,22 +374,23 @@ impl Desktop {
         }
         let profile = format!("--user-data-dir={ROOT}/profile");
         // No launch URL: wake restores tabs without appending about:blank.
-        self.spawn(
-            "browser",
-            &[
-                "/opt/agent-tools/browsers/chromium-1243/chrome-linux64/chrome",
-                "--remote-debugging-address=127.0.0.1",
-                "--remote-debugging-port=9222",
-                &profile,
-                "--no-first-run",
-                "--disable-infobars",
-                "--no-default-browser-check",
-                "--password-store=basic",
-                "--restore-last-session",
-            ],
-            true,
-        )
-        .await?;
+        let mut args = vec![
+            "/opt/agent-tools/browsers/chromium-1243/chrome-linux64/chrome",
+            "--remote-debugging-address=127.0.0.1",
+            "--remote-debugging-port=9222",
+            &profile,
+            "--no-first-run",
+            "--disable-infobars",
+            "--no-default-browser-check",
+            "--password-store=basic",
+            "--restore-last-session",
+        ];
+        // Server's VM is the isolation boundary. Chromium refuses root without
+        // this flag; Standalone retains its unprivileged Chromium sandbox.
+        if process::workspace_uid() == 0 {
+            args.push("--no-sandbox");
+        }
+        self.spawn("browser", &args, true).await?;
         self.ready(9222, false, Duration::from_secs(15)).await?;
         self.generation += 1;
         self.last_used = Instant::now();
@@ -462,8 +466,9 @@ impl Desktop {
     }
 }
 pub async fn node(value: serde_json::Value) -> anyhow::Result<serde_json::Value> {
-    let spec = serde_json::json!({"program":"node","args":[format!("{NODE}/observe-worker.cjs"),value.to_string()],"timeout_secs":5,"max_bytes":agent_engine::media::REPORT_LIMIT,"max_lines":10000,"uid":1001});
+    let spec = serde_json::json!({"program":"node","args":[format!("{NODE}/observe-worker.cjs"),value.to_string()],"timeout_secs":5,"max_bytes":agent_engine::media::REPORT_LIMIT,"max_lines":10000,"uid":process::workspace_uid()});
     let mut command = Command::new("python3");
+    process::workspace_env(&mut command);
     command
         .args([
             "-I",

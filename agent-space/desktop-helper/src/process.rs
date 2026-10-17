@@ -16,6 +16,18 @@ pub fn workspace_uid() -> u32 {
     }
 }
 
+pub fn workspace_env(command: &mut Command) {
+    let (home, user) = if workspace_uid() == 0 {
+        ("/root", "root")
+    } else {
+        ("/home/desktop", "desktop")
+    };
+    command
+        .env("HOME", home)
+        .env("USER", user)
+        .env("LOGNAME", user);
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Identity {
     pub pid: u32,
