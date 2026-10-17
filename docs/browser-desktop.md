@@ -73,10 +73,10 @@ helper 二进制内嵌匹配的五份 JS 源码，启动时原子安装到 `/opt
 
 序列的返回图片编码合计最多2 MiB，按请求帧数分配单帧预算。对同一次捕获做有界压缩：JPEG 质量80、70，再按需把最长边缩到1600、1280；初始最长边不超过2000，不重新捕获。仍超预算时明确 IMAGE_BUDGET_EXCEEDED，已有帧保留，不静默丢图或无限降质。默认不落盘；只有显式启用保存时才保留原图文件。
 
-需要下载原图时设置 `save_original=true`，可选 `save_dir` 指定空间内可写的绝对目录，默认 `/workspace/agent-space/artifacts`，缺失目录自动创建。未启用保存却指定目录属于参数错误。每帧捕获的原始 PNG 字节按 `screen-<10位Base62随机串>.png` 原子保存，不覆盖已有文件；观察返回的图片仍按上述预算优化。终态 `files` 按捕获顺序包含 `frame_index/image_id/path/width/height/bytes/mime_type`，尺寸和字节数对应原图。可通过现有工作台文件流或 DAV 下载工作区内的文件，也可用 `read(multimodal=true)` 读取。保存失败返回 `SCREEN_SAVE_FAILED` 并保留可显示的当前帧；取消、超时或后续失败保留已保存文件及其路径。
+需要下载原图时设置 `save_original=true`，可选 `save_dir` 指定空间内可写的绝对目录，默认 `/workspace/agent-space/artifacts`，缺失目录可在可写父目录下自动创建。自定义目录也须具有写权限，不能仅凭绝对路径或 MCP 文件工具可写就推断截图保存可写；默认产物目录及其子目录是通用选择。未启用保存却指定目录属于参数错误。每帧捕获的原始 PNG 字节按 `screen-<10位Base62随机串>.png` 原子保存，不覆盖已有文件；观察返回的图片仍按上述预算优化。终态 `files` 按捕获顺序包含 `frame_index/image_id/path/width/height/bytes/mime_type`，尺寸和字节数对应原图。可通过现有工作台文件流或 DAV 下载工作区内的文件，也可用 `read(multimodal=true)` 读取。保存失败返回 `SCREEN_SAVE_FAILED` 并保留可显示的当前帧；取消、超时或后续失败保留已保存文件及其路径。
 
 ```json
-{"view":"desktop","count":3,"interval_ms":1000,"save_original":true,"save_dir":"/workspace/screenshots"}
+{"view":"desktop","count":3,"interval_ms":1000,"save_original":true,"save_dir":"/workspace/agent-space/artifacts/screenshots"}
 ```
 
 桌面 image_id 的有效期从实际捕获算起60秒，并绑定捕获前后相同的前台窗口；无法确认窗口时仍返回图片，但拒绝据此进行指针动作。坐标使用返回图片的像素，服务自动换算到原桌面尺寸。长序列中较早帧可能在返回时已过期，应重新观察后再操作。

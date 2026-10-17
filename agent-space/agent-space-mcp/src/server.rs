@@ -119,7 +119,7 @@ struct ScreenParams {
     save_original: bool,
     #[serde(default, deserialize_with = "publish_params::optional_string")]
     #[schemars(
-        description = "Optional absolute directory in the remote workspace for saved originals. Requires save_original=true; defaults to /workspace/agent-space/artifacts. Missing directories are created. Files use screen-<10 random letters or digits>.png without overwriting existing files."
+        description = "Optional absolute writable directory for saved originals. Requires save_original=true; defaults to /workspace/agent-space/artifacts. Missing directories are created when the parent is writable. Files use screen-<10 random letters or digits>.png without overwriting existing files."
     )]
     save_dir: Option<String>,
 }

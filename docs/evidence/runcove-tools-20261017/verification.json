@@ -216,6 +216,18 @@
       "agent-space-desktop": "75f3d3c182a6a579f53e0e442f0d68ed515bc96f197260385ab9d43420854292"
     },
     "release_sqlite": "3.51.3; actual linked sqlite3_version symbol verified before stripping",
-    "release_image_built": false
+    "release_image_built": false,
+    "parameter_description_followup": {
+      "source_sha256": "83fe72521872f94f191aa99b2c10a6131491ca59769a18b832466e1b2f4f873b",
+      "change": "Explicitly require a writable save_dir and writable parent for directory creation; recommend the artifact directory or its children.",
+      "schema_contract_tests_passed": 5,
+      "schema_log_sha256": "487999a2d2f1b3ebab60749bd59240e8471193ed5f7812333e4d4ae5a4218746",
+      "release_log_sha256": "4d37076238a16ce89dbae2872c4d87d8ab0e4d8c43e1f7503cd993a1cb4a1a01",
+      "release_binaries_sha256": {
+        "agent-space-mcp": "623dc2a6198fcc3e48ad4e7e74f7ed5be6a4ea3231349a8672741106d0300196",
+        "agent-space-desktop": "75f3d3c182a6a579f53e0e442f0d68ed515bc96f197260385ab9d43420854292"
+      },
+      "sqlite": "3.51.3 linked symbol verified before stripping"
+    }
   }
 }
