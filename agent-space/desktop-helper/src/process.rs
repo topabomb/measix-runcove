@@ -6,6 +6,16 @@ use std::{
 };
 use tokio::process::Command;
 
+/// Match the workspace command/file principal. Only Standalone shares its
+/// container with a privileged controller; Server commands already own the VM.
+pub fn workspace_uid() -> u32 {
+    if std::env::var_os("AGENT_SPACE_LOCAL_RUNTIME").is_some() {
+        1001
+    } else {
+        0
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Identity {
     pub pid: u32,

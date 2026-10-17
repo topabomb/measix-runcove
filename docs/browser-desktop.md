@@ -42,7 +42,7 @@ helper 二进制内嵌匹配的五份 JS 源码，启动时原子安装到 `/opt
 | `/workspace/.agent-space/desktop/profile/` | 持久浏览器 profile，包含敏感登录信息 |
 | `/workspace/agent-space/artifacts/` | 截图、下载、MHTML、大返回值等产物 |
 
-默认桌面 1440×900；VNC 5901、CDP 9222、helper 随机端口仅限 guest 回环，并禁止作为 web_publish 端口发布。Chromium/LXQt/worker 使用 UID1001，bash 保留现有身份。guest root 命令仍可修改这些目录，内部协作约束不构成对抗 root 的安全边界。
+默认桌面 1440×900；VNC 5901、CDP 9222、helper 随机端口仅限 guest 回环，并禁止作为 web_publish 端口发布。Chromium、LXQt 和内部观察进程使用 UID1001。`browser_run` 用户脚本、截图保存及产物列表与 bash、文件工具使用相同的空间文件身份：Server 在 VM 内使用 root，Standalone 使用 UID1001，后者的 root 控制器保持私有。guest root 命令仍可修改这些目录，内部协作约束不构成对抗 root 的安全边界。
 
 公开目录是默认落盘位置，Agent仍可在其他工作区路径组织文件；不自动创建 `/workspace/agent-space/README.md`。桌面启动时把旧默认产物目录中的普通文件移到新目录，同名冲突以UUID前缀保留两份，未知子目录/符号链接留在原处。仅将Chromium原默认下载路径改到新位置，用户自选路径保留。旧绝对产物链接不提供永久别名，迁移后从产物列表取得当前路径。
 
@@ -73,7 +73,7 @@ helper 二进制内嵌匹配的五份 JS 源码，启动时原子安装到 `/opt
 
 序列的返回图片编码合计最多2 MiB，按请求帧数分配单帧预算。对同一次捕获做有界压缩：JPEG 质量80、70，再按需把最长边缩到1600、1280；初始最长边不超过2000，不重新捕获。仍超预算时明确 IMAGE_BUDGET_EXCEEDED，已有帧保留，不静默丢图或无限降质。默认不落盘；只有显式启用保存时才保留原图文件。
 
-需要下载原图时设置 `save_original=true`，可选 `save_dir` 指定空间内可写的绝对目录，默认 `/workspace/agent-space/artifacts`，缺失目录可在可写父目录下自动创建。自定义目录也须具有写权限，不能仅凭绝对路径或 MCP 文件工具可写就推断截图保存可写；默认产物目录及其子目录是通用选择。未启用保存却指定目录属于参数错误。每帧捕获的原始 PNG 字节按 `screen-<10位Base62随机串>.png` 原子保存，不覆盖已有文件；观察返回的图片仍按上述预算优化。终态 `files` 按捕获顺序包含 `frame_index/image_id/path/width/height/bytes/mime_type`，尺寸和字节数对应原图。可通过现有工作台文件流或 DAV 下载工作区内的文件，也可用 `read(multimodal=true)` 读取。保存失败返回 `SCREEN_SAVE_FAILED` 并保留可显示的当前帧；取消、超时或后续失败保留已保存文件及其路径。
+需要下载原图时设置 `save_original=true`，可选 `save_dir` 指定空间内的绝对目录，默认 `/workspace/agent-space/artifacts`，缺失目录自动创建。保存与 bash、文件工具遵循相同的文件权限，自定义目录不要求改归桌面用户所有。未启用保存却指定目录属于参数错误。每帧捕获的原始 PNG 字节按 `screen-<10位Base62随机串>.png` 原子保存，不覆盖已有文件；观察返回的图片仍按上述预算优化。终态 `files` 按捕获顺序包含 `frame_index/image_id/path/width/height/bytes/mime_type`，尺寸和字节数对应原图。可通过现有工作台文件流或 DAV 下载工作区内的文件，也可用 `read(multimodal=true)` 读取。保存失败返回 `SCREEN_SAVE_FAILED` 并保留可显示的当前帧；取消、超时或后续失败保留已保存文件及其路径。
 
 ```json
 {"view":"desktop","count":3,"interval_ms":1000,"save_original":true,"save_dir":"/workspace/agent-space/artifacts/screenshots"}
@@ -83,7 +83,7 @@ helper 二进制内嵌匹配的五份 JS 源码，启动时原子安装到 `/opt
 
 ### JavaScript 执行与显式输出
 
-`browser_run` 注入 `page`、`context`、`desktop`、`output`、`artifacts`，接受 async 函数或带 await 的函数体；模块用 `await import(...)` 导入。artifacts 是默认可写目录路径，其他目标也须具有写权限。普通运行没有标签页且无原生窗口时创建空白页，不创建第二个浏览器或 context。选择 page_id 不自动聚焦；优先复用已有页，仅有并行页面需求时新建标签，用完关闭自己创建的临时页。
+`browser_run` 注入 `page`、`context`、`desktop`、`output`、`artifacts`，接受 async 函数或带 await 的函数体；模块用 `await import(...)` 导入。artifacts 是默认产物目录路径，脚本访问文件与 bash、文件工具遵循相同的权限。普通运行没有标签页且无原生窗口时创建空白页，不创建第二个浏览器或 context。选择 page_id 不自动聚焦；优先复用已有页，仅有并行页面需求时新建标签，用完关闭自己创建的临时页。
 
 上传可用 `locator.setInputFiles(path)`，或先登记 `page.waitForEvent('filechooser')`，触发后调用 `chooser.setFiles(path)`。下载同样先登记事件再触发：
 

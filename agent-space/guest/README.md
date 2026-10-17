@@ -25,6 +25,7 @@ Use `/workspace` for large downloads, archives and build outputs.
   keeping the profile and workspace. A later browser call wakes it.
 - Use `browser_run` with standard Playwright JavaScript for upload/download;
   long runs return a task ID. Use `browser_task` to wait or cancel that task.
+  Scripts and screenshot saving use the same file permissions as bash and file tools.
   A cancelled or failed website action can have side effects; inspect the page
   before repeating it. Native dialogs and unresponsive pages require a desktop
   screenshot and the injected `desktop` helpers. Use `browser_observe` for DOM or AX, and `screen_observe` for one screenshot or a timed sequence of up to eight images. Set `save_original=true` to save original PNG files; `save_dir` optionally selects an absolute directory (default `/workspace/agent-space/artifacts`). The result reports saved paths in `files`. Completed scripts return only explicit outputs; observe separately when needed.

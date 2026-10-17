@@ -119,7 +119,7 @@ struct ScreenParams {
     save_original: bool,
     #[serde(default, deserialize_with = "publish_params::optional_string")]
     #[schemars(
-        description = "Optional absolute writable directory for saved originals. Requires save_original=true; defaults to /workspace/agent-space/artifacts. Missing directories are created when the parent is writable. Files use screen-<10 random letters or digits>.png without overwriting existing files."
+        description = "Optional absolute directory for saved originals, using the same file permissions as other workspace tools. Requires save_original=true; defaults to /workspace/agent-space/artifacts. Missing directories are created. Files use screen-<10 random letters or digits>.png without overwriting existing files."
     )]
     save_dir: Option<String>,
 }
@@ -448,7 +448,7 @@ impl AgentSpaceMcpServer {
         ))
     }
     #[tool(
-        description = "Run an asynchronous JavaScript task in Runcove's remote workspace using the provided browser page, context, and desktop helpers. Returns your value and explicitly emitted outputs, or a task_id to continue with browser_task. One browser task runs at a time while AI control is active. Inspect the current state after a failure before repeating actions."
+        description = "Run an asynchronous JavaScript task in Runcove's remote workspace using the provided browser page, context, and desktop helpers, with the same file permissions as bash and file tools. Returns your value and explicitly emitted outputs, or a task_id to continue with browser_task. One browser task runs at a time while AI control is active. Inspect the current state after a failure before repeating actions."
     )]
     async fn browser_run(
         &self,

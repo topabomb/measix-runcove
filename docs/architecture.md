@@ -191,7 +191,7 @@ Server 中以上为 **guest 路径**；Standalone 复用同名容器路径，用
 
 目录默认 `0755`、二进制 `0755`、说明 `0644`；配置、运行记录及内部日志仅授予启动器/helper 所需权限。当前 guest 可运行 root 命令，这些规则用于防误操作，不能构成对抗 guest root 的安全隔离。
 
-桌面profile持久保存在 `/workspace/.agent-space/desktop/profile`；用户产物位于公开目录 `/workspace/agent-space/artifacts`。helper与worker仍在opt；任务JSON和日志仅在tmp实例目录，不作为跨重启任务恢复。desktop worker使用UID1001，实例目录仅给遍历权限0711，身份/日志保持root权限。
+桌面profile持久保存在 `/workspace/.agent-space/desktop/profile`；用户产物位于公开目录 `/workspace/agent-space/artifacts`。helper与worker仍在opt；任务JSON和日志仅在tmp实例目录，不作为跨重启任务恢复。Chromium、桌面应用和内部观察worker使用UID1001；用户脚本、截图保存和产物枚举复用空间文件身份，Server为VM内root，Standalone为UID1001。任务目录和结果校验使用同一身份，实例目录仅给遍历权限0711，身份/日志保持root权限。
 
 ### 配置与运行状态
 

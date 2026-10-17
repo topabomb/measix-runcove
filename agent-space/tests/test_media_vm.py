@@ -127,9 +127,49 @@ class MediaQualification(unittest.TestCase):
     with urllib.request.urlopen(urllib.request.Request(base+'files'+paths[0].removeprefix('/workspace'),headers=headers),timeout=10) as response:
      downloaded=response.read()
     self.assertEqual(len(downloaded),value['files'][0]['bytes']);self.assertTrue(downloaded.startswith(bytes.fromhex('89504e470d0a1a0a')))
-  value,reply=self.finish(self.client.tool('screen_observe',{'view':'desktop','save_original':True,'save_dir':'/root/originals'}))
+  value,reply=self.finish(self.client.tool('screen_observe',{'view':'desktop','save_original':True,'save_dir':'/proc/agent-space-originals'}))
   self.assertTrue(reply.get('isError'));self.assertEqual(value['error']['code'],'SCREEN_SAVE_FAILED')
   self.assertEqual(value['captured_count'],1);self.assertNotIn('files',value)
+
+ def test_02c_private_directories_share_workspace_file_permissions(self):
+  directory='/workspace/tmp/chatgpt-ops'
+  created=self.client.tool('bash',{'command':'umask 077; mkdir -p '+directory+'; chmod 700 '+directory})
+  self.assertFalse(created.get('isError'),text(created))
+  path=directory+'/shared.txt'
+  self.assertFalse(self.client.tool('write',{'path':path,'content':'before'}).get('isError'))
+  self.assertFalse(self.client.tool('edit',{'path':path,'old_text':'before','new_text':'after'}).get('isError'))
+  code="const fs=await import('node:fs');const path="+json.dumps(path)+";const text=fs.readFileSync(path,'utf8');fs.appendFileSync(path,'-browser');await output.file(path);return {text,uid:process.getuid(),owner:fs.statSync(path).uid};"
+  script,reply=self.finish(self.client.tool('browser_run',{'code':code}))
+  self.assertFalse(reply.get('isError'),script)
+  uid=1001 if TARGET=='standalone' else 0
+  self.assertEqual(script['value'],dict(text='after',uid=uid,owner=uid))
+  self.assertIn('after-browser',json.dumps(text(self.client.tool('read',{'path':path}))))
+  for view in ['page','desktop']:
+   value,reply=self.finish(self.client.tool('screen_observe',{'view':view,'save_original':True,'save_dir':directory+'/'+view}))
+   self.assertFalse(reply.get('isError'),value)
+   file=value['files'][0]
+   saved=self.client.tool('read',{'path':file['path'],'multimodal':True})
+   self.assertFalse(saved.get('isError'),text(saved))
+   image=next(c for c in saved['content'] if c['type']=='image')
+   self.assertEqual(len(base64.b64decode(image['data'])),file['bytes'])
+  base=BASE+space_path('desktop','desktop/api/')
+  with urllib.request.urlopen(urllib.request.Request(base+'login',data=json.dumps({'token':self.client.token}).encode(),headers={'Content-Type':'application/json','Origin':BASE}),timeout=10) as response:
+   cookie=response.headers['Set-Cookie'].split(';',1)[0];nonce=json.load(response)['nonce']
+  headers={'Cookie':cookie,'X-Desktop-Nonce':nonce,'Origin':BASE}
+  with urllib.request.urlopen(urllib.request.Request(base+'files'+file['path'].removeprefix('/workspace'),headers=headers),timeout=10) as response:
+   self.assertEqual(response.read(),base64.b64decode(image['data']))
+  # Traverse the same private parent when listing artifacts. Standalone also
+  # verifies separately that a root-private target remains inaccessible.
+  artifacts='/workspace/agent-space/artifacts'
+  moved=self.client.tool('bash',{'command':'mv '+artifacts+' '+artifacts+'.permissions-check; ln -s '+directory+' '+artifacts})
+  self.assertFalse(moved.get('isError'),text(moved))
+  try:
+   with urllib.request.urlopen(urllib.request.Request(base+'artifacts',headers=headers),timeout=10) as response:
+    listed=json.load(response)
+   self.assertIn('shared.txt',[f['name'] for f in listed['files']])
+  finally:
+   restored=self.client.tool('bash',{'command':'rm '+artifacts+'; mv '+artifacts+'.permissions-check '+artifacts})
+   self.assertFalse(restored.get('isError'),text(restored))
 
  def test_03_cancel_sequence_preserves_frames_and_allows_browser_work(self):
   value=text(self.client.tool('screen_observe',{'view':'page','count':8,'interval_ms':3000,'save_original':True,'save_dir':'/workspace/qualification/cancelled-originals'}))

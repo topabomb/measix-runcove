@@ -88,13 +88,13 @@ async fn input(State(app): State<App>) -> Reply {
 }
 async fn artifacts() -> Reply {
     // The user owns every workspace ancestor and may replace it with a link.
-    // Perform the complete walk as the data UID, including ancestor traversal.
+    // Use the workspace file identity for the complete walk, including ancestors.
     let mut command = Command::new(std::env::current_exe().map_err(|e| fail(&e.to_string()))?);
     command
         .arg("--list-artifacts")
         .stdin(Stdio::null())
         .kill_on_drop(true);
-    process::isolate(&mut command, Some(1001));
+    process::isolate(&mut command, Some(process::workspace_uid()));
     let output = tokio::time::timeout(Duration::from_secs(5), command.output())
         .await
         .map_err(|_| fail("ARTIFACTS_TIMEOUT"))?
@@ -108,8 +108,8 @@ async fn artifacts() -> Reply {
 }
 fn list_artifacts() -> anyhow::Result<Value> {
     anyhow::ensure!(
-        unsafe { libc::geteuid() } == 1001,
-        "artifact listing requires UID1001"
+        unsafe { libc::geteuid() } == process::workspace_uid(),
+        "artifact listing requires workspace ownership"
     );
     let mut files = vec![];
     match std::fs::read_dir(desktop::ARTIFACTS) {
@@ -180,7 +180,8 @@ fn new_job(id: &str, timeout: u64, modifies: bool) -> anyhow::Result<Arc<Job>> {
     std::fs::create_dir(&directory)?;
     let c = std::ffi::CString::new(directory.clone())?;
     unsafe {
-        if libc::chown(c.as_ptr(), 1001, 1001) != 0 {
+        let uid = process::workspace_uid();
+        if libc::chown(c.as_ptr(), uid, uid) != 0 {
             anyhow::bail!("JOB_OWNERSHIP");
         }
     }
@@ -290,7 +291,7 @@ async fn worker(job: &Job, params: &Run, observation: Value) -> anyhow::Result<V
         "EXECUTION_TIMEOUT_OR_CANCELLED"
     );
     let worker_spec = json!({"code":params.code,"page_id":observation["page_id"],"window":observation["window"],"nativeWindow":observation["nativeWindow"],"pageResponsive":observation["health"]["page"],"captures":params.captures,"timeoutMs":remaining.as_millis()});
-    let spec = json!({"program":"node","args":[format!("{}/browser-worker.cjs",desktop::NODE)],"uid":1001,
+    let spec = json!({"program":"node","args":[format!("{}/browser-worker.cjs",desktop::NODE)],"uid":process::workspace_uid(),
     "timeout_secs":remaining.as_secs_f64(),"max_bytes":32768,"max_lines":500,"cleanup_on_exit":true});
     let mut command = Command::new("python3");
     command
@@ -410,7 +411,7 @@ fn read_worker_result(path: &std::path::Path) -> anyhow::Result<Value> {
     let limit = 12 * 1024 * 1024;
     anyhow::ensure!(
         metadata.is_file()
-            && metadata.uid() == 1001
+            && metadata.uid() == process::workspace_uid()
             && metadata.nlink() == 1
             && metadata.len() <= limit,
         "invalid worker result ownership/type/size"
@@ -506,8 +507,8 @@ async fn main() -> anyhow::Result<()> {
     if std::env::args().nth(1).as_deref() == Some("--save-capture") {
         use std::io::Read;
         anyhow::ensure!(
-            unsafe { libc::geteuid() } == 1001,
-            "capture storage requires desktop ownership"
+            unsafe { libc::geteuid() } == process::workspace_uid(),
+            "capture storage requires workspace ownership"
         );
         let mut bytes = vec![];
         std::io::stdin()
@@ -532,8 +533,8 @@ async fn main() -> anyhow::Result<()> {
             "subreaper failed"
         );
     }
-    // Child workers are UID 1001; allow traversal only, keeping the managed
-    // identity record and logs root-owned and non-writable by browser workers.
+    // Desktop observers and Standalone scripts use UID1001. Permit traversal
+    // while keeping the controller's identity and logs private in Standalone.
     if let Ok(instance) = std::env::var("AGENT_SPACE_HELPER_INSTANCE") {
         use std::os::unix::fs::PermissionsExt;
         let directory = format!("/tmp/agent-space/{instance}");

@@ -238,7 +238,7 @@ async fn save_capture(bytes: &[u8], directory: &str, deadline: Instant) -> anyho
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .kill_on_drop(true);
-    crate::process::isolate(&mut command, Some(1001));
+    crate::process::isolate(&mut command, Some(crate::process::workspace_uid()));
     let mut child = command.spawn()?;
     let mut stdin = child.stdin.take().unwrap();
     let output = tokio::time::timeout(
@@ -258,7 +258,7 @@ async fn save_capture(bytes: &[u8], directory: &str, deadline: Instant) -> anyho
     Ok(serde_json::from_slice(&output.stdout)?)
 }
 
-/// Called only in the UID1001 storage child. Publish a complete file atomically;
+/// Called in the workspace storage child. Publish a complete file atomically;
 /// a collision can never overwrite an existing screenshot or follow its link.
 pub fn store_capture(directory: &std::path::Path, bytes: &[u8]) -> anyhow::Result<Value> {
     use std::{fs, io::Write, os::unix::fs::OpenOptionsExt};

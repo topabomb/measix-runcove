@@ -258,5 +258,101 @@
     "backups_created": false,
     "migration_run": false,
     "image_recreation_caveat": "Changes are in the existing container writable layer; recreating it from the unchanged base image requires reapplying the binaries."
+  },
+  "workspace_permissions_fix": {
+    "baseline_git": "47b8d586a1973a80d13ebe33542829e159072b2a",
+    "source_sha256": "4a2fa14a42ed8441bb75c4367d474de74c209428103943a2a69fdbec0d75eaca",
+    "scope": "Source and quick development-asset regression; not final-image qualification.",
+    "principals": {
+      "server": "VM root, matching commands and file tools",
+      "standalone": "UID/GID1001; root controller remains private"
+    },
+    "permission_audit": {
+      "bash/read/write/edit": "Existing shared execution identity already consistent.",
+      "browser_observe": "Internal observer remains UID1001; no caller-selected filesystem access.",
+      "screen_observe": "Original-file storage now uses the workspace file identity.",
+      "browser_run": "User script, job directory and result-owner validation now use the workspace file identity.",
+      "browser_task": "Existing in-memory task results; no separate filesystem identity.",
+      "web_publish": "Existing static/DAV data identity already follows the runtime adapter.",
+      "workbench_artifacts": "Whole-directory traversal now uses the workspace file identity."
+    },
+    "rust": {
+      "desktop_helper_passed": 6,
+      "mcp_unit_and_contract_passed": 32,
+      "ignored": 0,
+      "fmt": "passed",
+      "workspace_all_targets_clippy": "passed",
+      "standalone_no_default_features_build_and_clippy": "passed"
+    },
+    "python": {
+      "managed_cleanup_passed": 8,
+      "exec_owner_passed": 5,
+      "package_passed": 5
+    },
+    "isolated_permission_checks": {
+      "passed": true,
+      "checks": [
+        "previous_helper_reproduces_permission_denied_in_root_private_directory",
+        "server_saves_exact_bytes_inside_root_private_parent_without_chmod",
+        "server_artifact_listing_traverses_same_workspace_principal",
+        "standalone_cannot_save_or_list_through_root_private_parent",
+        "standalone_saves_with_workspace_uid1001_and_exact_bytes",
+        "standalone_storage_child_rejects_accidental_root_execution",
+        "server_browser_script_uid_result_ownership_and_private_file_upload",
+        "server_page_and_desktop_capture_save_into_private_workspace_parent"
+      ]
+    },
+    "standalone_quick": {
+      "passed": true,
+      "cleanup_passed": true,
+      "scope": "development assets",
+      "image_id": "sha256:b13c172f4e8a21c42d256dbbea21ecb6fcd4a578847851c85e98fd47a25c2993",
+      "source_digest": "4a2fa14a42ed8441bb75c4367d474de74c209428103943a2a69fdbec0d75eaca",
+      "checks": [
+        "starts_without_kvm_msb_or_docker_socket",
+        "single_space_routes_have_no_management_or_user_selection",
+        "shared_nine_tools_and_nonroot_secret_isolation",
+        "profile_preparation_cannot_follow_user_links_with_root_privileges",
+        "real_shared_desktop_screenshot",
+        "root_task_owner_keeps_final_results_in_memory_without_following_user_paths",
+        "dav_workbench_and_mcp_edits_share_writable_user_ownership",
+        "artifact_listing_respects_payload_permissions_through_user_symlinks",
+        "publication_uses_single_space_address",
+        "stopped_data_child_dies_with_killed_control_owner_and_helper_recovers",
+        "shared_test_browser_vm.py",
+        "shared_test_media_vm.py",
+        "rewritten_host_workbench_preserves_own_origin_and_nonce_checks",
+        "lost_desktop_owner_blocks_recreation_and_control_until_container_restart",
+        "active_mcp_sse_closes_on_graceful_shutdown",
+        "graceful_restart_preserves_workspace_and_expires_page_session"
+      ],
+      "full": false,
+      "tools_only": true
+    },
+    "standalone_suites": {
+      "browser_passed": 11,
+      "media_passed": 9
+    },
+    "validation_setup_corrections": [
+      "Initial quick restart was interrupted by rebuilding a bind-mounted development binary; final fixed-input rerun passed.",
+      "Server-identity helper probe requires the repository desktop seccomp profile; passed with that profile."
+    ],
+    "logs_sha256": {
+      "permissions-mcp-tests.log": "e8515afb6cfd1ecfe048ea60d2b3765b6afa932902c30d5108049c7d011a6986",
+      "permissions-clippy.log": "4e123f9c32ef2892b459894b8ba40411c8a6ae0da2abc6abc26c4a4ecfb0c3d3",
+      "permissions-standalone-build.log": "9094bd2219e9c193dd98ed0b0b9ecab8d354aee644ede6d1515c704ea09b95b6",
+      "permissions-standalone-clippy.log": "2749bb7660a15dad82b4ef589e3e79169698a804487813d8d5b368ab02e69e91",
+      "permissions-cleanup.log": "322e9bec5d6bbde47d6476008f309469c1e42048ed96320a3bae52af8811e27a",
+      "permissions-exec-owner.log": "6412a45d470eade286e08efa555dd1a698c2250f784229554cdb89b911babbfb",
+      "permissions-package.log": "c7bda652e5d33c59422b19bbc4a6fdf0f099ecdd6b6a9a561893f4f6156b93fa",
+      "permissions-standalone-final.log": "d257247956de4cc1ecc17115e6dee03e9766fbbbed8eba5e6d8c9e3b0a2ced04",
+      "permissions-release-build.log": "75f72c3afab47928ce4c8c4c8f62096405c51f06ecb0357ed29469f3f46e0ec4",
+      "permissions-probe-result.json": "2c645b2d1a492e7e53ab3185f5aae5993f2a42a99e5d59d461a5666475ed601e"
+    },
+    "release_binaries_sha256": {
+      "agent-space-mcp": "8f03681ff762b35373f8449bb160dc47f3e513ba8fd8858717d249ce4d0a40d7",
+      "agent-space-desktop": "c207dba08b01331faef84c099e9e8d7d27512fe44da4b49e41ec6c7740ad133c"
+    },
+    "linked_sqlite_version": "3.51.3"
   }
 }
