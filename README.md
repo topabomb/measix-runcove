@@ -87,7 +87,7 @@ Measix 围绕“可信业务事实、专业能力、人的入口、Agent 工作�
 | **衡准 Metrivon** | 精密测量、设备协同与确定性计算，形成可信的业务事实 |
 | **溯原 Tracelle** | 保存、查询与分析测量数据，保留原始依据和上下文 |
 | **知衡 Noetral** | 面向工业任务的领域模型能力 |
-| **领航 Pilot** | 原生移动 Agent 入口，承接现场交互、工具使用与人工确认 |
+| [**领航 Pilot**](https://github.com/topabomb/measix-pilot) | 原生移动 Agent 入口，承接现场交互、工具使用与人工确认 |
 | [**松子 Tuck**](https://github.com/topabomb/measix-tuck) | 员工专属的自主工作伙伴，组织对话、任务、进展与成果 |
 | **工舱 Runcove** | 带浏览器和桌面的持久空间，提供程序运行与文件环境 |
 | **枢策 Orchelm** | 企业身份、模型、工具、助手与策略的供给和治理 |
