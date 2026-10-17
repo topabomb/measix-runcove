@@ -70,6 +70,8 @@ class MediaQualification(unittest.TestCase):
   self.finish(self.client.tool('browser_run',{'code':"await page.goto('data:text/html,<title>Observe fixture</title><button>Continue</button>');return 7;"}))
   dom=text(self.client.tool('browser_observe',{}));self.assertIn('dom',dom);self.assertNotIn('ax',dom);self.assertNotIn('recent_tasks',dom);self.assertNotIn('can_input',dom['control'])
   ax=text(self.client.tool('browser_observe',{'view':'ax'}));self.assertIn('ax',ax);self.assertNotIn('dom',ax)
+  legacy=text(self.client.tool('browser_observe',{'view':'desktop','recent_tasks_limit':1}))
+  self.assertEqual(len(legacy['recent_tasks']),1)
   for view in ['page','desktop']:
    value,reply=self.finish(self.client.tool('screen_observe',{'view':view,'count':3,'interval_ms':300}))
    self.assertFalse(reply.get('isError'),value);self.assertEqual(value['captured_count'],3)

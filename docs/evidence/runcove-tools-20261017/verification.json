@@ -123,5 +123,99 @@
     "final release image build and qualification",
     "production change or registry push",
     "external agent/model/gateway multimodal acceptance"
-  ]
+  ],
+  "review": {
+    "baseline_git": "7743385",
+    "source_sha256": "16d3e95d65205e0389883f53ed603e7cd470da52d1b940c83a468ba76366851a",
+    "reviewed_tools": [
+      "bash",
+      "read",
+      "write",
+      "edit",
+      "web_publish",
+      "browser_observe",
+      "browser_run",
+      "browser_task",
+      "screen_observe"
+    ],
+    "fixes": [
+      "Short ASCII BM/II* prefixes no longer misclassify text as media.",
+      "File protocol markers, no-content results and media errors survive tiny text limits; successful text retains its own limits.",
+      "Internal report budgets honor larger configured text allowances; bounded reads handle short reads without read-ahead.",
+      "Legacy screenshot views retain explicitly requested task history.",
+      "Validate line parameters before waiting for codec capacity, include save directory in storage errors, and normalize media error codes once."
+    ],
+    "checks": {
+      "tools-review-small-read.log": {
+        "log_sha256": "366181b1f4d7f48250a76eca777c2fe97396bcc5db866f22774846cab3479219",
+        "passed": 1
+      },
+      "tools-review-mcp.log": {
+        "log_sha256": "4ea8b1a7c99aff8bf971be98a3a398984fd5394a3f81a1b43080dbcafce9c269",
+        "passed": 32
+      },
+      "tools-review-helper.log": {
+        "log_sha256": "d92a17ebb12d78ad34261c35854ed7a808035688d72b81a7e4998ce3e61fb1fa",
+        "passed": 6
+      },
+      "tools-review-file-read.log": {
+        "log_sha256": "199ba496f288116d36c62f29346d4fbf0bd75745a1c893abfcbdaa4c6d5b1033",
+        "passed": 3
+      },
+      "tools-review-managed-cleanup.log": {
+        "log_sha256": "637ad693971420b70a01476cd5d51065ecc3c7af270c41cfe91899ec8c2db4bd",
+        "passed": 8
+      },
+      "tools-review-package.log": {
+        "log_sha256": "d696f1c26f2015b17a696a05a08857ceb721833bf50f2085fe7a7b172670ab76",
+        "passed": 5
+      },
+      "tools-review-final-clippy.log": {
+        "log_sha256": "a2aa48be6ea5268e25dfdeb9f8b25faa72148461b6b524a33373066bb49ed012"
+      },
+      "tools-review-standalone-clippy.log": {
+        "log_sha256": "cb6ef4f5521dd87689af2d4093703e0fcf2cd43b3b08861180e37b68b287a7fc"
+      },
+      "tools-review-release.log": {
+        "log_sha256": "bc4851c62cc6ba953f09320ce3a3d7d7aa4fe792d68f66365cdeacf1d5c6c970"
+      }
+    },
+    "standalone_tools_only": {
+      "scope": "development assets",
+      "image_id": "sha256:b13c172f4e8a21c42d256dbbea21ecb6fcd4a578847851c85e98fd47a25c2993",
+      "source_digest": "16d3e95d65205e0389883f53ed603e7cd470da52d1b940c83a468ba76366851a",
+      "checks": [
+        "starts_without_kvm_msb_or_docker_socket",
+        "single_space_routes_have_no_management_or_user_selection",
+        "shared_nine_tools_and_nonroot_secret_isolation",
+        "profile_preparation_cannot_follow_user_links_with_root_privileges",
+        "real_shared_desktop_screenshot",
+        "root_task_owner_keeps_final_results_in_memory_without_following_user_paths",
+        "dav_workbench_and_mcp_edits_share_writable_user_ownership",
+        "artifact_listing_respects_payload_permissions_through_user_symlinks",
+        "publication_uses_single_space_address",
+        "stopped_data_child_dies_with_killed_control_owner_and_helper_recovers",
+        "shared_test_browser_vm.py",
+        "shared_test_media_vm.py",
+        "rewritten_host_workbench_preserves_own_origin_and_nonce_checks",
+        "lost_desktop_owner_blocks_recreation_and_control_until_container_restart",
+        "active_mcp_sse_closes_on_graceful_shutdown",
+        "graceful_restart_preserves_workspace_and_expires_page_session"
+      ],
+      "passed": true,
+      "full": false,
+      "tools_only": true,
+      "cleanup_passed": true,
+      "suite_logs": {
+        "test_browser_vm.py.log": "5bf261cc32262b1058010694f3c16ec66e5a8775f484ad5f9e17066a037a25da",
+        "test_media_vm.py.log": "7ddc1d9d0ebb2e9447d7f8b09ce466e3174b81d5bc9ba94d6790e5dd2be1f8fc"
+      }
+    },
+    "release_binaries_sha256": {
+      "agent-space-mcp": "06c37f99ade42e3e57bd96d59e725455e3839de72d874711a9e30d8566e3bc61",
+      "agent-space-desktop": "75f3d3c182a6a579f53e0e442f0d68ed515bc96f197260385ab9d43420854292"
+    },
+    "release_sqlite": "3.51.3; actual linked sqlite3_version symbol verified before stripping",
+    "release_image_built": false
+  }
 }

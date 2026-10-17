@@ -20,13 +20,23 @@ import io
 SOURCE_LIMIT = 10 * 1024 * 1024
 
 
+def read_bounded(stream, limit):
+    data = bytearray()
+    while len(data) < limit:
+        chunk = stream.read(min(65536, limit - len(data)))
+        if not chunk:
+            break
+        data.extend(chunk)
+    return data
+
+
 def read_file(path, spec):
     try:
         fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC)
     except FileNotFoundError:
         print("FILE_NOT_FOUND")
         return 1
-    with os.fdopen(fd, "rb") as stream:
+    with os.fdopen(fd, "rb", buffering=0) as stream:
         meta = os.fstat(stream.fileno())
         if not stat.S_ISREG(meta.st_mode):
             print("NOT_A_FILE")
@@ -34,13 +44,15 @@ def read_file(path, spec):
         if not meta.st_size:
             print("EMPTY")
             return 0
-        head = stream.read(512)
+        head = read_bounded(stream, 512)
         supported = (head.startswith((b"\xff\xd8", b"\x89PNG", b"GIF87a", b"GIF89a"))
                      or (head.startswith(b"RIFF") and head[8:12] == b"WEBP"))
         text_bom = head.startswith((b"\xff\xfe", b"\xfe\xff", b"\0\0\xfe\xff"))
         xml = head.lstrip().lower()
         svg = xml.startswith(b"<svg") or (xml.startswith(b"<?xml") and b"<svg" in xml)
-        media = supported or (b"\0" in head and not text_bom) or head.startswith((b"BM", b"II*", b"MM\0*", b"%PDF")) or svg
+        # BMP/TIFF headers contain NUL bytes; their short ASCII prefixes alone
+        # also occur in ordinary text, such as "BM25 ranks documents".
+        media = supported or (b"\0" in head and not text_bom) or head.startswith(b"%PDF") or svg
         stream.seek(0)
         if media:
             # This separate marker survives bounded stdout collection. Media
@@ -58,7 +70,7 @@ def read_file(path, spec):
             if error:
                 print(json.dumps({"error": error}))
                 return 0
-            data = stream.read(SOURCE_LIMIT + 1)
+            data = read_bounded(stream, SOURCE_LIMIT + 1)
             if len(data) > SOURCE_LIMIT:
                 print(json.dumps({"error": {"code": "IMAGE_TOO_LARGE", "message": "Source image exceeds 10 MiB"}}))
             else:

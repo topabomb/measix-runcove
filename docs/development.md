@@ -27,6 +27,7 @@ cargo build -p agent-space-mcp --no-default-features --bin runcove-standalone --
 cargo clippy -p agent-space-mcp --no-default-features --bin runcove-standalone --locked -- -D warnings
 cargo tree -p agent-space-mcp --no-default-features --edges normal,build --locked
 python3 tests/test_managed_cleanup.py
+python3 tests/test_file_read.py
 python3 tests/test_exec_owner.py
 python3 tests/test_msb_patches.py
 python3 tests/test_workspace_transfer.py
@@ -36,6 +37,8 @@ python3 docker/test_package.py
 ```
 
 先构建当前三个 helper，再串行运行真实 VM 测试；只使用独立资格 Host、容器和新建卷，不指向日常或生产服务。Standalone 的 normal/build 依赖图应排除 microsandbox/libkrun。工作区导入的所有者与权限测试需要隔离 root 环境；普通用户运行的跳过项不能记为通过。
+
+仅修改工具时，可在独立容器运行 `python3 docker/verify-standalone.py --image <base-image> --development-assets --tools-only`，绑定当前 debug 二进制和 UI，执行浏览器及媒体套件并验证容器基础行为。先构建对应 MCP、Standalone 和 helper；此模式报告 full=false，跳过长时间休眠、文件流和真实 UI 套件，不满足最终镜像发布资格。
 
 资源紧张时使用 `CARGO_BUILD_JOBS=2 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_INCREMENTAL=0`，不要并行运行完整构建或 VM 生命周期套件。UI 在 `desktop-ui/` 使用 `npm ci`、`npm run build` 和 Playwright；运行真实 UI 套件前准备匹配浏览器、系统运行库和字体。源码检查不替代真实 HTTP、文件、桌面和迁移验证。
 

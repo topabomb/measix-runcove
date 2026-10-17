@@ -69,6 +69,14 @@ impl TestServer {
 }
 
 async fn start_server(workspace: &str, exec_timeout_secs: u64) -> TestServer {
+    start_server_with_output_limit(workspace, exec_timeout_secs, 51200).await
+}
+
+async fn start_server_with_output_limit(
+    workspace: &str,
+    exec_timeout_secs: u64,
+    max_bytes: usize,
+) -> TestServer {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let port = listener.local_addr().unwrap().port();
     let config = Arc::new(
@@ -95,11 +103,9 @@ async fn start_server(workspace: &str, exec_timeout_secs: u64) -> TestServer {
         max_tcp_connections: config.workspace.max_tcp_connections,
         max_udp_connections: config.workspace.max_udp_connections,
     };
-    let sessions = Arc::new(SessionManager::new(
-        engine,
-        config.server.max_sessions,
-        opts,
-    ));
+    let sessions = Arc::new(
+        SessionManager::new(engine, config.server.max_sessions, opts).with_limits(2000, max_bytes),
+    );
     let cancel = tokio_util::sync::CancellationToken::new();
     let server_cancel = cancel.clone();
     let config_for_service = config.clone();
@@ -404,6 +410,63 @@ async fn tool_call_starts_a_stopped_workspace_and_keeps_data() -> anyhow::Result
     );
     assert_running(workspace).await?;
 
+    client.cancel().await?;
+    server.cleanup().await
+}
+
+#[tokio::test]
+#[serial]
+async fn tiny_text_limits_preserve_file_protocol_and_image_results() -> anyhow::Result<()> {
+    let server = start_server_with_output_limit("smcp-e2e-small-read", 30, 8).await;
+    let client = ()
+        .serve(StreamableHttpClientTransport::from_config(client_config(
+            server.port,
+            Some("tok-alice-test"),
+        )))
+        .await?;
+    call(
+        &client,
+        "write",
+        json!({"path":"/workspace/text.txt","content":"BM25 ranks documents\n"}),
+    )
+    .await?;
+    let ordinary = call(&client, "read", json!({"path":"/workspace/text.txt"})).await?;
+    let enabled = call(
+        &client,
+        "read",
+        json!({"path":"/workspace/text.txt","multimodal":true}),
+    )
+    .await?;
+    assert_ne!(ordinary.is_error, Some(true));
+    assert_eq!(
+        serde_json::to_value(ordinary)?,
+        serde_json::to_value(enabled)?
+    );
+    let no_content = serde_json::to_value(
+        call(
+            &client,
+            "read",
+            json!({"path":"/workspace/text.txt","offset":2}),
+        )
+        .await?,
+    )?;
+    assert_eq!(no_content["content"][0]["text"], "(no content in range)");
+    call(&client, "bash", json!({"command":"python3 -c \"import base64;open('/workspace/image','wb').write(base64.b64decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'))\""})).await?;
+    let disabled =
+        serde_json::to_value(call(&client, "read", json!({"path":"/workspace/image"})).await?)?;
+    let error: serde_json::Value =
+        serde_json::from_str(disabled["content"][0]["text"].as_str().unwrap())?;
+    assert_eq!(error["error"]["code"], "MULTIMODAL_REQUIRED");
+    let image = call(
+        &client,
+        "read",
+        json!({"path":"/workspace/image","multimodal":true}),
+    )
+    .await?;
+    assert_ne!(image.is_error, Some(true));
+    let image = serde_json::to_value(image)?;
+    assert_eq!(image["content"][1]["type"], "image");
+    assert_eq!(image["content"][1]["mimeType"], "image/png");
     client.cancel().await?;
     server.cleanup().await
 }

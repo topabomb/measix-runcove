@@ -373,12 +373,22 @@ async fn desktop_catalog_and_permissive_arguments_reach_the_mcp_handlers() {
     );
     assert_eq!(schema("read")["properties"]["multimodal"]["default"], false);
     assert_eq!(schema("screen_observe")["required"], json!(["view"]));
-    for name in ["page_id", "count", "interval_ms"] {
+    for name in [
+        "page_id",
+        "count",
+        "interval_ms",
+        "save_original",
+        "save_dir",
+    ] {
         assert!(schema("screen_observe")["properties"][name]["description"]
             .as_str()
             .unwrap()
             .starts_with("Optional"));
     }
+    assert_eq!(
+        schema("screen_observe")["properties"]["save_original"]["default"],
+        false
+    );
     assert_eq!(
         schema("browser_task")["properties"]["wait_secs"]["maximum"],
         20

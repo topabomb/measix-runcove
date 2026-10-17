@@ -171,7 +171,7 @@ impl DesktopHub {
             return Err(EngineError::Other("INVALID_ARGUMENT".into()));
         }
         if ["page", "desktop"].contains(&view) {
-            return self
+            let mut value = self
                 .screen(
                     self.session.clone(),
                     ScreenOptions {
@@ -183,7 +183,11 @@ impl DesktopHub {
                         save_dir: None,
                     },
                 )
-                .await;
+                .await?;
+            if recent > 0 {
+                value["recent_tasks"] = json!(self.recent_jobs(recent).await);
+            }
+            return Ok(value);
         }
         let _lease = self.session.activity_lease()?;
         let port = self.ensure().await?;

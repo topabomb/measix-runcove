@@ -9,7 +9,9 @@ ROOT=Path(__file__).resolve().parents[1]
 def main():
  parser=argparse.ArgumentParser(description=__doc__)
  parser.add_argument('--image',required=True)
- parser.add_argument('--full',action='store_true',help='Run shared browser, 1 GiB file, UI and real 300-second idle suites')
+ suites=parser.add_mutually_exclusive_group()
+ suites.add_argument('--full',action='store_true',help='Run shared browser, 1 GiB file, UI and real 300-second idle suites')
+ suites.add_argument('--tools-only',action='store_true',help='Run browser and image tool regressions without long idle, file-stream or UI suites')
  parser.add_argument('--development-assets',action='store_true',help='Bind current debug binaries/UI for early development checks; not release qualification')
  args=parser.parse_args()
  name='runcove-qualify-'+uuid.uuid4().hex[:10]
@@ -146,9 +148,9 @@ print('stopped data child reaped after parent death')"""
   assert 'reaped' in command('docker','exec',container,'python3','-c',ownership_probe)
   assert request('GET','/dav/interop.txt',headers=auth,port=dav_port)[2]==b'edited'
   check('stopped_data_child_dies_with_killed_control_owner_and_helper_recovers')
-  if args.full:
+  if args.full or args.tools_only:
    from qualification import run_shared
-   report['suite_logs']=run_shared(output,environment,check)
+   report['suite_logs']=run_shared(output,environment,check,tools_only=args.tools_only)
   # Proxy rewrites Host; workbench's own Origin/Cookie/nonce boundary applies.
   proxy_origin='https://runcove-entry.example'
   proxy_headers={'Origin':proxy_origin,'Host':'upstream.internal:8932','Content-Type':'application/json'}
@@ -175,6 +177,7 @@ print('stopped data child reaped after parent death')"""
   stream.request('GET','/mcp',headers={'Authorization':'Bearer '+token,'Accept':'text/event-stream','Mcp-Session-Id':client.session,'MCP-Protocol-Version':'2025-11-25'})
   stream_response=stream.getresponse();assert stream_response.status==200
   report['full']=args.full
+  report['tools_only']=args.tools_only
   command('docker','stop','--time','45',container,timeout=60)
   stream_response.read();stream.close()
   check('active_mcp_sse_closes_on_graceful_shutdown')

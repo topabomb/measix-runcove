@@ -83,6 +83,14 @@ pub(crate) async fn read_file(
     timeout: Duration,
     cancel: CancellationToken,
 ) -> Result<CallToolResult, McpError> {
+    let offset = params.offset.unwrap_or(1);
+    let limit = params.limit.unwrap_or(500);
+    if offset == 0 || limit == 0 {
+        return Err(McpError::invalid_params(
+            "offset and limit must be positive integers",
+            None,
+        ));
+    }
     // The owner retains activity and codec capacity until actual completion,
     // even if the MCP waiter disappears or reaches its deadline.
     let lease = session.activity_lease().map_err(internal_error)?;
@@ -98,14 +106,6 @@ pub(crate) async fn read_file(
         } else {
             None
         };
-        let offset = params.offset.unwrap_or(1);
-        let limit = params.limit.unwrap_or(500);
-        if offset == 0 || limit == 0 {
-            return Err(McpError::invalid_params(
-                "offset and limit must be positive integers",
-                None,
-            ));
-        }
         let cmd = file_command(
             serde_json::json!({"operation":"read", "path":params.path, "offset":offset, "limit":limit,
                 "multimodal":params.multimodal,"line_range":params.offset.is_some() || params.limit.is_some()}),
@@ -115,9 +115,13 @@ pub(crate) async fn read_file(
             .exec_file_report(
                 &cmd,
                 remaining,
-                params
-                    .multimodal
-                    .then_some(agent_engine::media::REPORT_LIMIT),
+                // Type markers and image errors must survive even an 8-byte
+                // text limit. Successful text is bounded again below.
+                Some(if params.multimodal {
+                    agent_engine::media::REPORT_LIMIT
+                } else {
+                    4096
+                }),
                 cancel.clone(),
             )
             .await;
@@ -190,21 +194,14 @@ pub(crate) async fn read_file(
                             ),
                         ])
                     }
-                    Err(error) => {
-                        let message = compact_error(&error.to_string());
-                        let (code, detail) = message
-                            .split_once(": ")
-                            .filter(|(code, _)| {
-                                !code.is_empty()
-                                    && code.bytes().all(|c| c.is_ascii_uppercase() || c == b'_')
-                            })
-                            .unwrap_or(("IMAGE_PROCESSING_FAILED", &message));
-                        media_error(code, detail)
-                    }
+                    Err(error) => media_error(
+                        "IMAGE_PROCESSING_FAILED",
+                        &compact_error(&error.to_string()),
+                    ),
                 });
             }
         }
-        match result.map(|result| session.truncate_text(result)) {
+        match result {
             Ok(result) => match result.stdout.trim() {
                 "FILE_NOT_FOUND" => Ok(CallToolResult::error(vec![Content::text(compact_error(&format!(
                     "File not found: {}",
@@ -221,6 +218,7 @@ pub(crate) async fn read_file(
                     compact_error(&format!("read failed: {}", result.stderr.trim_start_matches("RUNCOVE_READ_TEXT\n").trim_start_matches("RUNCOVE_READ_MEDIA\n"))),
                 )])),
                 _ => {
+                    let result = session.truncate_text(result);
                     let output = if result.truncated {
                         format!("{}\n[output truncated] Request a smaller line range using offset and limit.", result.stdout)
                     } else { result.stdout };

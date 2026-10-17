@@ -1457,7 +1457,9 @@ impl Session {
             file_phase: Some(phase.clone()),
             cancel: cancel.clone(),
             max_lines: self.max_output_lines,
-            max_bytes: report_bytes.unwrap_or(self.max_output_bytes),
+            // Media has a protocol budget, while text still honors any larger
+            // workspace allowance before the caller applies its text guard.
+            max_bytes: report_bytes.unwrap_or(0).max(self.max_output_bytes),
             admission: self.admission.clone(),
             resp,
             _lease: ActivityLease::acquire(&self.workspace),

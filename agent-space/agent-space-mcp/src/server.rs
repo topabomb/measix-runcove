@@ -1123,7 +1123,9 @@ pub(crate) fn internal_error(error: impl std::fmt::Display) -> McpError {
 pub(crate) fn media_error(code: &str, message: &str) -> CallToolResult {
     let (code, message) = message
         .split_once(": ")
-        .filter(|(code, _)| code.bytes().all(|c| c.is_ascii_uppercase() || c == b'_'))
+        .filter(|(code, _)| {
+            !code.is_empty() && code.bytes().all(|c| c.is_ascii_uppercase() || c == b'_')
+        })
         .unwrap_or((code, message));
     CallToolResult::error(vec![Content::text(
         json!({"error":{"code":code,"message":message}}).to_string(),

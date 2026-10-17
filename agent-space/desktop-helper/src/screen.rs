@@ -213,9 +213,12 @@ async fn save_frame(
     capture: &Value,
     result: &mut Value,
 ) -> anyhow::Result<()> {
-    let mut file = save_capture(bytes, directory.unwrap_or(desktop::ARTIFACTS), job.deadline)
+    let directory = directory.unwrap_or(desktop::ARTIFACTS);
+    let mut file = save_capture(bytes, directory, job.deadline)
         .await
-        .map_err(|e| anyhow::anyhow!("SCREEN_SAVE_FAILED: {e}"))?;
+        .map_err(|e| {
+            anyhow::anyhow!("SCREEN_SAVE_FAILED: Cannot save original to {directory}: {e}")
+        })?;
     file["frame_index"] = json!(index + 1);
     file["image_id"] = capture["capture"]["image_id"].clone();
     file["width"] = capture["capture"]["width"].clone();
