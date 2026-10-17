@@ -51,11 +51,13 @@ docker compose -f docker/compose.standalone.yaml up -d
 
 Compose 示例读取 `docker/configs.example/standalone.toml`，持久化 `/workspace`，限制 CPU/内存/shm/tmpfs，并提供浏览器所需的 seccomp 配置。首次只初始化空工作卷根目录；已有数据的 UID/GID 不会被递归改写。数据进程使用1001:1001；导入数据先按运维手册显式映射。root 服务配置和访问凭据不能放进用户工作卷。
 
+Standalone 的服务与 helper 控制进程使用 root，Agent 命令、浏览器和文件操作使用 UID/GID1001。Agent 可在工作区创建 Python 虚拟环境、安装项目内 npm 依赖；额外系统依赖由部署维护者在镜像构建时安装，部署前验证受影响的工具和桌面流程。Agent 不具备运行时 root 或任意 sudo 权限，完整边界见[执行身份与环境管理](architecture.md#执行身份与环境管理)。
+
 访问 `/desktop/` 并使用该实例 Token 登录，MCP 地址为 `/mcp`，发布为 `/pub/{name}/`。只有一个使用者的一个空间，无账号/空间选择和管理 API。访问凭据通过环境变量提供，TOML 只保存环境变量名称；重建后必须继续提供凭据。外部 DAV 默认关闭；启用时配置 `[webdav] enabled=true`、独立 `RUNCOVE_DAV_TOKEN` 并在编排中映射8933端口，入口为 `/dav/`。工作台文件面板不依赖外部 DAV 开启。
 
 独立 TOML 支持 `[server]`、`[auth]`、`[execution]`、`[logging]`、`[webdav]`、`[web_publish]`；不接受用户/空间清单、MSB、VM 容量/生命周期或管理配置。执行默认 Bash、30秒、2000行/51200bytes；监听默认8932，MCP协议会话默认不因空闲过期。DAV 的 `public_port` 是 Server 管理链接投影设置，不在独立配置中提供。
 
-正常 TERM 会取消 MCP 长连接、DAV 与现有任务/helper。若桌面 root owner 被强杀，状态保守 BLOCKED 并要求 `docker compose ... restart`；基础命令和文件继续可用。不要用 `pkill` 或删实例记录强行恢复。使用者安装到容器根文件系统的软件不承诺跨换镜像保留。
+正常 TERM 会取消 MCP 长连接、DAV 与现有任务/helper。若桌面 root owner 被强杀，状态保守 BLOCKED 并要求 `docker compose ... restart`；基础命令和文件继续可用。不要用 `pkill` 或删实例记录强行恢复。部署维护者临时安装到容器根文件系统的软件不承诺跨换镜像保留。
 
 ### 托管版配置与 Compose
 

@@ -16,6 +16,8 @@
 
 共享能力直接复用现有所有者，目标差异留在装配与运行适配。Standalone 不引入 VM、用户登记或第二套任务服务。新增/修改 helper、worker 或 Agent 说明前核对[受管进程规范](architecture.md#受管进程)。SDK/CLI 升级或补丁变更先核对 [MSB 补丁撤销条件](runtime.md)。
 
+执行身份遵循[权限合同](architecture.md#执行身份与环境管理)：Standalone 的 Agent 任务使用 UID/GID1001，系统依赖由镜像提供；Server 的命令和文件操作使用 VM 内 root。新增文件访问复用同一空间身份，并验证 bash 创建的私有目录在文件工具、browser_run 和截图保存间可互通，同时保留 Standalone 对 root 控制文件与进程的保护。
+
 ## 源码检查
 
 ```bash

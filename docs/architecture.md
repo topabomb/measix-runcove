@@ -6,8 +6,6 @@ Runcove 在一个仓库中维护共享核心，提供托管多空间版（Server
 
 Standalone 的 `StateStore::standalone` 只建立固定空间的只读内存访问身份，不创建 state.json 或用户表。配置只保留入口、凭据环境引用、执行、日志、可选 DAV 和发布设置；外部 DAV 默认关闭。容器 `/workspace` 持久化文件、profile、产物和既有暂存归属，Cookie、任务和临时发布随服务结束。
 
-root 控制进程不把访问凭据传给 payload；命令和文件数据进程使用 UID/GID1001。桌面 profile 准备和产物枚举在降权子进程内完成，包括对用户可修改的父路径进行遍历，最终任务结果与观察保存在现有 Job 内存中，读取 worker 结果使用不跟随链接的固定文件句柄、归属和大小校验。DAV/static-http 的 root 身份父进程管理数据子进程；父死强杀子进程，正常停服仍先 TERM 后有界收敛。
-
 Standalone 的桌面控制 owner 异常死亡时不能证明所有独立桌面后代已经结束：保留受保护的实例记录，控制进入 `BLOCKED`，拒绝创建第二个桌面 owner，错误明确要求重启容器。基础文件和命令仍可使用；容器重启由 Docker 清空原 PID namespace 后恢复。正常关闭桌面和正常停服继续使用既有后代清理边界，不新增通用守护或第二套回收器。
 
 Server 是单节点、可独立部署的托管空间服务。它为每个本地账号维护一个隔离的 microsandbox VM、持久根盘和 `/workspace` 独立磁盘卷，提供 Streamable HTTP MCP、文件状态用户管理，WebDAV 文件交换，以及随空间运行 session 结束的临时网页发布。当前锁定 microsandbox SDK、CLI 和运行时 0.7.2，使用可核验的本地临时补丁；VM 元数据由 SDK／runtime 维护，Agent Space 不直接写 MSB 数据库。
@@ -15,6 +13,23 @@ Server 是单节点、可独立部署的托管空间服务。它为每个本地�
 本文件说明实现的所有权与生命周期；接口、配置、操作和 MEASIX 接入步骤见[功能与接入参考](server-api.md)，容器部署见[Docker 部署](deployment.md)。WebDAV helper 和外部 DAV 入口已实现，固定版本验证范围单独登记；当前不提供平台 quota 或 compute/storage metering。
 
 `[workspace].image` 接受自定义字符串或桌面预设对象。schema3 为每个空间固定镜像选择；自定义类型提供原五工具，桌面预设自动增加三个浏览器工具、screen_observe 和 `/u/{username}/desktop/` 工作台。默认值改变不替换已有根盘或能力；详见[浏览器与云桌面合同](browser-desktop.md)。
+
+## 执行身份与环境管理
+
+两种编排共用工具能力和调用语义，执行身份由各自的空间隔离边界确定：
+
+| 执行对象 | Server | Standalone |
+|---|---|---|
+| Runcove 核心服务 | 位于用户 VM 外的 Host 服务 | 本容器内的 root 服务 |
+| 受管 helper 控制进程 | VM 内 root | 容器内 root |
+| bash、文件工具、browser_run 用户脚本、原图保存及产物枚举 | VM 内 root | UID/GID1001 |
+| Chromium、桌面应用和内部观察进程 | VM 内 UID/GID1001 | 容器内 UID/GID1001 |
+
+Standalone 保持一个使用者、一个空间、一个容器。Agent 可以管理工作文件、用户应用和项目依赖；Python 虚拟环境、项目内 npm 依赖等使用可写目录。系统依赖由部署维护者在镜像构建时提供，Agent 没有运行时 root 或任意 sudo 权限。root 控制进程负责服务入口、凭据和运行记录，UID 隔离用于防止普通用户权限下的任务直接读写控制文件或终止控制进程；资源耗尽和程序故障仍由资源限额、任务期限及进程清理处理。
+
+Standalone 的 root 控制进程不把访问凭据传给 payload。桌面 profile 准备和产物枚举在降权子进程内完成，包括对用户可修改的父路径进行遍历，最终任务结果与观察保存在现有 Job 内存中，读取 worker 结果使用不跟随链接的固定文件句柄、归属和大小校验。DAV/static-http 的 root 身份父进程管理 UID1001 数据子进程；父死强杀子进程，正常停服仍先 TERM 后有界收敛。
+
+Server 的 Agent 可以在 VM 内使用 root 管理系统依赖。Host 核心服务由 VM 边界隔离；guest root 仍能修改 VM 内的 helper 和桌面文件，受管进程约定用于协作和防误操作。新增工具的文件访问沿用所在空间的命令/文件身份，避免对同一路径产生额外的权限差异。
 
 ## 1. 组件和权威状态
 
@@ -26,7 +41,7 @@ Server 是单节点、可独立部署的托管空间服务。它为每个本地�
 | `agent-space/src/session.rs` 的 `SessionManager` | 每空间唯一运行所有者；队列、容量、活动、预览配置和 helper 生命周期 |
 | `agent-space/src/engine/msb.rs` | microsandbox VM、卷、guest TCP 和受管 helper 的底层操作 |
 | `agent-space/src/config.rs` | 运行 profile、生命周期、外部 origin、状态目录和管理员凭证来源；拒绝动态模式并行使用静态用户 |
-| `agent-space/agent-space-mcp/src/mcp_auth.rs`、`server.rs` | 每个 MCP HTTP 请求与 session 鉴权；按镜像提供五/八工具和执行前准入复核 |
+| `agent-space/agent-space-mcp/src/mcp_auth.rs`、`server.rs` | 每个 MCP HTTP 请求与 session 鉴权；按镜像提供五/九工具和执行前准入复核 |
 | `agent-space/agent-space-mcp/src/admin_api.rs`、`web_publish.rs`、`webdav.rs`、`origins.rs` | 管理接口；发布/DAV 认证及流式反代；各入口 authority 与浏览器来源边界 |
 | `agent-space/agent-space-mcp/src/main.rs` | 路由装配、显式状态初始化和静态用户导入、启动接管及清理重试 |
 | `agent-space/static-http/src/main.rs`（`agent-space-static-http`） | 运行在 guest 内、只读服务指定文件或目录的固定版本程序 |

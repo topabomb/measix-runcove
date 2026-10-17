@@ -49,5 +49,15 @@ Use `/workspace` for large downloads, archives and build outputs.
   the Host owner. Do not use `pkill`, edit credentials or try to repair ownership
   records. Host configuration and account state remain authoritative.
 
-These conventions prevent accidental interference; they are not an isolation
-boundary against commands running as root inside a VM. Standalone user commands and file processes run as UID1001; its root controller owns private runtime records.
+On Standalone, commands, browser scripts, saved screenshots and file operations
+run as UID/GID1001. The Runcove service and helper controllers run as root and own
+private credentials and runtime records. Install application dependencies in
+project-local environments, such as a Python virtual environment or a local npm
+project. System packages belong in the deployment image; Agent tasks have no
+runtime root or unrestricted sudo access.
+
+On Server, commands, file operations, browser scripts and saved screenshots use
+root inside the VM; the core service is outside the VM. Chromium, desktop apps
+and internal observers use UID1001 in both deployments. Managed-service
+conventions prevent accidental interference; they do not isolate guest helpers
+from root commands inside a VM.

@@ -62,6 +62,8 @@ Runcove 为这些工作提供一个长期保留的空间。你可以把它用于
 | 持久内容 | `/workspace`，包含工作文件与浏览器资料 | 用户状态、空间根盘与工作卷 |
 | 主机要求 | Linux Docker，无需 KVM | Linux Docker，需 `/dev/kvm` |
 | 管理方式 | 单份配置和访问凭据 | 用户、凭据、资源及空间生命周期管理 API |
+| 命令与文件权限 | UID/GID1001，服务控制进程使用 root | VM 内 root，核心服务在 VM 外 |
+| 依赖安装 | Agent 安装项目依赖，系统依赖由镜像提供 | Agent 可在 VM 内管理项目和系统依赖 |
 | 部署入口 | [单空间构建与启动](docs/deployment.md#独立单空间构建与启动) | [Server 构建与部署](docs/deployment.md) |
 
 先体验个人单空间，从源码构建：

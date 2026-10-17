@@ -44,6 +44,8 @@ helper 二进制内嵌匹配的五份 JS 源码，启动时原子安装到 `/opt
 
 默认桌面 1440×900；VNC 5901、CDP 9222、helper 随机端口仅限 guest 回环，并禁止作为 web_publish 端口发布。Chromium、LXQt 和内部观察进程使用 UID1001。`browser_run` 用户脚本、截图保存及产物列表与 bash、文件工具使用相同的空间文件身份：Server 在 VM 内使用 root，Standalone 使用 UID1001，后者的 root 控制器保持私有。guest root 命令仍可修改这些目录，内部协作约束不构成对抗 root 的安全边界。
 
+Standalone 的 Agent 可管理项目和用户态依赖，系统依赖由部署镜像提供；root 服务控制进程与用户任务的权限边界见[架构说明](architecture.md#执行身份与环境管理)。
+
 公开目录是默认落盘位置，Agent仍可在其他工作区路径组织文件；不自动创建 `/workspace/agent-space/README.md`。桌面启动时把旧默认产物目录中的普通文件移到新目录，同名冲突以UUID前缀保留两份，未知子目录/符号链接留在原处。仅将Chromium原默认下载路径改到新位置，用户自选路径保留。旧绝对产物链接不提供永久别名，迁移后从产物列表取得当前路径。
 
 ## 浏览器与截图工具
