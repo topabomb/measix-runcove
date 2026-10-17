@@ -353,6 +353,40 @@
       "agent-space-mcp": "8f03681ff762b35373f8449bb160dc47f3e513ba8fd8858717d249ce4d0a40d7",
       "agent-space-desktop": "c207dba08b01331faef84c099e9e8d7d27512fe44da4b49e41ec6c7740ad133c"
     },
-    "linked_sqlite_version": "3.51.3"
+    "linked_sqlite_version": "3.51.3",
+    "production_binary_update": {
+      "passed": true,
+      "checks": [
+        "production_nine_tool_catalog_and_optional_parameters",
+        "production_text_read_write_edit_compatibility",
+        "production_full_mcp_image_hash_and_default_disabled",
+        "server_private_directory_mcp_and_browser_script_uid_read_write_upload",
+        "production_browser_dom_ax_explicit_result_task_and_screen_sequence",
+        "production_original_png_authenticated_download_hash",
+        "server_page_and_desktop_originals_saved_and_downloaded_under_root_private_parent",
+        "server_artifact_listing_uses_same_workspace_file_permissions",
+        "production_web_publish_handler",
+        "original_users_configuration_volumes_runtime_and_other_services_preserved"
+      ],
+      "health": "healthy",
+      "user_count": 2,
+      "schema": 3,
+      "temporary_account_removed": true,
+      "runtime_error_lines": 0,
+      "original_user_records_preserved": true,
+      "source_revision": "3f75721b2bd527e6997fade5f55529d5e5196234",
+      "source_sha256": "4a2fa14a42ed8441bb75c4367d474de74c209428103943a2a69fdbec0d75eaca",
+      "binaries": {
+        "agent-space-mcp": "8f03681ff762b35373f8449bb160dc47f3e513ba8fd8858717d249ce4d0a40d7",
+        "agent-space-desktop": "c207dba08b01331faef84c099e9e8d7d27512fe44da4b49e41ec6c7740ad133c"
+      },
+      "scope": "Existing container binary override; no new image.",
+      "image_id": "sha256:413c3411b962e140b89f9f1a7195b4350ff92af2f76f3dec5a9fe3a00c129260",
+      "backups_created": false,
+      "migration_run": false,
+      "verified_at_utc": "2026-10-17T05:32:58.105575+00:00",
+      "mount_comparison": "All mount fields compared by destination; port bindings checked separately.",
+      "initial_verification_note": "Initial raw mount-list equality assertion failed after functional checks. The failing list was not retained; subsequent repeated checks and the complete rerun passed. No mount or port fields differed in the retained checks."
+    }
   }
 }

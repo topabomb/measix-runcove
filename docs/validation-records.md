@@ -28,6 +28,8 @@
 
 权限复审的快速验证通过 helper 6项、MCP 32项、清理8项、执行所有权5项、打包5项、全目标及无 MSB Standalone Clippy。隔离进程的8项检查复现旧版拒绝并验证 Server 私有目录保存、产物枚举、脚本身份及私有文件上传，Standalone 仍拒绝 root 私有路径。只启动一个 Standalone 验收部署，浏览器11项、媒体9项、秘密隔离和基础重启通过，full=false，容器与卷已清理；新增共同回归覆盖 bash 创建0700目录后的文件读写、浏览器脚本、页面/桌面原图、认证下载和产物列表。发布程序重新构建，SQLite 实际链接版本为3.51.3。首轮开发资产重启受测试中重编译绑定文件干扰，固定输入后复验通过。详情见验证摘要的 workspace_permissions_fix 字段。
 
+权限修复提交 `3f75721` 后，再次直接更新现有生产容器的 MCP 和 desktop helper 并重启，未备份或迁移。生产程序 SHA-256 分别为 `8f03681ff762b35373f8449bb160dc47f3e513ba8fd8858717d249ce4d0a40d7`、`c207dba08b01331faef84c099e9e8d7d27512fe44da4b49e41ec6c7740ad133c`。临时账号的九工具调用通过，实际验证 root 创建的0700目录中脚本读写及上传、页面/桌面原图保存、MCP图片读取、认证下载哈希和产物枚举；原账号、配置、挂载、运行时及其他服务保持不变，服务健康，本次启动运行时错误为0，临时账号已正常清理。首次原始挂载列表相等断言未通过，未留存当次列表；之后按目标路径核对全部挂载字段、端口及完整复验通过，不能据此确定首次断言失败原因。此次仍为原镜像上的二进制覆盖，重新创建容器需重新应用；详情见 workspace_permissions_fix.production_binary_update。
+
 ## 工具描述与生产二进制更新（2026-10-16）
 
 提交 `7e3f206` 统一八个 MCP 工具的远程工作区归属说明：`bash`、`browser_observe` 保留工具描述，`read`、`write`、`edit` 的 `path`、`browser_run` 的 `code` 和 `browser_task` 的 `task_id` 补充归属，`web_publish` 在工具描述首句补充。每个工具的描述与参数描述合计出现一次 `Runcove's remote workspace`；未改执行逻辑或参数结构。`cargo fmt --check` 及无 MSB 构建下的 `test_web_publish_mcp` 五项测试通过。
