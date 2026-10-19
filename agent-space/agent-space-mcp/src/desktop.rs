@@ -429,7 +429,12 @@ async fn change_control(
         _ => Err("INVALID_CONTROL".into()),
     };
     match result {
-        Ok(()) => Json(hub.control.view(&page.id)).into_response(),
+        Ok(()) => {
+            if body.mode == "HUMAN" {
+                let _ = hub.input().await;
+            }
+            Json(hub.control.view(&page.id)).into_response()
+        }
         Err(code) => error(StatusCode::CONFLICT, &code),
     }
 }

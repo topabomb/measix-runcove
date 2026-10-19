@@ -1,0 +1,61 @@
+{
+  "recorded_at": "2026-10-19T08:04:44.208606+00:00",
+  "source_digest": "61a1d41f93a18d9bc347484a97380fd714bee44f741db9b18b9f2df53be432cf",
+  "build_revision_baseline": "4b05936592af4fd8361b04ab7d68d84b0e7bc402",
+  "server_image": {
+    "tag": "runcove-server:runcove-61a1d41f93a18d9b",
+    "id": "sha256:dc5d61e08fa29c02775089083efe31ae2968ad6246d317600d5a52e90cb4b861"
+  },
+  "source_checks": {
+    "server_route_tests_passed": 3,
+    "standalone_route_tests_passed": 3,
+    "control_tests_passed": 5,
+    "clippy_server_all_targets": true,
+    "fmt_and_diff_check": true,
+    "MSB_build_regression_count": 177,
+    "route_test_source_sha256": "c41a59fc9cc3284336436b0485d10fa53f6916a5c3064b6711fe16a8df357835"
+  },
+  "targeted_final_image_validation": {
+    "passed": true,
+    "scope": "targeted final Server image smoke test",
+    "full": false,
+    "checks": [
+      "fresh_real_VM_and_browser",
+      "authenticated_takeover_with_live_desktop_helper",
+      "unchanged_60_second_control_policy",
+      "second_viewer_takeover_rejected",
+      "give_back_and_browser_remain_usable"
+    ],
+    "cleanup_passed": true
+  },
+  "production": {
+    "passed": true,
+    "backups_created": false,
+    "database_migration": false,
+    "state_schema": 3,
+    "original_accounts_config_proxy_mounts_and_other_services_preserved": true,
+    "sqlite_integrity": "ok",
+    "foreign_key_violations": 0,
+    "local_and_public_health_passed": true,
+    "public_authenticated_control_routes_passed": true,
+    "temporary_account_deleted_original_accounts_preserved": true,
+    "automatic_restarts": 0,
+    "runtime_error_lines_current_boot": 0
+  },
+  "cleanup": {
+    "old_production_container_and_image_removed": true,
+    "historical_private_backups_and_migration_artifacts_removed": true,
+    "local_backup_volumes_removed": 2,
+    "production_historical_volumes_removed": 3,
+    "production_transfer_and_private_acceptance_staging_removed": true,
+    "live_config_preserved_at_original_path": true,
+    "config_mount_verified_after_old_container_removal": true,
+    "current_local_and_production_data_and_unrelated_services_preserved": true
+  },
+  "not_executed": [
+    "new five-minute idle timing qualification",
+    "new Standalone release image",
+    "full release qualification and large-file stress",
+    "new offline package"
+  ]
+}

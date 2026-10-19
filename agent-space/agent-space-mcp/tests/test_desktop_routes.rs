@@ -14,12 +14,14 @@ use serde_json::{json, Value};
 use std::{
     fs,
     sync::{atomic::Ordering, Arc},
+    time::{Duration, Instant},
 };
 use tower::ServiceExt;
 struct Fixture {
     app: Router,
     state: Arc<StateStore>,
     engine: Arc<MockEngine>,
+    sessions: Arc<SessionManager>,
     token: String,
     _dir: tempfile::TempDir,
 }
@@ -60,7 +62,7 @@ fn fixture() -> Fixture {
     fs::create_dir(&ui).unwrap();
     fs::write(ui.join("index.html"), "workbench").unwrap();
     let app = desktop::router(DesktopState::new(
-        sessions,
+        sessions.clone(),
         state.clone(),
         ui.to_string_lossy().into(),
     ));
@@ -68,6 +70,7 @@ fn fixture() -> Fixture {
         app,
         state,
         engine,
+        sessions,
         token: token.token,
         _dir: dir,
     }
@@ -191,6 +194,84 @@ async fn routes_bind_identity_nonce_and_origin_without_waking_vm() {
         .status(),
         StatusCode::UNAUTHORIZED
     );
+}
+#[tokio::test]
+async fn takeover_refreshes_activity_without_polling_or_rejection_doing_so() {
+    let f = fixture();
+    let (cookie, nonce) = sign_in(&f).await;
+    let (other_cookie, other_nonce) = sign_in(&f).await;
+    let user = f.state.get("alice").unwrap();
+    let hub = f.sessions.desktop(&user.sandbox_name).await.unwrap();
+    let old = Instant::now() - Duration::from_secs(290);
+    hub.session.set_last_work(old).await;
+    hub.session.set_last_request(old).await;
+    let path = "/u/alice/desktop/api/control";
+    assert_eq!(
+        request(
+            &f.app,
+            path,
+            "GET",
+            json!({}),
+            Some(&cookie),
+            Some(&nonce),
+            "https://public.example"
+        )
+        .await
+        .status(),
+        StatusCode::OK
+    );
+    assert_eq!(hub.session.last_work().await, old);
+    let accepted = Instant::now();
+    let response = request(
+        &f.app,
+        path,
+        "POST",
+        json!({"mode":"HUMAN"}),
+        Some(&cookie),
+        Some(&nonce),
+        "https://public.example",
+    )
+    .await;
+    assert_eq!(response.status(), StatusCode::OK);
+    let view: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 8192).await.unwrap()).unwrap();
+    assert_eq!(view["control"], "HUMAN");
+    assert_eq!(view["can_input"], true);
+    assert_eq!(view["human_idle_secs"], 60);
+    let refreshed = hub.session.last_work().await;
+    assert!(refreshed >= accepted);
+    assert_eq!(hub.session.last_request().await, refreshed);
+    assert_eq!(
+        request(
+            &f.app,
+            path,
+            "POST",
+            json!({"mode":"HUMAN"}),
+            Some(&other_cookie),
+            Some(&other_nonce),
+            "https://public.example"
+        )
+        .await
+        .status(),
+        StatusCode::CONFLICT
+    );
+    assert_eq!(hub.session.last_work().await, refreshed);
+    assert_eq!(
+        request(
+            &f.app,
+            path,
+            "POST",
+            json!({"mode":"AI"}),
+            Some(&cookie),
+            Some(&nonce),
+            "https://public.example"
+        )
+        .await
+        .status(),
+        StatusCode::OK
+    );
+    assert_eq!(hub.session.last_work().await, refreshed);
+    assert_eq!(f.engine.create_count.load(Ordering::SeqCst), 0);
 }
 #[tokio::test]
 async fn cross_site_requests_and_cross_space_tokens_fail() {
