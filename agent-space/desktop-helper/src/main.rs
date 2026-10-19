@@ -1,5 +1,6 @@
 //! Loopback-only guest browser owner. No MCP or user credentials live here.
 mod desktop;
+mod pages;
 mod process;
 mod screen;
 use axum::{
@@ -25,6 +26,7 @@ use tokio_util::sync::CancellationToken;
 
 #[derive(Clone)]
 struct App {
+    port: u16,
     desktop: Arc<Mutex<desktop::Desktop>>,
     jobs: Arc<Mutex<HashMap<String, Arc<Job>>>>,
 }
@@ -73,13 +75,18 @@ async fn health(State(app): State<App>) -> Reply {
     Ok(Json(value))
 }
 async fn viewer(State(app): State<App>) -> Reply {
-    app.desktop
-        .lock()
-        .await
-        .start()
+    let mut desktop = app.desktop.lock().await;
+    desktop.start().await.map_err(|e| fail(&e.to_string()))?;
+    desktop.last_used = Instant::now();
+    let pages = desktop
+        .pages
+        .clone()
+        .ok_or_else(|| fail("BROWSER_UNAVAILABLE"))?;
+    drop(desktop);
+    pages
+        .ensure_page()
         .await
         .map_err(|e| fail(&e.to_string()))?;
-    app.desktop.lock().await.last_used = Instant::now();
     Ok(Json(json!({"desktop":true})))
 }
 async fn input(State(app): State<App>) -> Reply {
@@ -135,9 +142,12 @@ async fn observe(State(app): State<App>, Json(params): Json<Value>) -> Reply {
     desktop.start().await.map_err(|e| fail(&e.to_string()))?;
     desktop.last_used = Instant::now();
     drop(desktop);
-    let value = desktop::node(params)
+    let mut value = desktop::node(params)
         .await
         .map_err(|e| fail(&e.to_string()))?;
+    if let Some(fields) = value.as_object_mut() {
+        fields.remove("profilePicker");
+    }
     Ok(Json(value))
 }
 async fn run(State(app): State<App>, Json(params): Json<Run>) -> Reply {
@@ -169,6 +179,40 @@ async fn run(State(app): State<App>, Json(params): Json<Run>) -> Reply {
     Ok(Json(
         json!({"task_id":id,"state":"running","phase":"preparing"}),
     ))
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NewPage {
+    task_id: String,
+}
+async fn new_page(State(app): State<App>, Json(params): Json<NewPage>) -> Reply {
+    let job = app
+        .jobs
+        .lock()
+        .await
+        .get(&params.task_id)
+        .cloned()
+        .ok_or_else(|| fail("TASK_NOT_FOUND"))?;
+    if !job.modifies
+        || job.cancel.is_cancelled()
+        || Instant::now() >= job.deadline
+        || job.status.lock().await["terminal"] == true
+    {
+        return Err(fail("EXECUTION_CANCELLED"));
+    }
+    let pages = app
+        .desktop
+        .lock()
+        .await
+        .pages
+        .clone()
+        .ok_or_else(|| fail("BROWSER_UNAVAILABLE"))?;
+    let id = tokio::select! {
+        result = pages.create() => result.map_err(|e| fail(&e.to_string()))?,
+        _ = job.cancel.cancelled() => return Err(fail("EXECUTION_CANCELLED")),
+        _ = tokio::time::sleep_until(tokio::time::Instant::from_std(job.deadline)) => return Err(fail("EXECUTION_TIMEOUT")),
+    };
+    Ok(Json(json!({"page_id":id})))
 }
 fn new_job(id: &str, timeout: u64, modifies: bool) -> anyhow::Result<Arc<Job>> {
     anyhow::ensure!(uuid::Uuid::parse_str(id).is_ok(), "INVALID_TASK_ID");
@@ -206,13 +250,25 @@ async fn execute(app: App, job: Arc<Job>, params: Run) {
         let mut desktop = app.desktop.lock().await;
         desktop.start().await?;
         desktop.last_used = Instant::now();
+        let pages = desktop
+            .pages
+            .clone()
+            .ok_or_else(|| anyhow::anyhow!("BROWSER_UNAVAILABLE: page admission unavailable"))?;
         drop(desktop);
-        let value = desktop::node(json!({"page_id":params.page_id,"create_page":true})).await?;
+        let mut value = desktop::node(json!({"page_id":params.page_id})).await?;
+        if params.page_id.is_none()
+            && value["page_id"].is_null()
+            && value["nativeWindow"] != true
+            && value["profilePicker"] != true
+        {
+            let id = pages.ensure_page().await?;
+            value = desktop::node(json!({"page_id":id})).await?;
+        }
         if value.get("error").is_some() {
             *job.result.lock().await = Some(json!({"tabs":value["tabs"]}));
             anyhow::bail!(value.to_string());
         }
-        Ok(value)
+        Ok((value, pages))
     };
     let prepared = tokio::select! {
      result=prepare=>result,
@@ -221,7 +277,7 @@ async fn execute(app: App, job: Arc<Job>, params: Run) {
     };
     let started = prepared.is_ok();
     let outcome = match prepared {
-        Ok(observation) => worker(&job, &params, observation).await,
+        Ok((observation, pages)) => worker(&job, &params, observation, app.port, pages).await,
         Err(error) => {
             let mut desktop = app.desktop.lock().await;
             if !desktop.display_alive() {
@@ -284,13 +340,21 @@ async fn finish_unconfirmed(app: &App, job: &Job, error: String) {
     app.desktop.lock().await.last_used = Instant::now();
     job.done.notify_waiters();
 }
-async fn worker(job: &Job, params: &Run, observation: Value) -> anyhow::Result<Value> {
+async fn worker(
+    job: &Job,
+    params: &Run,
+    observation: Value,
+    port: u16,
+    pages: pages::Pages,
+) -> anyhow::Result<Value> {
+    let mut page_events = pages.violations();
+    page_events.borrow_and_update();
     let remaining = job.deadline.saturating_duration_since(Instant::now());
     anyhow::ensure!(
         !remaining.is_zero() && !job.cancel.is_cancelled(),
         "EXECUTION_TIMEOUT_OR_CANCELLED"
     );
-    let worker_spec = json!({"code":params.code,"page_id":observation["page_id"],"window":observation["window"],"nativeWindow":observation["nativeWindow"],"pageResponsive":observation["health"]["page"],"captures":params.captures,"timeoutMs":remaining.as_millis()});
+    let worker_spec = json!({"code":params.code,"page_id":observation["page_id"],"window":observation["window"],"nativeWindow":observation["nativeWindow"],"profilePicker":observation["profilePicker"],"pageResponsive":observation["health"]["page"],"captures":params.captures,"timeoutMs":remaining.as_millis(),"guard_port":port,"task_id":job.id});
     let spec = json!({"program":"node","args":[format!("{}/browser-worker.cjs",desktop::NODE)],"uid":process::workspace_uid(),
     "timeout_secs":remaining.as_secs_f64(),"max_bytes":32768,"max_lines":500,"cleanup_on_exit":true});
     let mut command = Command::new("python3");
@@ -330,9 +394,11 @@ async fn worker(job: &Job, params: &Run, observation: Value) -> anyhow::Result<V
         stderr.take(8192).read_to_end(&mut bytes).await?;
         Ok::<_, std::io::Error>(bytes)
     });
+    let mut page_limit = false;
     let ending = tokio::select! {
       exit=child.wait()=>{exit?;false},
       _=job.cancel.cancelled()=>true,
+      changed=page_events.changed()=>{page_limit=changed.is_ok();true},
       _=tokio::time::sleep_until(tokio::time::Instant::from_std(job.deadline))=>true,
     };
     if ending {
@@ -383,8 +449,25 @@ async fn worker(job: &Job, params: &Run, observation: Value) -> anyhow::Result<V
     }
     *job.result.lock().await = Some(result.clone());
     anyhow::ensure!(output["cleanup_confirmed"] == true, "CLEANUP_UNCONFIRMED");
+    // The worker can exit before this connection receives its popup event.
+    // Drain a real target snapshot before publishing success, retaining outputs.
+    // Forced endings already stopped the worker. Do not extend cancellation's
+    // existing cleanup budget with an additional browser round trip.
+    let synchronized = if ending { Ok(()) } else { pages.sync().await };
+    page_limit |= page_events.has_changed().unwrap_or(false);
+    anyhow::ensure!(!page_limit, "{}", pages.limit_error());
     anyhow::ensure!(output["cancelled"] != true, "EXECUTION_CANCELLED");
     anyhow::ensure!(output["timed_out"] != true, "EXECUTION_TIMEOUT");
+    if let Err(error) = synchronized {
+        // Closing the last Page can shut Chromium down normally. Preserve that
+        // completed action; the existing lifecycle owner handles the next open.
+        if tokio::net::TcpStream::connect(("127.0.0.1", 9222))
+            .await
+            .is_ok()
+        {
+            return Err(error);
+        }
+    }
     if output["exit_code"] != 0 {
         let cause = stderr
             .trim()
@@ -541,8 +624,22 @@ async fn main() -> anyhow::Result<()> {
         std::fs::set_permissions(directory, std::fs::Permissions::from_mode(0o711))?;
     }
     desktop::install_sources()?;
+    let max_pages = match std::env::args().nth(1).as_deref() {
+        None => 4,
+        Some("--max-pages") => std::env::args()
+            .nth(2)
+            .ok_or_else(|| anyhow::anyhow!("missing --max-pages"))?
+            .parse::<usize>()?,
+        Some(_) => anyhow::bail!("unknown desktop helper argument"),
+    };
+    anyhow::ensure!(max_pages > 0, "browser.max_pages must be greater than zero");
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+    let port = listener.local_addr()?.port();
+    let mut desktop = desktop::Desktop::default();
+    desktop.max_pages = max_pages;
     let app = App {
-        desktop: Arc::new(Mutex::new(Default::default())),
+        port,
+        desktop: Arc::new(Mutex::new(desktop)),
         jobs: Arc::new(Mutex::new(HashMap::new())),
     };
     let upkeep = app.clone();
@@ -591,16 +688,17 @@ async fn main() -> anyhow::Result<()> {
             drop(jobs);
             if !active {
                 let mut desktop = upkeep.desktop.lock().await;
+                if !desktop.alive() {
+                    desktop.pages = None;
+                }
                 if desktop.last_used.elapsed() > Duration::from_secs(300) {
-                    if let Err(error) = desktop.stop().await {
+                    if let Err(error) = desktop.sleep().await {
                         eprintln!("desktop cleanup: {error}");
                     }
                 }
             }
         }
     });
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
-    let port = listener.local_addr()?.port();
     println!("READY {port}");
     let router = Router::new()
         .route("/health", get(health))
@@ -609,6 +707,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/input", post(input))
         .route("/artifacts", get(artifacts))
         .route("/run", post(run))
+        .route("/page", post(new_page))
         .route("/screen", post(screen::start))
         .route("/task/{id}", get(task))
         .route("/task/{id}/cancel", post(cancel))

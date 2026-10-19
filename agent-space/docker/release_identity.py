@@ -8,7 +8,7 @@ PROJECT = Path(__file__).resolve().parents[1]
 
 def source_digest():
     files = [PROJECT / name for name in (
-        'Cargo.toml', 'Cargo.lock', 'msb-runtime.sha256',
+        'Cargo.toml', 'Cargo.lock', 'msb-runtime.sha256', '.dockerignore',
         'docker/Dockerfile', 'docker/docker-entrypoint.sh',
         'docker/build.sh', 'docker/release_identity.py',
         'docker/release-metadata.py', 'docker/build-standalone.sh', 'docker/Dockerfile.standalone',

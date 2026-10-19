@@ -1,0 +1,399 @@
+{
+  "recorded_at": "2026-10-19T06:20:04.675131+00:00",
+  "source_digest": "395b6c2c66ada27d3f0cfce93a3d2d01aeb5941d8322475b785db7abb9d0c47a",
+  "build_revision_baseline": "5b726c65f832266e0f2eb897775c7fc01ed91e89",
+  "workspace_lock": {
+    "kind": "desktop",
+    "preset": "runcove-desktop",
+    "reference": "runcove/runcove-workspace@sha256:7521b27905d226123ec8355de46dd3744bfdd843d4fd68f23b5203ebe1b3a9e3",
+    "workerContract": 1
+  },
+  "quick_checks": {
+    "rust-unit": {
+      "exit_code": 0,
+      "log_sha256": "0960edbde41f3e49bbd95333494b2029b8b69354533cef1ba80c0a55829c39b3"
+    },
+    "mcp-contract": {
+      "exit_code": 0,
+      "log_sha256": "41f5c6d312b85ae1aa3640a1aa62bf224f830b2cb7b9b544d3d98b8783f4a330"
+    },
+    "clippy": {
+      "exit_code": 0,
+      "log_sha256": "1abdcf5a59f90df7638e20f875c0975d4c88595383a3bd1bc03c22b8c3881d90"
+    },
+    "clippy-standalone": {
+      "exit_code": 0,
+      "log_sha256": "1b06c206522a9ad6653edd56b1bb9e19254f4cd592480fbc8b10cbddc2b994e9"
+    },
+    "server-lifecycle": {
+      "exit_code": 0,
+      "log_sha256": "bdbad4f184c5ff6081e62c36f98d01bc0a774d167e3e5783e07ec060e878d9a9"
+    },
+    "server-desktop": {
+      "exit_code": 0,
+      "log_sha256": "340b9abbafb3759d5dbb3b357b18970bf432f528c392f5f674fa4990800d1a3c"
+    },
+    "current-production-base-upgrade": {
+      "exit_code": 0,
+      "log_sha256": "e4cda9b8ff893da70a6e4c4f97819953b7e53f871918dfb6082da271d0690757"
+    },
+    "build-standalone": {
+      "exit_code": 0,
+      "log_sha256": "fd43abeb3adf60c58df4eedb635fdca23da5d4d4b764eacc9caf67577889836c"
+    },
+    "standalone-full": {
+      "exit_code": 0,
+      "log_sha256": "b7518e06491aa3f58c6f5302ca0c227789192d344dd637af8355f03d5bea5177"
+    }
+  },
+  "server_lifecycle": {
+    "image_id": "sha256:e7f831ff60b651ad1a1a869b52c18de521169b311ce672940bc232b19077bb63",
+    "passed": true,
+    "cleanup_passed": true,
+    "idle_seconds": 310,
+    "checks": [
+      "three protocol versions negotiate exactly and discover complete tools in their HTTP sessions",
+      "image/version, helper, and five-tool contract are exact; metadata does not wake VM",
+      "finite keepalive protects idle VM, get does not extend it, expiry reclaims VM and invalidates URL",
+      "real VM 4 MiB upload/download hashes match; app Authorization and query survive, publication key stays on Host",
+      "same-name file/directory/port replacement preserves URL, Basic realm and credentials; failed preparation keeps old service",
+      "file/directory/port coexist with independent paths and credentials, automatic auth, ranges, stable retry and scoped close; app survives",
+      "configured fallback and manual bash timeout both use seconds",
+      "direct file URL and bash/read/write/edit resume a paused VM; publication identity is preserved",
+      "in-flight command survives both short reclamation thresholds",
+      "same MCP session wakes a stopped VM and retains both disks",
+      "original MCP session still executes after 310s idle",
+      "Host restart invalidates all publication state; old URL does not wake the VM",
+      "graceful container restart preserves root disk and workspace volume",
+      "fresh image initializes state and serves a managed user without Hub",
+      "disable closes publications and new token restores retained workspace files",
+      "managed delete removes its sandbox and named volume from the runtime catalog"
+    ],
+    "protocol_versions": [
+      {
+        "requested": "2025-11-25",
+        "negotiated": "2025-11-25"
+      },
+      {
+        "requested": "2025-06-18",
+        "negotiated": "2025-06-18"
+      },
+      {
+        "requested": "2025-03-26",
+        "negotiated": "2025-03-26"
+      }
+    ]
+  },
+  "server_desktop": {
+    "target": "server",
+    "image": "sha256:e7f831ff60b651ad1a1a869b52c18de521169b311ce672940bc232b19077bb63",
+    "image_id": "sha256:e7f831ff60b651ad1a1a869b52c18de521169b311ce672940bc232b19077bb63",
+    "scope": "final image",
+    "full": true,
+    "passed": true,
+    "cleanup_passed": true,
+    "checks": [
+      "shared_test_browser_vm.py",
+      "shared_test_browser_pages_vm.py",
+      "shared_test_media_vm.py",
+      "shared_test_browser_profiles_vm.py",
+      "shared_test_desktop_files_vm.py",
+      "shared_test_browser_lifecycle_vm.py",
+      "shared_real_vnc_keyboard_clipboard_viewers_responsive_and_idle",
+      "reduced_page_limit_after_restart_preserves_profile_and_existing_pages"
+    ],
+    "suite_logs": {
+      "test_browser_lifecycle_vm.py.log": "1a859c1e2767b4ad6470264da8c29b84aa954103f60baca38dcd4f19539d66e4",
+      "test_browser_pages_vm.py.log": "2c0476193b3357ce4d56e920048da914b4f21778bd9dd93ef7130ff25a2b2226",
+      "test_browser_profiles_vm.py.log": "e796e4338ad95cfc1814fa066995ba7fa5dfbc673a9aeba080c42864de680fcd",
+      "test_browser_vm.py.log": "2dec3dbf1212225c8744e8bfc57276f84545b7e432a233aa76a74355e5561f4b",
+      "test_desktop_files_vm.py.log": "866b33425b10bcacdf8808ca5b0067d277beeacea8bcfb7fe8a693310eb8e039",
+      "test_media_vm.py.log": "fac3296c2b620a199a7bba582fd183589967e1661a596b5ae175b01339ee509e",
+      "ui.log": "a0cd46be81ee5f429f9f63b294b3f7cf7504ad8ab98141a5e3ccb50f19a3ad17"
+    },
+    "page_limit_restart": {
+      "initial_limit": 4,
+      "restarted_limit": 1,
+      "restored_pages": 4,
+      "restored_after_profile_picker": true,
+      "new_page_error": "PAGE_LIMIT_REACHED",
+      "existing_page_navigation_and_close": true
+    },
+    "idle_seconds": 310
+  },
+  "standalone": {
+    "target": "standalone",
+    "image": "sha256:a77343bd235610cf2ad2474df35917cddb6fa393ced093db72644044e3363f29",
+    "image_id": "sha256:a77343bd235610cf2ad2474df35917cddb6fa393ced093db72644044e3363f29",
+    "scope": "final image",
+    "full": true,
+    "passed": true,
+    "cleanup_passed": true,
+    "checks": [
+      "starts_without_kvm_msb_or_docker_socket",
+      "single_space_routes_have_no_management_or_user_selection",
+      "shared_nine_tools_and_nonroot_secret_isolation",
+      "profile_preparation_cannot_follow_user_links_with_root_privileges",
+      "real_shared_desktop_screenshot",
+      "root_task_owner_keeps_final_results_in_memory_without_following_user_paths",
+      "dav_workbench_and_mcp_edits_share_writable_user_ownership",
+      "artifact_listing_respects_payload_permissions_through_user_symlinks",
+      "publication_uses_single_space_address",
+      "stopped_data_child_dies_with_killed_control_owner_and_helper_recovers",
+      "shared_test_browser_vm.py",
+      "shared_test_browser_pages_vm.py",
+      "shared_test_media_vm.py",
+      "shared_test_browser_profiles_vm.py",
+      "shared_test_desktop_files_vm.py",
+      "shared_test_browser_lifecycle_vm.py",
+      "shared_real_vnc_keyboard_clipboard_viewers_responsive_and_idle",
+      "rewritten_host_workbench_preserves_own_origin_and_nonce_checks",
+      "lost_desktop_owner_blocks_recreation_and_control_until_container_restart",
+      "active_mcp_sse_closes_on_graceful_shutdown",
+      "graceful_restart_preserves_workspace_and_expires_page_session",
+      "reduced_page_limit_after_restart_preserves_profile_and_existing_pages"
+    ],
+    "suite_logs": {
+      "test_browser_lifecycle_vm.py.log": "775c4d96b2ec63e395afa88317182cbb6cb77a4679c1a175b655aa45426d3c81",
+      "test_browser_pages_vm.py.log": "bd9b01ab087790d7c3f3e944282d7bcf80dc43451bcff71e39685a1fc6e2ddae",
+      "test_browser_profiles_vm.py.log": "c7d9b9d34b1408869f8e19649ee61df521910955285e130ff6b877ec7bcb6a0d",
+      "test_browser_vm.py.log": "83468100b754425730e675fa621ac984a7456c66700f1bc372175b78837804f1",
+      "test_desktop_files_vm.py.log": "6aa63dae4f099b8e6de05c2cf82aece44af1d8d4e96f4f310e6a973dbfc387e4",
+      "test_media_vm.py.log": "8101ecdb297c7497f16709785aa8a6ae1b51409da77c689cceb1e9e5d6767f0c",
+      "ui.log": "e1ea15d5cf811f492724ebae85cf62bfb5280c51441ab6f06064be63cb5ed9dd"
+    },
+    "page_limit_restart": {
+      "initial_limit": 2,
+      "restarted_limit": 1,
+      "restored_pages": 2,
+      "restored_after_profile_picker": true,
+      "new_page_error": "PAGE_LIMIT_REACHED",
+      "existing_page_navigation_and_close": true
+    },
+    "max_pages": 2
+  },
+  "upgrade_from_current_production_base": {
+    "passed": true,
+    "image_id": "sha256:e7f831ff60b651ad1a1a869b52c18de521169b311ce672940bc232b19077bb63",
+    "old_image_id": "sha256:413c3411b962e140b89f9f1a7195b4350ff92af2f76f3dec5a9fe3a00c129260",
+    "source_digest": "395b6c2c66ada27d3f0cfce93a3d2d01aeb5941d8322475b785db7abb9d0c47a",
+    "checks": [
+      "old_production_base_creates_persistent_profile_and_identity",
+      "new_helper_old_Workspace_profile_credentials_files_and_default_limit"
+    ],
+    "cleanup_passed": true
+  },
+  "executed_test_inputs": {
+    "tests/browser_client.py": {
+      "sha256": "e30533587523b36e4bd3f980743fb32a5781f155843e5ae9012b19653d3fa913"
+    },
+    "tests/test_browser_vm.py": {
+      "sha256": "3ceb367de6d261161405165e3ced0391eb94ba9d994aa4811ed3d28d837b0d00"
+    },
+    "tests/test_browser_pages_vm.py": {
+      "sha256": "01f3be5a2f4f85291bb614353d6dfcdb455dab88f52a2dca489b4ff0e4936929"
+    },
+    "tests/test_browser_profiles_vm.py": {
+      "sha256": "fdbf0d7d8424ed250a25e984386f419c6eb5527bb9e7542fa053b5f000320fd3"
+    },
+    "tests/test_browser_lifecycle_vm.py": {
+      "sha256": "9ba174a92844631fe5aea2566d94ee715b4255e34cdf582607355fd61f14b745"
+    },
+    "tests/test_media_vm.py": {
+      "sha256": "dbd5a71b87628bc04cd5adb9d4d1720468531ea17bda4e62e6d9169e9c022690"
+    },
+    "tests/test_desktop_files_vm.py": {
+      "sha256": "119ed99a1bb868cc585968343d54b2e6065340d08bd29da20cd5b67a1bb12e75"
+    },
+    "tests/fixtures/browser-site.cjs": {
+      "sha256": "7e01c2f116e341b5033a0e90e06fba4f6a528c2e26dab16e17fd23f5a85be0a6"
+    },
+    "tests/fixtures/start-browser-site.py": {
+      "sha256": "eb2003f22353fbe42c6201becff78dc9a3aa1be6be6e8b0deb02bedd9b86c49a"
+    },
+    "docker/qualification.py": {
+      "sha256": "5fafd3b8f942f8da8518160c831c58c8d61988caaed4b3319a73246f38f82f5b"
+    },
+    "docker/verify.py": {
+      "sha256": "a88a02e4e795d1e54d0058ba77eebb060578f715c6cceb6e5c4d96243a3cd6d6"
+    },
+    "docker/verify-desktop.py": {
+      "sha256": "93c6e203b5ed5f40355b2a0bb1523c1b6375d8e1f950251829df37dae7973202"
+    },
+    "docker/verify-standalone.py": {
+      "sha256": "4c8b3c4db74725cda0a613d3c85ae09a84ce29766d6b0609640ab9be84da1c96"
+    },
+    "desktop-ui/tests/workbench.spec.ts": {
+      "sha256": "2d63e0db3bf2fe61336ce226ed2c7b4f37f19ac4a94d48ee34acf13264e703bb"
+    }
+  },
+  "production": {
+    "deployment": {
+      "passed": true,
+      "started_at": "2026-10-19T06:15:14.942416+00:00",
+      "old_image_id": "sha256:413c3411b962e140b89f9f1a7195b4350ff92af2f76f3dec5a9fe3a00c129260",
+      "image_id": "sha256:e7f831ff60b651ad1a1a869b52c18de521169b311ce672940bc232b19077bb63",
+      "source_digest": "395b6c2c66ada27d3f0cfce93a3d2d01aeb5941d8322475b785db7abb9d0c47a",
+      "backups_created": false,
+      "migration_performed": false,
+      "checks": [
+        "graceful_stop_preserves_original_state",
+        "same_mounts_config_credentials_ports_proxy_and_runtime_inputs",
+        "public_health_original_accounts_read_only_sqlite_and_unrelated_services"
+      ],
+      "schema": 3,
+      "user_count": 2,
+      "msb_sha256": "c3ef4764900d4bc7de6d33cd2ab8bd400a1a412161871ba27686ca4db4ff8b9b",
+      "healthy": true,
+      "initial_attempt": {
+        "validation_error": "Docker top ps output omitted PID column",
+        "automatic_rollback_verified": true,
+        "corrected_to": "ps -eo pid,comm",
+        "final_deployment_retried": true
+      }
+    },
+    "acceptance": {
+      "passed": true,
+      "image_id": "sha256:e7f831ff60b651ad1a1a869b52c18de521169b311ce672940bc232b19077bb63",
+      "source_digest": "395b6c2c66ada27d3f0cfce93a3d2d01aeb5941d8322475b785db7abb9d0c47a",
+      "checks": [
+        "nine_tools_files_root_identity_real_browser_and_MCP_image",
+        "omitted_config_defaults_to_four_shared_Page_limit_and_popup_error",
+        "public_workbench_browser_reopen_preserves_HUMAN_control",
+        "public_DAV_Range_and_authenticated_publication"
+      ],
+      "temporary_account_deleted": true,
+      "actual_VM_executable_sha256": "c3ef4764900d4bc7de6d33cd2ab8bd400a1a412161871ba27686ca4db4ff8b9b",
+      "initial_attempt": {
+        "validation_error": "Probe helper parameter name collided with web_publish name argument",
+        "temporary_account_deleted": true,
+        "final_probe_retried": true
+      }
+    },
+    "audit": {
+      "passed": true,
+      "observed_at": "2026-10-19T06:19:28.045048+00:00",
+      "image_id": "sha256:e7f831ff60b651ad1a1a869b52c18de521169b311ce672940bc232b19077bb63",
+      "source_digest": "395b6c2c66ada27d3f0cfce93a3d2d01aeb5941d8322475b785db7abb9d0c47a",
+      "healthy": true,
+      "automatic_restarts": 0,
+      "schema": 3,
+      "original_user_count": 2,
+      "original_accounts_and_credentials_preserved": true,
+      "original_sandbox_and_volume_counts_preserved": true,
+      "configuration_preserved": true,
+      "binary_and_UI_bytes_match_release_metadata": true,
+      "read_only_sqlite_integrity": "ok",
+      "foreign_key_violations": 0,
+      "unrelated_services_preserved": true,
+      "runtime_error_lines_current_boot": 0
+    }
+  },
+  "not_executed": [
+    "new offline package",
+    "new full 4 GiB DAV stress and storage-failure qualification",
+    "external Agent/model integration",
+    "NAS or ARM qualification"
+  ],
+  "rust_unit_count": 138,
+  "MCP_contract_count": 5,
+  "MSB_build_regression_count": 177,
+  "release_metadata": {
+    "server": {
+      "target": "server",
+      "source_revision": "5b726c65f832266e0f2eb897775c7fc01ed91e89",
+      "source_sha256": "395b6c2c66ada27d3f0cfce93a3d2d01aeb5941d8322475b785db7abb9d0c47a",
+      "worker_contract": 1,
+      "workspace": {
+        "kind": "desktop",
+        "preset": "runcove-desktop",
+        "reference": "runcove/runcove-workspace@sha256:7521b27905d226123ec8355de46dd3744bfdd843d4fd68f23b5203ebe1b3a9e3",
+        "workerContract": 1
+      },
+      "binaries": {
+        "agent-space-mcp": "c2c2ad8609d8fbae4a005fcab62517db660249d2014b0a1008e06f7cd7b5d5be",
+        "agent-space-static-http": "12970c80be278f2f5574d10bd5787bae007532f6b40bbab5c9b32eafcda007f5",
+        "agent-space-webdav": "dcf0228edb831bbb1a339495ffcf5924f31820cec2071a47ac203c77b6450dc3",
+        "agent-space-desktop": "a56d72b47cdeb64e632e3df42dc670d666afe7e62c8b6c6ff408e8eb1ee164c6"
+      },
+      "ui": {
+        "assets/desktop-BH75KkJ_.js": "f308f13a284f9844638ecf61e91584b3e87af61ea87893f36d643430b366418f",
+        "assets/i18n-BdoMF_IG.js": "bb47b3f36bc05c35a392586794ef71b5daac4957a8fa5ab077f7b332bae097fe",
+        "assets/index-BkFtORdr.js": "14b3a30bacdf14750c9d501a1e3a4c20c89626c1bfb506ffc77b7c640c96ca10",
+        "assets/index-C8gOcvl2.css": "d0c5a5acdac8e3dd2e5fa6a3f39081603e4581d96e9e77fc6cfe61158b2576e9",
+        "index.html": "a2b3529aec5f3d52f0ddcd7d380bad27fb91d948021ca69b8639c0ce8668d321",
+        "licenses/SOURCES.txt": "406457243c71f0eb4f5939dee665173c9d04b52eaf90b96965c624fb8531e4ea",
+        "licenses/i18next.txt": "1cd0a2b02a6cc40ef8ee16310d13eeffdd7b5de4a562fd3ee7c921d8eb54f60a",
+        "licenses/noVNC.txt": "3ccd2242d7f5b6c5ae831a486f63cce1f18d8cd11c511f6a7a7251673763b2d1",
+        "licenses/qrcode.txt": "8df47c6ad9ac2c41eb9b2a72def9908959da0ede8dadd56c7b249c1bdb0c5ce6"
+      }
+    },
+    "standalone": {
+      "target": "standalone",
+      "source_revision": "5b726c65f832266e0f2eb897775c7fc01ed91e89",
+      "source_sha256": "395b6c2c66ada27d3f0cfce93a3d2d01aeb5941d8322475b785db7abb9d0c47a",
+      "worker_contract": 1,
+      "workspace": {
+        "kind": "desktop",
+        "preset": "runcove-desktop",
+        "reference": "runcove/runcove-workspace@sha256:7521b27905d226123ec8355de46dd3744bfdd843d4fd68f23b5203ebe1b3a9e3",
+        "workerContract": 1
+      },
+      "binaries": {
+        "runcove-standalone": "ef3576aed2cbcaf78eb6145f1ad2d42dbb4f748fdbfd4b7d58005018b395f386",
+        "agent-space-static-http": "6f0d12900c374afbb72dd3f715e04043c697c984fa2ba6d87e38e5b79386fde2",
+        "agent-space-webdav": "d1bd9097b991869e0ba585cbf282559e7e09fe2315a063c12e87e0f691ba8471",
+        "agent-space-desktop": "b079db75547adbe690e8a50ab0540d7530e101147ad3473fffdf2cf7f874c4b5"
+      },
+      "ui": {
+        "assets/desktop-BH75KkJ_.js": "f308f13a284f9844638ecf61e91584b3e87af61ea87893f36d643430b366418f",
+        "assets/i18n-BdoMF_IG.js": "bb47b3f36bc05c35a392586794ef71b5daac4957a8fa5ab077f7b332bae097fe",
+        "assets/index-BkFtORdr.js": "14b3a30bacdf14750c9d501a1e3a4c20c89626c1bfb506ffc77b7c640c96ca10",
+        "assets/index-C8gOcvl2.css": "d0c5a5acdac8e3dd2e5fa6a3f39081603e4581d96e9e77fc6cfe61158b2576e9",
+        "index.html": "a2b3529aec5f3d52f0ddcd7d380bad27fb91d948021ca69b8639c0ce8668d321",
+        "licenses/SOURCES.txt": "406457243c71f0eb4f5939dee665173c9d04b52eaf90b96965c624fb8531e4ea",
+        "licenses/i18next.txt": "1cd0a2b02a6cc40ef8ee16310d13eeffdd7b5de4a562fd3ee7c921d8eb54f60a",
+        "licenses/noVNC.txt": "3ccd2242d7f5b6c5ae831a486f63cce1f18d8cd11c511f6a7a7251673763b2d1",
+        "licenses/qrcode.txt": "8df47c6ad9ac2c41eb9b2a72def9908959da0ede8dadd56c7b249c1bdb0c5ce6"
+      }
+    }
+  },
+  "review_fixes": [
+    "Synchronize Page events before publishing a normally completed worker result, including immediate popups.",
+    "Adopt the deferred initial session after profile selection; refresh snapshots drained during restoration.",
+    "Preserve the original cancellation cleanup budget and successful closure of the last Page.",
+    "Use the existing Page-owner state for idle cleanup; verify with Chromium SIGSTOP before the real idle deadline.",
+    "Checkpoint completed script results before best-effort CDP download cleanup, including disconnected browsers.",
+    "Make the malformed-result fixture explicitly flush stdout and exit before normal worker completion.",
+    "Admit only verified public runtime cache files into the Docker build context; include the filter in source identity."
+  ],
+  "persistence_contract": {
+    "state_schema": 3,
+    "database_migration": false,
+    "persistent_layout_change": false,
+    "added_Chrome_native_restart_intent": "was.restarted",
+    "browser_config_omitted_default": 4
+  },
+  "python_checks": {
+    "source_digest": "395b6c2c66ada27d3f0cfce93a3d2d01aeb5941d8322475b785db7abb9d0c47a",
+    "checks": {
+      "tests/test_managed_cleanup.py": {
+        "exit_code": 0,
+        "log_sha256": "fc23540c8545d4075fe2f0420accd022e74e5566176c3bd4c597964ff02c2e14"
+      },
+      "tests/test_exec_owner.py": {
+        "exit_code": 0,
+        "log_sha256": "aa4d19161042e95f0b2a9f31ce9e3440486aa7ccf0e0d56887809c6e310d1757"
+      },
+      "docker/test_package.py": {
+        "exit_code": 0,
+        "log_sha256": "f5b0975bbc76eebbbbfbd9ff17140ccc843d8aa8dd46d365fb85c9b5f5446e84"
+      },
+      "docker/test_verify_protocol.py": {
+        "exit_code": 0,
+        "log_sha256": "975f0c6ff1bf113ffed161caf926d8e4fce2342ea81b922d74b48ac95d135ab0"
+      }
+    },
+    "passed": true
+  }
+}

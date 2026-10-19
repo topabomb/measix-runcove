@@ -30,3 +30,7 @@ io_idle_timeout_secs = 120
 enabled = true
 startup_timeout_secs = 60
 io_idle_timeout_secs = 120
+
+# Maximum open Pages across all windows of each shared browser. Restart to apply.
+[browser]
+max_pages = 4

@@ -23,6 +23,7 @@ pub struct SessionManager {
     desktops: Mutex<HashMap<String, Arc<crate::desktop::DesktopHub>>>,
     max_output_lines: usize,
     max_output_bytes: usize,
+    browser: crate::config::BrowserConfig,
     shutting_down: Arc<std::sync::atomic::AtomicBool>,
 }
 
@@ -591,6 +592,7 @@ impl SessionManager {
             desktops: Mutex::new(HashMap::new()),
             max_output_lines: 2000,
             max_output_bytes: 51200,
+            browser: Default::default(),
             shutting_down: Arc::new(std::sync::atomic::AtomicBool::new(false)),
         }
     }
@@ -598,6 +600,11 @@ impl SessionManager {
     pub fn with_limits(mut self, max_lines: usize, max_bytes: usize) -> Self {
         self.max_output_lines = max_lines;
         self.max_output_bytes = max_bytes;
+        self
+    }
+
+    pub fn with_browser(mut self, browser: crate::config::BrowserConfig) -> Self {
+        self.browser = browser;
         self
     }
 
@@ -762,11 +769,17 @@ impl SessionManager {
             return Err(EngineError::NotFound("workspace session changed".into()));
         }
         let mut desktops = self.desktops.lock().await;
-        let hub = desktops
-            .entry(name.to_owned())
-            .or_insert_with(|| Arc::new(crate::desktop::DesktopHub::new(session.clone())));
+        let hub = desktops.entry(name.to_owned()).or_insert_with(|| {
+            Arc::new(crate::desktop::DesktopHub::new(
+                session.clone(),
+                self.browser.clone(),
+            ))
+        });
         if !Arc::ptr_eq(&hub.session.workspace, &session.workspace) {
-            *hub = Arc::new(crate::desktop::DesktopHub::new(session));
+            *hub = Arc::new(crate::desktop::DesktopHub::new(
+                session,
+                self.browser.clone(),
+            ));
         }
         Ok(hub.clone())
     }

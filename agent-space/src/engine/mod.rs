@@ -373,6 +373,7 @@ impl ManagedService {
 pub enum ManagedLaunch {
     Desktop {
         host_binary: String,
+        max_pages: usize,
     },
     StaticHttp {
         host_binary: String,
@@ -397,12 +398,14 @@ impl ManagedLaunch {
         match self {
             Self::StaticHttp { host_binary, .. }
             | Self::Webdav { host_binary, .. }
-            | Self::Desktop { host_binary } => host_binary,
+            | Self::Desktop { host_binary, .. } => host_binary,
         }
     }
     pub fn settings(&self) -> serde_json::Value {
         match self {
-            Self::Desktop { .. } => serde_json::json!({"worker_contract":1}),
+            Self::Desktop { max_pages, .. } => {
+                serde_json::json!({"worker_contract":1,"max_pages":max_pages})
+            }
             Self::StaticHttp { root, file, .. } => serde_json::json!({"root":root,"file":file}),
             Self::Webdav { owner, config, .. } => {
                 serde_json::json!({"owner":owner,"config":config})

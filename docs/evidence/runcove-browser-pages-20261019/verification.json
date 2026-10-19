@@ -1,0 +1,221 @@
+{
+  "date": "2026-10-19",
+  "scope": "source and development assets; no final-image qualification or production deployment",
+  "frozen_inputs": {
+    "source_digest": "831d43683fda0e561e4bf02726fda67c3de44a4eabcc6ef380637c78eabce9f5",
+    "files": {
+      "target/debug/agent-space-mcp": "e593467b2fe513ed5b4db67312ccb5995ee211e3ebc8419d022f387fbf8e71e6",
+      "target/debug/runcove-standalone": "a20b0f0aef1deb1476b665de791b435b012e8b7cea33400d8cd62a4aee149439",
+      "target/debug/agent-space-desktop": "dbe42092348918c644f577c57bbb43c8cb6b1a74670547d2801412d00d9337a1",
+      "target/debug/agent-space-static-http": "1f235e136586d0e7f607d151b5de4fe53c024e84f5704cd06580c1647819fdfc",
+      "target/debug/agent-space-webdav": "c7b34ee1b3c802d699780e99dd53141f5b9e6731ef4cec718c913344d00621ae",
+      "tests/test_browser_pages_vm.py": "e0f1a09d3007785fd728b5369bc7fa9d41837c264e3d31d8c7267cae6ae00032",
+      "tests/test_browser_profiles_vm.py": "fba1433b981fba269c68ed749abb9e3344569a7bfbdca236e6eef66240db9104",
+      "docker/qualification.py": "a4bd33532d39a6e122465929544411fc263027a380b12b98b44f6ab6eef87e68",
+      "docker/verify-desktop.py": "7e5cdf69f17fe966c0a451eabbcaffe6afa80bb0733ad169601da4286996b00f",
+      "docker/verify-standalone.py": "ef3ad5357c67485d79fb9521d4a6bb88e011839588dacc42f726c46f57ec7593",
+      "desktop-ui/tests/workbench.spec.ts": "2d63e0db3bf2fe61336ce226ed2c7b4f37f19ac4a94d48ee34acf13264e703bb"
+    }
+  },
+  "local_checks": {
+    "rust_library_and_desktop_units": 128,
+    "mcp_contract": 5,
+    "managed_cleanup": 8,
+    "exec_owner": 5,
+    "package": 5,
+    "verifier_http_protocol": 8,
+    "workspace_all_targets_clippy": "passed",
+    "standalone_no_default_features_clippy": "passed",
+    "standalone_no_msb_build": "passed",
+    "desktop_ui_build_i18n_and_dom_contract": "passed",
+    "local_documentation_links": 107
+  },
+  "qualification": {
+    "server": {
+      "target": "server",
+      "image": "runcove-server:runcove-fc010ed2726e9bec",
+      "image_id": "sha256:413c3411b962e140b89f9f1a7195b4350ff92af2f76f3dec5a9fe3a00c129260",
+      "scope": "development assets",
+      "full": false,
+      "checks": [
+        "three_independent_server_browser_cold_starts",
+        "shared_test_browser_vm.py",
+        "shared_test_browser_pages_vm.py",
+        "shared_test_media_vm.py",
+        "shared_test_browser_profiles_vm.py",
+        "shared_browser_reopen_and_real_300_second_passive_idle_ui",
+        "reduced_page_limit_after_restart_preserves_profile_and_existing_pages"
+      ],
+      "passed": true,
+      "source_digest": "831d43683fda0e561e4bf02726fda67c3de44a4eabcc6ef380637c78eabce9f5",
+      "suite_logs": {
+        "test_browser_pages_vm.py.log": "a6bc6423e17cd5e7114e9854c227c987b03e0bdba38cc04166ebb98902520396",
+        "test_browser_profiles_vm.py.log": "7f2218d4b329be535357016055713a2af73cc643a4caabb98b6bf2ea6335ac36",
+        "test_browser_vm.py.log": "82e0caf4c0cd9915096033c0d9327b6d055c4091c48cbf80fa2f3a5058ec92b9",
+        "test_media_vm.py.log": "47c4c4fbfbba14466edf76c77ead813e5e7f50936160a5b41fac35cc5e65080a",
+        "page-reopen-idle-ui.log": "eef386287e2a46b898388eb9cfcde11a54b6ae379e0e3160533c587f10d84181"
+      },
+      "page_limit_restart": {
+        "initial_limit": 4,
+        "restarted_limit": 1,
+        "restored_pages": 4,
+        "new_page_error": "PAGE_LIMIT_REACHED",
+        "existing_page_navigation_and_close": true
+      },
+      "cleanup_passed": true,
+      "suites": {
+        "test_browser_vm.py.log": {
+          "tests": 14,
+          "seconds": 85.556,
+          "sha256": "82e0caf4c0cd9915096033c0d9327b6d055c4091c48cbf80fa2f3a5058ec92b9"
+        },
+        "test_media_vm.py.log": {
+          "tests": 9,
+          "seconds": 76.982,
+          "sha256": "47c4c4fbfbba14466edf76c77ead813e5e7f50936160a5b41fac35cc5e65080a"
+        },
+        "test_browser_profiles_vm.py.log": {
+          "tests": 1,
+          "seconds": 328.0,
+          "sha256": "7f2218d4b329be535357016055713a2af73cc643a4caabb98b6bf2ea6335ac36"
+        },
+        "test_browser_pages_vm.py.log": {
+          "tests": 5,
+          "seconds": 39.468,
+          "sha256": "a6bc6423e17cd5e7114e9854c227c987b03e0bdba38cc04166ebb98902520396"
+        }
+      },
+      "profile_idle": {
+        "real_300_seconds": true,
+        "persisted_native_restart_intent_before_wake": true,
+        "all_profile_pages_and_last_selection_restored": true,
+        "explicit_close_shows_picker_again": true,
+        "picker_disabled_uses_last_profile": true,
+        "google_credentials_used": false
+      },
+      "ui_reopen_and_passive_idle_tests": 2
+    },
+    "standalone": {
+      "target": "standalone",
+      "scope": "development assets",
+      "image": "runcove-standalone:qualify",
+      "checks": [
+        "starts_without_kvm_msb_or_docker_socket",
+        "single_space_routes_have_no_management_or_user_selection",
+        "shared_nine_tools_and_nonroot_secret_isolation",
+        "profile_preparation_cannot_follow_user_links_with_root_privileges",
+        "real_shared_desktop_screenshot",
+        "root_task_owner_keeps_final_results_in_memory_without_following_user_paths",
+        "dav_workbench_and_mcp_edits_share_writable_user_ownership",
+        "artifact_listing_respects_payload_permissions_through_user_symlinks",
+        "publication_uses_single_space_address",
+        "stopped_data_child_dies_with_killed_control_owner_and_helper_recovers",
+        "shared_test_browser_vm.py",
+        "shared_test_browser_pages_vm.py",
+        "shared_test_media_vm.py",
+        "shared_test_browser_profiles_vm.py",
+        "shared_browser_reopen_and_real_300_second_passive_idle_ui",
+        "rewritten_host_workbench_preserves_own_origin_and_nonce_checks",
+        "lost_desktop_owner_blocks_recreation_and_control_until_container_restart",
+        "active_mcp_sse_closes_on_graceful_shutdown",
+        "graceful_restart_preserves_workspace_and_expires_page_session",
+        "reduced_page_limit_after_restart_preserves_profile_and_existing_pages"
+      ],
+      "passed": true,
+      "image_id": "sha256:b13c172f4e8a21c42d256dbbea21ecb6fcd4a578847851c85e98fd47a25c2993",
+      "max_pages": 2,
+      "source_digest": "831d43683fda0e561e4bf02726fda67c3de44a4eabcc6ef380637c78eabce9f5",
+      "suite_logs": {
+        "test_browser_pages_vm.py.log": "422822fbe70d62fb4536e7783687c9c18639df11d39ba9dd477dc4368780ae89",
+        "test_browser_profiles_vm.py.log": "2f72f481c1bf9ed05717122b6ca2327ef702bc8cafa7966568a580a285aafaba",
+        "test_browser_vm.py.log": "935cef4261c194237c22c6dbc80db851fddef24e7b43bccf0322f597b8edbcf8",
+        "test_media_vm.py.log": "fdc9de0d50c36433f36b94fd4c75f0b0e84dbdbb997074a66c1ef892f507052a",
+        "page-reopen-idle-ui.log": "c3986e97fe270015cc450f6eb65108c68a96b47b9d91d4d55ebd9c2431a52fe4"
+      },
+      "full": false,
+      "tools_only": true,
+      "page_limit_restart": {
+        "initial_limit": 2,
+        "restarted_limit": 1,
+        "restored_pages": 2,
+        "new_page_error": "PAGE_LIMIT_REACHED",
+        "existing_page_navigation_and_close": true
+      },
+      "cleanup_passed": true,
+      "suites": {
+        "test_browser_vm.py.log": {
+          "tests": 14,
+          "seconds": 70.33,
+          "sha256": "935cef4261c194237c22c6dbc80db851fddef24e7b43bccf0322f597b8edbcf8"
+        },
+        "test_media_vm.py.log": {
+          "tests": 9,
+          "seconds": 60.894,
+          "sha256": "fdc9de0d50c36433f36b94fd4c75f0b0e84dbdbb997074a66c1ef892f507052a"
+        },
+        "test_browser_profiles_vm.py.log": {
+          "tests": 1,
+          "seconds": 318.961,
+          "sha256": "2f72f481c1bf9ed05717122b6ca2327ef702bc8cafa7966568a580a285aafaba"
+        },
+        "test_browser_pages_vm.py.log": {
+          "tests": 5,
+          "seconds": 32.167,
+          "sha256": "422822fbe70d62fb4536e7783687c9c18639df11d39ba9dd477dc4368780ae89"
+        }
+      },
+      "profile_idle": {
+        "real_300_seconds": true,
+        "persisted_native_restart_intent_before_wake": true,
+        "all_profile_pages_and_last_selection_restored": true,
+        "explicit_close_shows_picker_again": true,
+        "picker_disabled_uses_last_profile": true,
+        "google_credentials_used": false
+      },
+      "ui_reopen_and_passive_idle_tests": 2
+    }
+  },
+  "research": {
+    "chromium_version": "153.0.8010.12",
+    "chromium_revision": "971a7443b0c9b0a9b2860529b33331b76077ec62",
+    "profile_picker_target_type": "browser_ui",
+    "restore_last_session_alone_does_not_skip_picker": true,
+    "profile_directory_restores_only_one_profile": true,
+    "native_was_restarted_restores_both_profiles_without_changing_picker_setting": true,
+    "sources": [
+      "https://support.google.com/chrome/answer/2364824?hl=en",
+      "https://support.google.com/accounts/answer/1721977?hl=en",
+      "https://github.com/chromium/chromium/blob/971a7443b0c9b0a9b2860529b33331b76077ec62/chrome/browser/ui/startup/startup_browser_creator.cc",
+      "https://github.com/chromium/chromium/blob/971a7443b0c9b0a9b2860529b33331b76077ec62/chrome/common/pref_names.h"
+    ]
+  },
+  "diagnostics": [
+    {
+      "case": "early first Server observation lacked expected health",
+      "cause": "original error was not retained; undetermined",
+      "action": "test now preserves the original response; final independent cold starts and browser suite passed"
+    },
+    {
+      "case": "early profile fixture opened a profile and appended a URL at limit two",
+      "cause": "the additional Page was correctly rejected",
+      "action": "fixture opens the profile without a URL and reuses its Page"
+    },
+    {
+      "case": "development qualification interrupted to revise resume behavior or test fixture",
+      "action": "discarded as final evidence; disposable containers and volumes cleaned"
+    }
+  ],
+  "documentation_only_after_qualification": {
+    "change": "Only CLI --tools-only help wording now discloses the 300-second profile recovery test; behavior is unchanged. Frozen verifier hashes above identify the executed files.",
+    "files": {
+      "docker/verify-desktop.py": {
+        "qualified_sha256": "7e5cdf69f17fe966c0a451eabbcaffe6afa80bb0733ad169601da4286996b00f",
+        "current_sha256": "93c6e203b5ed5f40355b2a0bb1523c1b6375d8e1f950251829df37dae7973202"
+      },
+      "docker/verify-standalone.py": {
+        "qualified_sha256": "ef3ad5357c67485d79fb9521d4a6bb88e011839588dacc42f726c46f57ec7593",
+        "current_sha256": "4c8b3c4db74725cda0a613d3c85ae09a84ce29766d6b0609640ab9be84da1c96"
+      }
+    }
+  }
+}

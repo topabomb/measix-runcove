@@ -20,6 +20,7 @@ use std::{sync::Arc, time::Duration};
 #[derive(Clone, Debug, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct StandaloneConfig {
+    pub browser: agent_engine::config::BrowserConfig,
     pub server: EntryConfig,
     pub auth: AccessConfig,
     pub execution: ExecutionConfig,
@@ -138,6 +139,7 @@ impl StandaloneConfig {
     }
 
     pub fn validate(&self) -> anyhow::Result<()> {
+        self.browser.validate()?;
         let listen: std::net::SocketAddr = self.server.listen.parse()?;
         for base in [&self.server.public_base_url, &self.webdav.public_base_url]
             .into_iter()
@@ -245,10 +247,12 @@ pub async fn serve(config: StandaloneConfig) -> anyhow::Result<()> {
         max_udp_connections: None,
     };
     let manager = Arc::new(
-        SessionManager::new(Arc::new(ProcessEngine::new()), 1, opts).with_limits(
-            config.execution.max_output_lines,
-            config.execution.max_output_bytes,
-        ),
+        SessionManager::new(Arc::new(ProcessEngine::new()), 1, opts)
+            .with_browser(config.browser.clone())
+            .with_limits(
+                config.execution.max_output_lines,
+                config.execution.max_output_bytes,
+            ),
     );
     let server = ServerConfig::from(&config.server);
     let tools = Arc::new(ToolConfig {
@@ -378,6 +382,21 @@ use tokio_util::sync::CancellationToken;
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn browser_limit_uses_shared_defaults_and_validation() {
+        let config: StandaloneConfig = toml::from_str("").unwrap();
+        assert_eq!(config.browser.max_pages, 4);
+        let config: StandaloneConfig = toml::from_str("[browser]\nmax_pages=2").unwrap();
+        config.validate().unwrap();
+        assert_eq!(config.browser.max_pages, 2);
+        let config: StandaloneConfig = toml::from_str("[browser]\nmax_pages=0").unwrap();
+        assert!(config
+            .validate()
+            .unwrap_err()
+            .to_string()
+            .contains("browser.max_pages"));
+        assert!(toml::from_str::<StandaloneConfig>("[browser]\nmax_tabs=4").is_err());
+    }
     #[test]
     fn dav_defaults_off_and_preserves_common_private_or_https_origin_boundary() {
         let config: StandaloneConfig = toml::from_str("[webdav]").unwrap();

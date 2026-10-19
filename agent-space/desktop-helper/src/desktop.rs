@@ -181,6 +181,8 @@ struct Owned {
     display: bool,
 }
 pub struct Desktop {
+    pub pages: Option<crate::pages::Pages>,
+    pub max_pages: usize,
     children: Vec<Owned>,
     pub last_used: Instant,
     generation: u64,
@@ -189,6 +191,8 @@ pub struct Desktop {
 impl Default for Desktop {
     fn default() -> Self {
         Self {
+            pages: None,
+            max_pages: 4,
             children: vec![],
             last_used: Instant::now(),
             generation: 0,
@@ -360,8 +364,12 @@ impl Desktop {
         }
         self.start_display().await?;
         if self.alive() {
+            if self.pages.is_none() {
+                self.pages = Some(crate::pages::Pages::start(self.max_pages).await?);
+            }
             return Ok(());
         }
+        self.pages = None;
         let mut index = 0;
         while index < self.children.len() {
             if self.children[index].browser {
@@ -395,6 +403,7 @@ impl Desktop {
         self.generation += 1;
         self.last_used = Instant::now();
         node(serde_json::json!({"maximize":true})).await?;
+        self.pages = Some(crate::pages::Pages::start(self.max_pages).await?);
         Ok(())
     }
     async fn ready(&mut self, port: u16, rfb: bool, timeout: Duration) -> anyhow::Result<()> {
@@ -424,7 +433,28 @@ impl Desktop {
         }
         anyhow::bail!("desktop readiness deadline exceeded")
     }
+    pub async fn sleep(&mut self) -> anyhow::Result<()> {
+        let selected = if self.alive() {
+            // Use the Page owner's existing state, without requiring CDP/DOM
+            // responsiveness before idle cleanup. A picker alone has no Pages.
+            match &self.pages {
+                Some(pages) => pages.has_pages().await.unwrap_or(false),
+                None => false,
+            }
+        } else {
+            false
+        };
+        self.stop().await?;
+        if selected {
+            // Use Chromium's one-shot session restart intent, retaining all
+            // profiles and the last selection across helper/VM recycling.
+            // A profile-directory flag would restore only one profile.
+            node(serde_json::json!({"action":"resume_on_wake"})).await?;
+        }
+        Ok(())
+    }
     pub async fn stop(&mut self) -> anyhow::Result<()> {
+        self.pages = None;
         let has_browser = self.children.iter().any(|p| p.browser);
         self.ready = false;
         if has_browser {

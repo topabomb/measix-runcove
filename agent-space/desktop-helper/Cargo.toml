@@ -14,3 +14,5 @@ libc = "0.2"
 uuid = { version = "1", features = ["v4"] }
 agent-engine = { path = "..", default-features = false }
 base64 = "0.22"
+futures = "0.3"
+tokio-tungstenite = "0.29"

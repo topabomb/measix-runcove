@@ -131,5 +131,6 @@
   "control_returns_to_ai_after_60_seconds": "Control returns to AI after {{seconds}} seconds without remote input. Viewing and editing local clipboard drafts do not extend it.",
   "returning_control_enables_ai_operations_interrupted_scripts": "Returning control enables AI operations. Interrupted scripts do not resume automatically.",
   "runcove_cloud_desktop": "Runcove · Cloud Desktop",
-  "desktop_user": "User"
+  "desktop_user": "User",
+  "open_browser": "Open browser"
 }

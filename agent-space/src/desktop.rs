@@ -22,6 +22,7 @@ pub struct DesktopHub {
     helper: Mutex<Option<ManagedInstance>>,
     jobs: Mutex<HashMap<String, Arc<Job>>>,
     captures: Mutex<Vec<Value>>,
+    browser: crate::config::BrowserConfig,
 }
 struct Job {
     id: String,
@@ -41,13 +42,14 @@ pub struct ScreenOptions {
     pub save_dir: Option<String>,
 }
 impl DesktopHub {
-    pub fn new(session: Session) -> Self {
+    pub fn new(session: Session, browser: crate::config::BrowserConfig) -> Self {
         Self {
             control: session.enable_desktop(),
             session,
             helper: Mutex::new(None),
             jobs: Mutex::new(HashMap::new()),
             captures: Mutex::new(vec![]),
+            browser,
         }
     }
     async fn ensure(&self) -> Result<u16, EngineError> {
@@ -70,6 +72,7 @@ impl DesktopHub {
         let launch = ManagedLaunch::Desktop {
             host_binary: std::env::var("AGENT_SPACE_DESKTOP")
                 .unwrap_or_else(|_| "/usr/local/bin/agent-space-desktop".into()),
+            max_pages: self.browser.max_pages,
         };
         let instance = match self.session.start_managed(launch.clone()).await {
             Ok(instance) => instance,

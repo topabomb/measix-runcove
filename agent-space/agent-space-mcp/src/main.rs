@@ -98,10 +98,12 @@ async fn main() -> anyhow::Result<()> {
     };
 
     let session_manager = Arc::new(
-        SessionManager::new(engine, config.server.max_sessions, default_opts).with_limits(
-            config.workspace.max_output_lines,
-            config.workspace.max_output_bytes,
-        ),
+        SessionManager::new(engine, config.server.max_sessions, default_opts)
+            .with_browser(config.browser.clone())
+            .with_limits(
+                config.workspace.max_output_lines,
+                config.workspace.max_output_bytes,
+            ),
     );
 
     let dynamic_state = if let Some(dir) = config.state_dir() {

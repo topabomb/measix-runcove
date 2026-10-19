@@ -5,13 +5,14 @@ Run docker/verify.py first for the same image; all resources here are disposable
 import argparse,hashlib,http.client,json,os,secrets,time,uuid
 from pathlib import Path
 from verify import docker
-from qualification import run_shared
+from qualification import run_shared,verify_page_limit_restart
 from release_identity import source_digest
 ROOT=Path(__file__).resolve().parents[1]
 def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--image',required=True);p.add_argument('--lifecycle',type=Path)
- p.add_argument('--tools-only',action='store_true',help='Run real VM browser and image regressions; not full release qualification')
+ p.add_argument('--tools-only',action='store_true',help='Run real VM browser and image regressions, including real 300-second profile recovery; not full release qualification')
  p.add_argument('--development-assets',action='store_true',help='Bind current debug binaries/UI for source regression; not release qualification')
+ p.add_argument('--max-pages',type=int,help='Override the shared browser Page limit for this independent qualification')
  a=p.parse_args()
  image_id=docker('image','inspect',a.image,'--format','{{.Id}}').strip()
  if not a.tools_only:
@@ -30,6 +31,10 @@ def main():
  try:
   volume=docker('volume','create',name+'-data').strip()
   config=output/'config.toml';config.write_text('resource_prefix="desktopqualification"\n[server]\nlisten="0.0.0.0:8932"\nmax_running_spaces=2\n[workspace]\nimage={preset="runcove-desktop"}\ncpus=2\nmemory_mib=3072\nworkspace_size_mib=8192\n[state]\ndir="/var/lib/microsandbox/agent-space-state"\n[admin]\ntoken_env="AGENT_SPACE_ADMIN_TOKEN"\n[webdav]\nenabled=false\n');config.chmod(0o600)
+  if a.max_pages is not None:
+   assert a.max_pages>=2,'shared Page regressions require at least two pages'
+   config.write_text(config.read_text()+f'\n[browser]\nmax_pages={a.max_pages}\n')
+   (output/'max_pages').write_text(str(a.max_pages));report['max_pages']=a.max_pages
   common=['-e','AGENT_SPACE_ADMIN_TOKEN','-v',volume+':/var/lib/microsandbox','-v',str(config)+':/etc/agent-space/config.toml:ro']
   if a.development_assets:
    report['source_digest']=source_digest()
@@ -54,6 +59,7 @@ def main():
    status,raw=request(port,'POST','/admin/v1/users',body);assert status==201,(status,raw.decode(errors='replace'));users[name]=json.loads(raw)
   (output/'port').write_text(str(port));(output/'target').write_text('server');secret=output/'users.json';secret.write_text(json.dumps(users));secret.chmod(0o600)
   report['suite_logs']=run_shared(output,os.environ,check,tools_only=a.tools_only)
+  report['page_limit_restart']=verify_page_limit_restart(output,container,docker,check)
   if a.development_assets:assert source_digest()==report['source_digest'],'source changed during qualification'
   report['passed']=True
  finally:

@@ -68,3 +68,7 @@ default_keep_alive_minutes = 10
 max_keep_alive_minutes = 1440
 startup_timeout_secs = 60
 io_idle_timeout_secs = 120
+
+# Maximum open Pages across all windows of each shared browser. Restart to apply.
+[browser]
+max_pages = 4

@@ -17,10 +17,13 @@
 | 入口与协议 | `[server]`：8932、公共 origin、协议空闲期限 | 同样的入口设置，协议期限默认 0 |
 | 空间容量 | `server.max_running_spaces=2`；与 MCP 连接数分开 | 固定一个空间，不接受此项 |
 | 资源与执行 | `[workspace]`：新 VM 镜像/2 CPU/3072 MiB/8192 MiB 工作盘/512 MiB tmpfs，以及执行限额 | `[execution]` 只负责 Bash/30 秒/2000 行/51200 bytes；资源交给 Compose |
+| 浏览器页面 | `[browser].max_pages=4`，每空间分别限制 | 同一设置，限制本实例共享浏览器 |
 | 生命周期 | `[lifecycle]` 的请求/工作空闲期限及检查间隔 | 无 VM 生命周期配置；桌面休眠沿用共同合同 |
 | 身份与状态 | `[state]` 唯一 state.json；`[admin]` 引用管理员环境凭据 | `[auth]` 引用单实例凭据；没有持久账号表 |
 | 文件与发布 | `[webdav]` 默认开启且独立凭据；`[web_publish]` 提供有限 VM 保活 | DAV 默认关闭且需独立凭据；发布不控制容器停机 |
 | 日志 | `[logging]` | `[logging]` |
+
+`[browser].max_pages` 为正整数，省略默认4，配置随服务重启生效；计数及满额行为见[页面上限](browser-desktop.md#页面数量上限)。
 
 资源与输出限额必须为有效正数；Server CPU 输入不能在 u8 转换时截断。新默认不覆盖已有 VM、磁盘、凭据或固定镜像。旧配置转换会保留其有效值，新格式再次转换也保持默认值，操作见[运维手册](operations.md#schema3-配置转换)。
 
@@ -55,7 +58,7 @@ Standalone 的服务与 helper 控制进程使用 root，Agent 命令、浏览�
 
 访问 `/desktop/` 并使用该实例 Token 登录，MCP 地址为 `/mcp`，发布为 `/pub/{name}/`。只有一个使用者的一个空间，无账号/空间选择和管理 API。访问凭据通过环境变量提供，TOML 只保存环境变量名称；重建后必须继续提供凭据。外部 DAV 默认关闭；启用时配置 `[webdav] enabled=true`、独立 `RUNCOVE_DAV_TOKEN` 并在编排中映射8933端口，入口为 `/dav/`。工作台文件面板不依赖外部 DAV 开启。
 
-独立 TOML 支持 `[server]`、`[auth]`、`[execution]`、`[logging]`、`[webdav]`、`[web_publish]`；不接受用户/空间清单、MSB、VM 容量/生命周期或管理配置。执行默认 Bash、30秒、2000行/51200bytes；监听默认8932，MCP协议会话默认不因空闲过期。DAV 的 `public_port` 是 Server 管理链接投影设置，不在独立配置中提供。
+独立 TOML 支持 `[server]`、`[auth]`、`[execution]`、`[logging]`、`[webdav]`、`[web_publish]`、`[browser]`；不接受用户/空间清单、MSB、VM 容量/生命周期或管理配置。执行默认 Bash、30秒、2000行/51200bytes；监听默认8932，MCP协议会话默认不因空闲过期。DAV 的 `public_port` 是 Server 管理链接投影设置，不在独立配置中提供。
 
 正常 TERM 会取消 MCP 长连接、DAV 与现有任务/helper。若桌面 root owner 被强杀，状态保守 BLOCKED 并要求 `docker compose ... restart`；基础命令和文件继续可用。不要用 `pkill` 或删实例记录强行恢复。部署维护者临时安装到容器根文件系统的软件不承诺跨换镜像保留。
 

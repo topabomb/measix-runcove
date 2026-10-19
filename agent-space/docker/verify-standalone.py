@@ -11,8 +11,9 @@ def main():
  parser.add_argument('--image',required=True)
  suites=parser.add_mutually_exclusive_group()
  suites.add_argument('--full',action='store_true',help='Run shared browser, 1 GiB file, UI and real 300-second idle suites')
- suites.add_argument('--tools-only',action='store_true',help='Run browser and image tool regressions without long idle, file-stream or UI suites')
+ suites.add_argument('--tools-only',action='store_true',help='Run browser and image regressions, including real 300-second profile recovery; skip file-stream and UI suites')
  parser.add_argument('--development-assets',action='store_true',help='Bind current debug binaries/UI for early development checks; not release qualification')
+ parser.add_argument('--max-pages',type=int,help='Override the shared browser Page limit for this independent qualification')
  args=parser.parse_args()
  name='runcove-qualify-'+uuid.uuid4().hex[:10]
  output=ROOT/'target/standalone-verification'/name;output.mkdir(parents=True)
@@ -37,6 +38,10 @@ def main():
   config=output/'config.toml'
   # Whitespace-only optional origins have the same semantics as an empty value.
   config.write_text('[server]\nlisten="0.0.0.0:8932"\n[webdav]\nenabled=true\nlisten="0.0.0.0:8933"\npublic_base_url="   "\n');config.chmod(0o600)
+  if args.max_pages is not None:
+   assert args.max_pages>=2,'shared Page regressions require at least two pages'
+   config.write_text(config.read_text()+f'\n[browser]\nmax_pages={args.max_pages}\n')
+   (output/'max_pages').write_text(str(args.max_pages));report['max_pages']=args.max_pages
   create=['docker','create','--name',name,'--init','--memory','3g','--cpus','2','--shm-size','512m','--security-opt','seccomp='+str(ROOT/'docker/playwright-seccomp.json'),'-p','127.0.0.1::8932','-p','127.0.0.1::8933','--tmpfs','/tmp:size=256m,mode=1777','--tmpfs','/run:size=64m,mode=755','--env','RUNCOVE_TOKEN','--env','RUNCOVE_DAV_TOKEN','--env','RUNCOVE_PRIVATE_MARKER','--mount','type=volume,src='+volume+',dst=/workspace','--mount','type=bind,src='+str(config)+',dst=/etc/runcove/config.toml,readonly']
   if args.development_assets:
    report['source_digest']=source_digest()
@@ -200,6 +205,9 @@ print('stopped data child reaped after parent death')"""
   observed=client.tool('browser_observe',{});assert not observed.get('isError'),text(observed)
   assert text(observed)['health']['browser']
   check('graceful_restart_preserves_workspace_and_expires_page_session')
+  if args.full or args.tools_only:
+   from qualification import verify_page_limit_restart
+   report['page_limit_restart']=verify_page_limit_restart(output,name,lambda *a,**kw:command('docker',*a,**kw),check)
   if args.development_assets:assert source_digest()==report['source_digest'],'source changed during qualification'
   report['passed']=True
  except BaseException as error:

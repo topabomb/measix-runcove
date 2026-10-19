@@ -87,7 +87,7 @@ Standalone 的 Agent 可管理项目和用户态依赖，系统依赖由部署�
 
 ### JavaScript 执行与显式输出
 
-`browser_run` 注入 `page`、`context`、`desktop`、`output`、`artifacts`，接受 async 函数或带 await 的函数体；模块用 `await import(...)` 导入。artifacts 是默认产物目录路径，脚本访问文件与 bash、文件工具遵循相同的权限。普通运行没有标签页且无原生窗口时创建空白页，不创建第二个浏览器或 context。选择 page_id 不自动聚焦；优先复用已有页，仅有并行页面需求时新建标签，用完关闭自己创建的临时页。
+`browser_run` 注入 `page`、`context`、`desktop`、`output`、`artifacts`，接受 async 函数或带 await 的函数体；模块用 `await import(...)` 导入。artifacts 是默认产物目录路径，脚本访问文件与 bash、文件工具遵循相同的权限。普通运行没有标签页、原生窗口或个人资料选择器时创建空白页，不创建第二个浏览器或 context。选择 page_id 不自动聚焦；优先复用已有页，仅有并行页面需求时新建标签，用完关闭自己创建的临时页。
 
 上传可用 `locator.setInputFiles(path)`，或先登记 `page.waitForEvent('filechooser')`，触发后调用 `chooser.setFiles(path)`。下载同样先登记事件再触发：
 
@@ -101,6 +101,24 @@ return {path:file.path, bytes:file.bytes};
 `output.file(path)` 只登记 `/workspace` 内现有普通文件的元数据，不复制或自动预览；`output.image(bufferOrCapture)` 显式返回 PNG/JPEG/WebP；`output.download(download)` 保存到 artifacts 并登记下载，返回文件元数据；`output.saveMhtml(page,path)` 保存并登记 MHTML，目标路径须在 `/workspace` 内。`desktop.screenshot()` 返回 Capture，使用 `await output.image(await desktop.screenshot())` 显示。已登记输出原子检查点保存，后续脚本报错、超时或取消仍返回可用产物和日志。成功只表示脚本完成，不解释返回值中业务字段的含义；不自动采集最终 DOM、AX 或截图。
 
 指针接口为 `desktop.click({image_id,x,y,button?})`、`desktop.drag({image_id,x,y,to_x,to_y})`、`desktop.scroll({image_id,x,y,delta})`；click 的 button 为1左键（默认）、2中键、3右键，drag 按住左键，scroll 的 delta 为-30..30的整数滚轮步数，正数向下、负数向上。其他接口为 `desktop.type(text)`、`desktop.press(key)`、`desktop.setWindowMode('normal'|'maximized'|'fullscreen')`，键名示例为 `Enter`、`Escape`、`ctrl+a`。对某个标签页进行桌面输入前，先调用 `page.bringToFront()`，再捕获桌面确认目标。若任务开始时已有原生对话框或所选页面无响应，该次任务的 page/context 不可用，不新建 Playwright 附着，改用 desktop helpers 恢复后再观察；窗口模式设置也要求 page/context 可用。参数形状错误给出真实签名，截图过期或前台窗口改变给出 STALE_OBSERVATION。
+
+### 页面数量上限
+
+Server、Standalone 共用 `[browser].max_pages`，省略默认4，只接受正整数；重启服务后生效。每空间的共享浏览器分别计数，所有连接、窗口中的 Page 共用上限：tab、新窗口页面、网页弹窗和空白页均计入，导航、刷新、切换或移动已有页不增加数量；iframe、worker、alert 和文件选择对话框不计入。
+
+`context.newPage()` 和工具自动补建的空白页由 desktop helper 串行准入；网页、桌面快捷键或人工新增的超额页面，在创建事件中关闭新页，不淘汰旧页，因此后者存在短暂创建窗口。只有确认页面关闭才释放数量，任务结束、超时或取消不释放仍存在的页面。页面守卫随 Chromium 启停，CDP 重连保留已接纳页面身份，监听不刷新桌面活动；浏览器重开时从实际恢复页面建立基线，包括经个人资料选择器延后恢复的初始页面。配置调小或恢复后已有页面超额时保留已有工作，阻止继续新增，允许复用与关闭。
+
+满额只阻止新增，观察、截图、已有页导航和关闭、任务查询继续可用。自动化新增失败沿用 `error:{code,message}`，code 为 `PAGE_LIMIT_REACHED`，message 含实际配置上限及复用/关闭提示；保留已有任务状态、输出和副作用说明，不增加用量字段或改变正常工具结果。浏览器脚本执行期间新增弹窗被拒绝时，中止该次脚本任务并返回同一错误，已登记输出保留。没有运行浏览器脚本时，人工或后台新增只关闭超额新页并记录日志，不给后续无关观察附加错误。
+
+工作台的“显示控制”提供“打开浏览器”，调用已有认证 `/viewer` 入口：人工关闭 Chromium 后可重新打开同一个受管浏览器；已有页面时只复用，没有页面且无个人资料选择器时经同一数量准入补建空白页，不创建第二个浏览器实例，不改变控制权或续期人工输入权限。页面仍遵循上述上限；桌面自身休眠时继续使用原有“唤醒桌面”。
+
+### 个人资料选择与休眠恢复
+
+Chrome 个人资料（profile）与 Google 网站中同时登录的多个账号不同。[Google 官方说明](https://support.google.com/chrome/answer/2364824?hl=en)中的“启动时显示”控制个人资料选择器；[网站账号切换](https://support.google.com/accounts/answer/1721977?hl=en)是普通网页行为，页面及登录弹窗按 Page 上限计数。多个资料中实际打开的 Page 也共用每空间上限，不能按账号增加额度。
+
+首次启动、人工明确关闭后重新打开，按 Chromium 的个人资料设置启动：启用选择器时保留选择界面，关闭时沿用浏览器的最后使用记录。选择器是 `browser_ui`，不计入 Page，不补建空白页绕过它，也不自动选择或修改账号。DOM/AX 或网页操作需要选择资料时，沿用既有错误结构返回 `PROFILE_SELECTION_REQUIRED`；桌面截图和 `desktop` 操作仍可用，完成选择后重新观察即可。
+
+300秒闲置休眠后唤醒属于原会话恢复：继续最后选择的资料并恢复原有资料中的页面，不再次要求选择。仍由现有 desktop helper 负责闲置、关闭和启动；根据同一 Page owner 已记录的页面状态判断是否需要恢复，闲置回收不依赖 CDP/DOM 响应，浏览器失去响应也沿用原有有界关闭流程。受管休眠确认停止 Chromium 后，以空间执行身份在持久 Local State 中写入原生 `was.restarted` 会话标记，因此 helper/VM 继续按原策略回收后仍可恢复。浏览器自行消费并清除该标记，不改 `show_picker_on_startup` 或 `last_used`，不另存资料选择状态。启动后尚未打开资料页面就休眠时，仍保留选择流程。此行为依赖镜像固定的 Chromium，升级须复验选择器和多资料恢复；[Chromium 启动实现](https://github.com/chromium/chromium/blob/971a7443b0c9b0a9b2860529b33331b76077ec62/chrome/browser/ui/startup/startup_browser_creator.cc)与[偏好定义](https://github.com/chromium/chromium/blob/971a7443b0c9b0a9b2860529b33331b76077ec62/chrome/common/pref_names.h)为依据。
 
 ### 任务、错误与输出预算
 
@@ -176,6 +194,8 @@ Rust 测试与原真实 VM 回归见 AGENTS.md。新增独立资格测试需要�
 export AGENT_SPACE_BROWSER_TEST_DIR=/path/to/independent-qualification
 python3 tests/test_bash_vm.py
 python3 tests/test_browser_vm.py
+python3 tests/test_browser_pages_vm.py # Page上限、并发、弹窗、新窗口、取消
+python3 tests/test_browser_profiles_vm.py # 选择器、跨资料上限、真实300秒休眠恢复
 python3 tests/test_desktop_files_vm.py
 python3 tests/test_browser_lifecycle_vm.py # 真实300秒，串行且勿操作该空间
 MSB_HOME=/path/to/isolated-msb python3 tests/test_migration_cli.py

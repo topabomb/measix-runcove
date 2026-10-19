@@ -14,7 +14,7 @@ function say(text){$('message').textContent=text;clearTimeout(toastTimer);toastT
 function clipSay(text){$('clipboardStatus').textContent=text;}
 function clearClipboard(){ $('clipboardSend').value='';$('clipboardReceive').value='';$('copyClipboard').disabled=true;clipSay(t("panel_cleared_system_clipboards_are_unchanged")); }
 function render(){
-  const writable=connected&&confirmed&&control==='HUMAN'&&canInput&&!controlBusy&&phase==='live';
+  const writable=connected&&confirmed&&control==='HUMAN'&&canInput&&!controlBusy&&!connecting&&phase==='live';
   document.body.classList.toggle('human',writable);document.body.classList.toggle('live',connected&&phase==='live');
   if(rfb)rfb.viewOnly=!writable;
   $('connection').textContent=({checking:t("checking_connection"),login:t("not_signed_in"),connecting:t("connecting_desktop"),live:t("desktop_connected"),reconnecting:t("reconnecting"),offline:t("desktop_disconnected"),idle:t("desktop_sleeping"),denied:t("access_denied")})[phase];
@@ -27,6 +27,7 @@ function render(){
   $('lease').hidden=!writable||remaining>10;$('lease').textContent=remaining+t("s_until_ai_control");
   $('sendClipboard').disabled=$('escapeKey').disabled=$('addressKey').disabled=!writable;
   $('upload').disabled=!authenticated||!!uploadRequest;
+  $('openBrowser').disabled=!authenticated||controlBusy||!!connecting;
   $('uploadHint').textContent=t("upload_to_the_workspace_then_select_it");
   $('mcpToggle').disabled=$('filesToggle').disabled=$('clipboardToggle').disabled=$('logout').disabled=!authenticated;
   $('overlay').hidden=phase==='live';$('loginForm').hidden=phase!=='login';$('reconnect').hidden=!['offline','idle'].includes(phase);
@@ -53,12 +54,13 @@ function scheduleReconnect(){
   phase='reconnecting';render();retryTimer=setTimeout(async()=>{retryTimer=null;try{await connect(false);}catch(e){fail(e);scheduleReconnect();}},delay);
 }
 async function connect(wake){
-  if(connecting)return connecting;if(connected){await state();return;}
+  if(connecting)return connecting;
   clearTimeout(retryTimer);retryTimer=null;
   connecting=(async()=>{
     await state();
     if(wake)await api('/viewer','POST',{},45000);
     else{const h=await api('/health');if(!h.desktop){phase='idle';render();return;}}
+    if(connected){await state();return;}
     phase='connecting';render();
 
     const current=new RFB($('screen'),location.protocol.replace('http','ws')+'//'+location.host+basePath+'/ws?nonce='+encodeURIComponent(nonce));rfb=current;
@@ -71,7 +73,7 @@ async function connect(wake){
     });
     await state();phase='live';retries=0;render();
   })();
-  try{await connecting;}finally{connecting=null;}
+  try{await connecting;}finally{connecting=null;render();}
 }
 async function changeControl(mode){
   if(controlBusy||!connected)return;controlBusy=true;++mutation;render();let completed=false;
@@ -138,6 +140,7 @@ document.addEventListener('fullscreenchange',()=>{const text=document.fullscreen
 function sendKey(address){try{if(!connected||!rfb||rfb.viewOnly||controlBusy)return;rfb.focus();if(address){rfb.sendKey(0xffe3,'ControlLeft',true);try{rfb.sendKey(0x6c,'KeyL');}finally{rfb.sendKey(0xffe3,'ControlLeft',false);}}else rfb.sendKey(0xff1b,'Escape');}catch(e){fail(e);}}
 $('logout').onclick=async()=>{if(!authenticated)return;try{await api('/logout','POST',{});authenticated=false;confirmed=false;nonce=null;configToken='';$('mcpToken').value='';control='UNKNOWN';phase='login';clearTimeout(retryTimer);retryTimer=null;dropConnection();closePanel(false);render();say(t("signed_out_of_this_desktop_page_other"));}catch(e){fail(e);}};
 $('escapeKey').onclick=()=>sendKey(false);$('addressKey').onclick=()=>sendKey(true);
+$('openBrowser').onclick=async()=>{if(!authenticated||controlBusy||connecting)return;try{await connect(true);}catch(e){fail(e);}};
 setInterval(async()=>{if(suspended||polling||controlBusy||connecting||!authenticated)return;polling=true;try{await state();}catch(e){fail(e);}finally{polling=false;}},2000);
 window.addEventListener('pagehide',()=>{suspended=true;clearTimeout(retryTimer);retryTimer=null;dropConnection();closePanel(false);});
 window.addEventListener('pageshow',async event=>{if(!event.persisted)return;suspended=false;try{await connect(false);}catch(e){fail(e);scheduleReconnect();}});

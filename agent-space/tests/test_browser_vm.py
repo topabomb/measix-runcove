@@ -38,7 +38,7 @@ class BrowserQualification(unittest.TestCase):
    if name=='custom':
     with self.assertRaisesRegex(RuntimeError,'not enabled'):client.tool('browser_observe',{})
    for item in tools:self.assertNotIn('中文',item['description'])
-  observed=text(self.client.tool('browser_observe',{}));self.assertTrue(observed['health']['browser']);self.assertTrue(observed['health']['page'])
+  reply=self.client.tool('browser_observe',{});observed=text(reply);self.assertFalse(reply.get('isError'),observed);self.assertTrue(observed['health']['browser']);self.assertTrue(observed['health']['page'])
   observed=text(self.client.tool('browser_observe',{'recent_tasks_limit':10}));self.assertLessEqual(len(observed['recent_tasks']),10)
   with self.assertRaisesRegex(RuntimeError,'recent_tasks_limit'):self.client.tool('browser_observe',{'recent_tasks_limit':11})
  def test_01b_concise_failures_and_string_arguments(self):
@@ -143,7 +143,7 @@ class BrowserQualification(unittest.TestCase):
   self.assertEqual(value['value'],'中文\nhello 🙂')
 
  def test_05b_invalid_worker_result_is_terminal_and_releases_control(self):
-  value,_=self.browser("const fs=await import('node:fs');fs.writeFileSync(process.env.AGENT_RESULT,'[]');process.stdout.write('malformed result',()=>process.exit(0));",success=False)
+  value,_=self.browser("const fs=await import('node:fs');fs.writeFileSync(process.env.AGENT_RESULT,'[]');await new Promise(resolve=>process.stdout.write('malformed result',resolve));process.exit(0);",success=False)
   self.assertEqual(value['state'],'failed',value)
   self.assertEqual('SCRIPT_ERROR',value['error']['code'])
   value,_=self.browser('return {recovered:true};')

@@ -2,11 +2,11 @@
 import hashlib,os,subprocess,sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-SHARED_CHECKS={'shared_test_browser_vm.py','shared_test_media_vm.py','shared_test_desktop_files_vm.py','shared_test_browser_lifecycle_vm.py','shared_real_vnc_keyboard_clipboard_viewers_responsive_and_idle'}
+SHARED_CHECKS={'shared_test_browser_vm.py','shared_test_browser_pages_vm.py','shared_test_browser_profiles_vm.py','shared_test_media_vm.py','shared_test_desktop_files_vm.py','shared_test_browser_lifecycle_vm.py','shared_real_vnc_keyboard_clipboard_viewers_responsive_and_idle'}
 def run_shared(output,environment,passed,*,tools_only=False):
  environment=dict(environment,AGENT_SPACE_BROWSER_TEST_DIR=str(output))
- for suite in ['test_browser_vm.py','test_media_vm.py','test_desktop_files_vm.py','test_browser_lifecycle_vm.py']:
-  if tools_only and suite not in ['test_browser_vm.py','test_media_vm.py']:continue
+ for suite in ['test_browser_vm.py','test_browser_pages_vm.py','test_media_vm.py','test_browser_profiles_vm.py','test_desktop_files_vm.py','test_browser_lifecycle_vm.py']:
+  if tools_only and suite not in ['test_browser_vm.py','test_browser_pages_vm.py','test_media_vm.py','test_browser_profiles_vm.py']:continue
   result=subprocess.run([sys.executable,str(ROOT/'tests'/suite)],env=environment,capture_output=True,text=True,timeout=700)
   (output/(suite+'.log')).write_text(result.stdout+result.stderr)
   if result.returncode:raise RuntimeError('shared qualification failed: '+suite+'; see its log')
@@ -18,3 +18,60 @@ def run_shared(output,environment,passed,*,tools_only=False):
  if result.returncode:raise RuntimeError('shared UI qualification failed; see ui.log')
  passed('shared_real_vnc_keyboard_clipboard_viewers_responsive_and_idle')
  return {p.name:hashlib.file_digest(p.open('rb'),'sha256').hexdigest() for p in sorted(output.glob('*.log'))}
+
+def verify_page_limit_restart(output,container,command,passed):
+ """Lower only this driver's disposable config, then verify profile and policy."""
+ import json,time,tomllib,urllib.request,shlex
+ assert container==output.name and container.startswith(('runcove-desktop-','runcove-qualify-'))
+ config=output/'config.toml';original=config.read_text()
+ maximum=tomllib.loads(original).get('browser',{}).get('max_pages',4)
+ assert maximum>=2,'restart regression requires an initial limit of at least two'
+ os.environ['AGENT_SPACE_BROWSER_TEST_DIR']=str(output)
+ sys.path.insert(0,str(ROOT/'tests'))
+ import browser_client
+ def connect():
+  port=int(command('port',container,'8932/tcp').strip().rsplit(':',1)[1])
+  (output/'port').write_text(str(port));browser_client.BASE='http://127.0.0.1:'+str(port)
+  until=time.monotonic()+90
+  while True:
+   try:
+    with urllib.request.urlopen(browser_client.BASE+'/healthz',timeout=5) as response:
+     if response.status==200:break
+   except OSError:pass
+   assert time.monotonic()<until,'Page restart readiness deadline';time.sleep(.2)
+  client=browser_client.Client('desktop');client.initialize();return client
+ def run(client,code):
+  reply=client.tool('browser_run',{'code':code});value=browser_client.text(reply)
+  while value.get('state')=='running':
+   reply=client.tool('browser_task',{'task_id':value['task_id']});value=browser_client.text(reply)
+  return value,reply
+ client=connect()
+ value,reply=run(client,f"for(const p of context.pages())if(p!==page)await p.close();await page.goto('data:text/html,<title>Page restart preservation</title>');while(context.pages().length<{maximum})await context.newPage();return context.pages().length;")
+ assert not reply.get('isError') and value['value']==maximum,value
+ def node(code):
+  reply=client.tool('bash',{'command':'node -e '+shlex.quote('(async()=>{'+code+'})().then(()=>process.exit()).catch(e=>{console.error(e);process.exit(1)});')})
+  assert not reply.get('isError'),browser_client.text(reply)
+ # Close Chrome explicitly, then enable its native picker with a disposable
+ # second profile. On selection the original session is restored after guard
+ # startup, including when the new configuration is below its Page count.
+ node("const v=await(await fetch('http://127.0.0.1:9222/json/version')).json();await new Promise((resolve,reject)=>{const w=new WebSocket(v.webSocketDebuggerUrl);w.onopen=()=>w.send(JSON.stringify({id:1,method:'Browser.close'}));w.onclose=resolve;w.onerror=reject;});await new Promise(r=>setTimeout(r,700));const fs=require('node:fs'),p='/workspace/.agent-space/desktop/profile',s=JSON.parse(fs.readFileSync(p+'/Local State'));s.profile.show_picker_on_startup=true;s.profile.picker_shown=true;s.profile.last_used='Default';s.profile.info_cache['Quota restart fixture']={name:'Quota restart fixture',active_time:Date.now()/1000,is_using_default_name:false};fs.mkdirSync(p+'/Quota restart fixture',{recursive:true});fs.writeFileSync(p+'/Quota restart fixture/Preferences',JSON.stringify({profile:{name:'Quota restart fixture',exit_type:'Normal'}}));fs.writeFileSync(p+'/Local State',JSON.stringify(s));")
+ command('stop','--time','60',container,timeout=90)
+ # Keep the bind file inode: Docker Desktop may retain a replaced bind inode.
+ if '\n[browser]' in original:
+  import re
+  updated=re.sub(r'(?m)^max_pages\s*=.*$', 'max_pages=1',original)
+ else:updated=original+'\n[browser]\nmax_pages=1\n'
+ config.write_text(updated)
+ command('start',container)
+ client=connect()
+ observed=client.tool('browser_observe',{});value=browser_client.text(observed)
+ assert observed.get('isError') and value['error']['code']=='PROFILE_SELECTION_REQUIRED',value
+ node("const p=(await(await fetch('http://127.0.0.1:9222/json/list')).json()).find(t=>t.url==='chrome://profile-picker/');await new Promise((resolve,reject)=>{const w=new WebSocket(p.webSocketDebuggerUrl);w.onopen=()=>w.send(JSON.stringify({id:1,method:'Runtime.evaluate',params:{expression:\"chrome.send('launchSelectedProfile',['/workspace/.agent-space/desktop/profile/Default'])\"}}));w.onmessage=()=>{w.close();resolve();};w.onclose=resolve;w.onerror=reject;});await new Promise(r=>setTimeout(r,1000));")
+ observed=client.tool('browser_observe',{});value=browser_client.text(observed)
+ assert not observed.get('isError') and len(value['tabs'])==maximum,value
+ value,reply=run(client,'await context.newPage();')
+ assert reply.get('isError') and value['error']['code']=='PAGE_LIMIT_REACHED' and '(1)' in value['error']['message'],value
+ value,reply=run(client,"for(const p of context.pages())if(p!==page)await p.close();await page.goto('data:text/html,<title>Existing page remains usable</title>');return context.pages().length;")
+ assert not reply.get('isError') and value['value']==1,value
+ passed('reduced_page_limit_after_restart_preserves_profile_and_existing_pages')
+ return {'initial_limit':maximum,'restarted_limit':1,'restored_pages':maximum,'restored_after_profile_picker':True,'new_page_error':'PAGE_LIMIT_REACHED','existing_page_navigation_and_close':True}

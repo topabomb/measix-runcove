@@ -7,7 +7,16 @@ test_*.py
 
 # Operator configuration is never part of a build context.
 docker/configs/
-docker/.build/
+# Only verified public runtime inputs are admitted from the build cache.
+docker/.build/*
+!docker/.build/libs/
+docker/.build/libs/*
+!docker/.build/libs/libkrunfw.so*
+!docker/.build/images/
+docker/.build/images/*
+!docker/.build/images/default.tar.gz
+!docker/.build/images/desktop.tar.gz
+!docker/.build/images/desktop.reference
 **/.env
 **/.env.*
 **/.secrets/

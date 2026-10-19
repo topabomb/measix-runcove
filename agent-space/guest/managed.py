@@ -260,7 +260,7 @@ def start(data):
     if item["service"] == "static-http":
         args = [executable, "file" if settings["file"] else "directory", settings["root"]]
     elif item["service"] == "desktop":
-        args = [executable]
+        args = [executable, "--max-pages", str(settings["max_pages"])]
     else:
         config = json.dumps(settings["config"], sort_keys=True).encode()
         atomic(ROOT + "/etc/webdav.json", config)

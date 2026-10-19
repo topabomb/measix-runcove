@@ -131,5 +131,6 @@
   "control_returns_to_ai_after_60_seconds": "人工接管后，{{seconds}} 秒无远程键鼠操作会自动交还 AI。观看画面和编辑本机剪贴板草稿不续期。",
   "returning_control_enables_ai_operations_interrupted_scripts": "交还 AI 会开放操作权限；被中断的任务由 Agent 决定后续执行。",
   "runcove_cloud_desktop": "Runcove 工舱 · 云桌面",
-  "desktop_user": "用户"
+  "desktop_user": "用户",
+  "open_browser": "打开浏览器"
 }

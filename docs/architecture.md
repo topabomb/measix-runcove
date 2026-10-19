@@ -239,7 +239,7 @@ Host 配置决定服务启用、外部地址、二进制来源和服务策略；
 
 管理员资源摘要使用 `guest/workspace_stats.py`，由 Host 在已运行 VM 内以 `python3 -I -c` 一次性执行。它只核对 `/workspace` 工作卷并读取文件系统容量，不安装文件、不创建受管实例、不启动 DAV helper，不改变上述固定 helper 的归属。其截止时间由资源查询控制，不取得用户活动租约；不修改用户工作区内容。
 
-桌面helper只管理自己的X11/LXQt/浏览器/worker子树，以PID+start身份保留后代并有界TERM/KILL。新helper内嵌五个JS文件，摘要同时覆盖worker，启动前原子安装；已执行任务不热换。普通bash的有界前台owner与固定文件操作脚本都是短命执行器，不是受管常驻服务。文件工具在 `/tmp/agent-space/file-operations.lock` 使用单个稳定的内核字节范围锁文件；不得在VM存活时删除该锁文件。write/edit的同目录 `.agent-space-write-*` 暂存随正常完成、失败或TERM退出清理。浏览器硬期限、控制权和300秒空闲详见[浏览器合同](browser-desktop.md)。
+桌面helper只管理自己的X11/LXQt/浏览器/worker子树，以PID+start身份保留后代并有界TERM/KILL。新helper内嵌五个JS文件，摘要同时覆盖worker，启动前原子安装；已执行任务不热换。页面准入和CDP创建/关闭监听归同一个desktop helper，配置进入既有launch摘要；不增加独立受管服务或持久计数，规则见[页面上限](browser-desktop.md#页面数量上限)。普通bash的有界前台owner与固定文件操作脚本都是短命执行器，不是受管常驻服务。文件工具在 `/tmp/agent-space/file-operations.lock` 使用单个稳定的内核字节范围锁文件；不得在VM存活时删除该锁文件。write/edit的同目录 `.agent-space-write-*` 暂存随正常完成、失败或TERM退出清理。浏览器硬期限、控制权和300秒空闲详见[浏览器合同](browser-desktop.md)。
 
 ### 给 Agent 的说明
 

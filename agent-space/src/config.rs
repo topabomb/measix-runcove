@@ -30,6 +30,30 @@ pub struct Config {
     pub webdav: WebdavConfig,
     #[serde(default)]
     pub web_publish: WebPublishConfig,
+    #[serde(default)]
+    pub browser: BrowserConfig,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct BrowserConfig {
+    pub max_pages: usize,
+}
+
+impl Default for BrowserConfig {
+    fn default() -> Self {
+        Self { max_pages: 4 }
+    }
+}
+
+impl BrowserConfig {
+    pub fn validate(&self) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            self.max_pages > 0,
+            "browser.max_pages must be greater than zero"
+        );
+        Ok(())
+    }
 }
 
 /// Settings consumed by workspace tools, independent of VM provisioning.
@@ -513,6 +537,7 @@ impl Config {
     }
 
     fn validate_with_mode(&self, state_command: bool) -> Result<(), anyhow::Error> {
+        self.browser.validate()?;
         anyhow::ensure!(
             self.server.max_sessions > 0,
             "server.max_sessions must be greater than zero"
@@ -720,6 +745,34 @@ pub fn validate_dav_origin(base: &str, primary: &str) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn browser_page_limit_defaults_and_validation() {
+        let config: Config = toml::from_str(VALID_TOML).unwrap();
+        assert_eq!(config.browser.max_pages, 4);
+        for max in [1, 7] {
+            let config: Config =
+                toml::from_str(&format!("{VALID_TOML}\n[browser]\nmax_pages={max}\n")).unwrap();
+            config.validate().unwrap();
+            assert_eq!(config.browser.max_pages, max);
+        }
+        let config: Config =
+            toml::from_str(&format!("{VALID_TOML}\n[browser]\nmax_pages=0\n")).unwrap();
+        assert!(config
+            .validate()
+            .unwrap_err()
+            .to_string()
+            .contains("browser.max_pages"));
+        for value in ["-1", "1.5", "'4'"] {
+            assert!(toml::from_str::<Config>(&format!(
+                "{VALID_TOML}\n[browser]\nmax_pages={value}\n"
+            ))
+            .is_err());
+        }
+        assert!(
+            toml::from_str::<Config>(&format!("{VALID_TOML}\n[browser]\nmax_tabs=4\n")).is_err()
+        );
+    }
 
     const VALID_TOML: &str = r#"
 [webdav]

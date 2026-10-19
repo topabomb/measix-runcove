@@ -34,6 +34,33 @@ async function login(page:any,target=url){
  await expect(page.locator('canvas')).toBeVisible();
 }
 test.describe.configure({mode:'serial'});
+test('human can reopen a closed browser without replacing the desktop or control',async({browser})=>{
+ test.setTimeout(90000);
+ const context=await browser.newContext({locale:'zh-CN',viewport:{width:1440,height:1000}}),page=await context.newPage();
+ await login(page);
+ let prepared=await tool('browser_run',{code:"for(const p of context.pages())if(p!==page)await p.close();await page.goto('http://127.0.0.1:8124/');await page.bringToFront();return true;"});
+ while(prepared.state==='running')prepared=await tool('browser_task',{task_id:prepared.task_id});
+ expect(prepared.state).toBe('succeeded');
+ await page.getByRole('button',{name:'接管操作',exact:true}).click();await expect(page.getByText('你正在操作',{exact:true})).toBeVisible();
+ await page.locator('canvas').click({position:{x:300,y:200}});
+ await page.keyboard.press('Alt+F4');
+ const desktopAlive=()=>page.evaluate(async()=>{const session=await (await fetch('./api/session')).json();const r=await fetch('./api/health',{headers:{'X-Desktop-Nonce':session.nonce}});if(!r.ok)throw Error('health request failed: '+r.status);return (await r.json()).desktop;});
+ await expect.poll(desktopAlive,{timeout:10000}).toBe(false);
+ await expect(page.locator('canvas')).toBeVisible();
+ await page.locator('#displayToggle').click();
+ await page.getByRole('button',{name:'打开浏览器',exact:true}).click();
+ await expect.poll(desktopAlive,{timeout:30000}).toBe(true);
+ await expect(page.getByText('你正在操作',{exact:true})).toBeVisible();
+ const first=(await tool('browser_observe',{})).tabs.map((p:any)=>p.page_id);
+ expect(first.length).toBeGreaterThan(0);
+ await expect(page.getByRole('button',{name:'打开浏览器',exact:true})).toBeEnabled();
+ await page.getByRole('button',{name:'打开浏览器',exact:true}).click();
+ await expect(page.getByRole('button',{name:'打开浏览器',exact:true})).toBeEnabled();
+ expect((await tool('browser_observe',{})).tabs.map((p:any)=>p.page_id)).toEqual(first);
+ await page.getByRole('combobox',{name:'语言'}).selectOption('en');
+ await expect(page.getByRole('button',{name:'Open browser',exact:true})).toBeVisible();
+ await context.close();
+});
 test('real VNC keyboard, clipboard, English UI and a second viewer',async({browser})=>{
  test.setTimeout(90000);
  const first=await browser.newContext({locale:'zh-CN',viewport:{width:1440,height:1000}}),second=await browser.newContext({locale:'zh-CN',viewport:{width:1440,height:1000}});

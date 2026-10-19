@@ -16,6 +16,19 @@ async function cdp(url,method,params={}){
  });
 }
 async function observe(){
+ if(params.action==='resume_on_wake'){
+  // Chromium consumes was.restarted once, bypassing the picker and restoring
+  // all last-opened profiles. Only touch it while Chromium is stopped, under
+  // the workspace identity. Never change show_picker_on_startup or last_used.
+  const fs=require('node:fs'),path='/workspace/.agent-space/desktop/profile/Local State';
+  let state;try{state=JSON.parse(fs.readFileSync(path,'utf8'));}catch{throw Error('PROFILE_RECOVERY_REQUIRED: Cannot read Chrome session state');}
+  if(state.was?.restarted===true)return {ok:true};
+  state.was={...state.was,restarted:true};
+  const temporary=path+'.'+crypto.randomUUID();
+  try{fs.writeFileSync(temporary,JSON.stringify(state),{flag:'wx',mode:0o600});fs.renameSync(temporary,path);}finally{try{fs.unlinkSync(temporary);}catch{}}
+  return {ok:true};
+ }
+ if(params.action==='page_endpoint')return {websocket:(await get('/json/version')).webSocketDebuggerUrl};
  if(params.view==='desktop'){
   const {bytes,...capture}=desktopCapture();
   return {capture,images:[{type:'image',mimeType:'image/png',data:bytes.toString('base64')}]};
@@ -24,14 +37,18 @@ async function observe(){
  try{window=cmd('xdotool',['getactivewindow']);nativeWindow=/window id # 0x[1-9a-f]/i.test(cmd('xprop',['-id',window,'WM_TRANSIENT_FOR']));}catch{}
  const version=await get('/json/version');
  if(params.action){await cdp(version.webSocketDebuggerUrl,params.action==='close'?'Browser.close':'Browser.setDownloadBehavior',params.action==='close'?{}:{behavior:'default'}).catch(()=>{});return {ok:true};}
- let targets=(await get('/json/list')).filter(t=>t.type==='page');
- if(params.create_page&&!targets.length&&!nativeWindow){await cdp(version.webSocketDebuggerUrl,'Target.createTarget',{url:'about:blank'});targets=(await get('/json/list')).filter(t=>t.type==='page');}
+ const allTargets=await get('/json/list');
+ let targets=allTargets.filter(t=>t.type==='page');
  const requested=params.page_id;
+ const picker=allTargets.find(t=>t.url.startsWith('chrome://profile-picker/'));
+ let profilePicker=!requested&&!!picker&&!targets.length;
+ if(!requested&&picker&&!profilePicker){try{const r=await cdp(picker.webSocketDebuggerUrl,'Runtime.evaluate',{expression:'document.hasFocus()',returnByValue:true});profilePicker=!!r.result?.value;}catch{}}
  let selected=requested?targets.find(t=>t.id===requested):null;
  const tabs=()=>targets.slice(0,50).map(t=>({page_id:t.id,url:t.url.slice(0,1000),title:t.title.slice(0,200)}));
+ if(profilePicker&&params.view)return {error:{code:'PROFILE_SELECTION_REQUIRED',message:'Select a Chrome profile using the desktop, then observe again.'},tabs:tabs()};
  if(requested&&!selected)return {error:{code:'PAGE_NOT_FOUND',message:'No open tab matches page_id. Select a tab from tabs, or omit page_id.'},tabs:tabs()};
- if(!requested&&!selected&&!nativeWindow){const visible=await Promise.all(targets.slice(0,12).map(async t=>{try{const r=await cdp(t.webSocketDebuggerUrl,'Runtime.evaluate',{expression:'document.hasFocus()',returnByValue:true});return r.result?.value?t:null;}catch{return null;}}));selected=visible.find(Boolean);}
- if(!requested)selected=selected||targets[0];
+ if(!requested&&!selected&&!nativeWindow&&!profilePicker){const visible=await Promise.all(targets.slice(0,12).map(async t=>{try{const r=await cdp(t.webSocketDebuggerUrl,'Runtime.evaluate',{expression:'document.hasFocus()',returnByValue:true});return r.result?.value?t:null;}catch{return null;}}));selected=visible.find(Boolean);}
+ if(!requested&&!profilePicker)selected=selected||targets[0];
  if(params.maximize&&selected&&!nativeWindow){const {windowId,bounds}=await cdp(version.webSocketDebuggerUrl,'Browser.getWindowForTarget',{targetId:selected.id});if(bounds.windowState!=='normal')await cdp(version.webSocketDebuggerUrl,'Browser.setWindowBounds',{windowId,bounds:{windowState:'normal'}});await cdp(version.webSocketDebuggerUrl,'Browser.setWindowBounds',{windowId,bounds:{windowState:'maximized'}});}
  let dom=null,ax=null,responsive=false;
  if(selected&&!nativeWindow&&params.view!=='page'){try{
@@ -47,6 +64,6 @@ async function observe(){
  }
  return {page_id:selected?.id||null,tabs:tabs(),
   health:{browser:true,page:responsive,desktop:!!window,native_window:nativeWindow},
-  ...(dom?{dom}:{}),...(ax?{ax}:{}),window,nativeWindow};
+  ...(dom?{dom}:{}),...(ax?{ax}:{}),window,nativeWindow,profilePicker};
 }
 observe().then(value=>{process.stdout.write(JSON.stringify(value));}).catch(error=>{console.error(error.message);process.exitCode=1;});

@@ -53,16 +53,18 @@ const output={file:async file=>{if(files.length>=16)throw Error('At most 16 arti
 (async()=>{
   // A fresh Playwright attachment can consume/cancel an already-open native chooser.
   // Native foreground observations deliberately do not attach; the same tool runs desktop helpers.
-  const desktopOnly=task.nativeWindow||task.pageResponsive===false;
+  const desktopOnly=task.nativeWindow||task.profilePicker||task.pageResponsive===false;
   const browser=desktopOnly?null:await chromium.connectOverCDP('http://127.0.0.1:9222',{timeout:5000});
-  const unavailable=new Proxy({}, {get(){throw Error(task.nativeWindow?'NATIVE_WINDOW: use desktop helpers, then observe after the dialog closes':'PAGE_UNRESPONSIVE: use desktop helpers to recover the tab, then observe');}});
+  const unavailable=new Proxy({}, {get(){throw Error(task.profilePicker?'PROFILE_SELECTION_REQUIRED: Select a Chrome profile using the desktop, then observe again.':task.nativeWindow?'NATIVE_WINDOW: use desktop helpers, then observe after the dialog closes':'PAGE_UNRESPONSIVE: use desktop helpers to recover the tab, then observe');}});
   const context=browser?browser.contexts()[0]:unavailable;
   if(browser){context.setDefaultTimeout(Math.min(task.timeoutMs,10000));context.setDefaultNavigationTimeout(Math.min(task.timeoutMs,20000));}
   let page=desktopOnly?unavailable:null;
-  const matches=await Promise.all((browser?context.pages():[]).map(async candidate=>{
-    let s;try{return await Promise.race([(async()=>{s=await context.newCDPSession(candidate);const {targetInfo}=await s.send('Target.getTargetInfo');return targetInfo.targetId===task.page_id?candidate:null;})(),new Promise(r=>setTimeout(()=>r(null),2000))]);}catch{return null;}finally{if(s)await Promise.race([s.detach().catch(()=>{}),new Promise(r=>setTimeout(r,200))]);}
-  }));
-  if(browser)page=matches.find(Boolean);
+  async function findPage(id){
+    const matches=await Promise.all(context.pages().map(async candidate=>{
+      let s;try{return await Promise.race([(async()=>{s=await context.newCDPSession(candidate);const {targetInfo}=await s.send('Target.getTargetInfo');return targetInfo.targetId===id?candidate:null;})(),new Promise(r=>setTimeout(()=>r(null),2000))]);}catch{return null;}finally{if(s)await Promise.race([s.detach().catch(()=>{}),new Promise(r=>setTimeout(r,200))]);}
+    }));return matches.find(Boolean);
+  }
+  if(browser)page=await findPage(task.page_id);
   if(!page)throw Error('STALE_OBSERVATION: page no longer exists');
   desktop.setWindowMode=async mode=>{
     if(!browser)throw Error('NATIVE_WINDOW: close native dialog before changing browser window mode');
@@ -85,6 +87,13 @@ const output={file:async file=>{if(files.length>=16)throw Error('At most 16 arti
   };
   // Cooperation guard, not a hostile-JavaScript sandbox.
   if(browser){context.close=async()=>{throw Error('managed context cannot be closed');};
+  context.newPage=async()=>{
+    const response=await fetch('http://127.0.0.1:'+task.guard_port+'/page',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task_id:task.task_id}),signal:AbortSignal.timeout(Math.min(task.timeoutMs,6000))});
+    const result=await response.json();if(!response.ok)throw Error(result.error||'BROWSER_UNAVAILABLE');
+    const until=Date.now()+5000;
+    while(Date.now()<until){const opened=await findPage(result.page_id);if(opened)return opened;await new Promise(r=>setTimeout(r,25));}
+    throw Error('PAGE_NOT_FOUND: newly opened page is no longer available');
+  };
   browser.close=async()=>{throw Error('managed browser cannot be closed');};
   browser.newContext=async()=>{throw Error('only the shared context is supported');};}
   const value=await compile(task.code)(page,context,desktop,output,directory);
@@ -94,9 +103,12 @@ const output={file:async file=>{if(files.length>=16)throw Error('At most 16 arti
     const temp=directory+'/'+crypto.randomUUID()+'.json';fs.writeFileSync(temp,serialized);
     const item=await output.file(temp);serialized=JSON.stringify({output_file:item.path,bytes:Buffer.byteLength(serialized)});outputWarning='Execution completed; large return value saved as JSON artifact.';
   }
-  // Restore ordinary user downloads after a Playwright download operation.
-  if(browser){const s=await browser.newBrowserCDPSession();await s.send('Browser.setDownloadBehavior',{behavior:'default'}).catch(()=>{});await s.detach();}
   checkpoint({value:JSON.parse(serialized),...(outputWarning?{output_warning:outputWarning}:{})});
+  // Closing the last Page can disconnect Chromium. Keep the completed result
+  // before best-effort download cleanup, including session creation/detachment.
+  if(browser?.isConnected()){
+    let s;try{s=await browser.newBrowserCDPSession();await s.send('Browser.setDownloadBehavior',{behavior:'default'});}catch{}finally{if(s)await s.detach().catch(()=>{});}
+  }
   process.stdout.write('',()=>process.exit(0));
 })().catch(error=>{
   let message=error instanceof Error ? (error.name+': '+error.message) : String(error);
