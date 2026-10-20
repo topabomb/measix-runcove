@@ -1,0 +1,5 @@
+    Checking agent-engine v0.1.0 (/home/hualei/msb_demo/agent-space)
+    Checking agent-space-mcp v0.1.0 (/home/hualei/msb_demo/agent-space/agent-space-mcp)
+    Checking agent-space-webdav v0.1.0 (/home/hualei/msb_demo/agent-space/webdav)
+    Checking agent-space-desktop v0.1.0 (/home/hualei/msb_demo/agent-space/desktop-helper)
+    Finished `dev` profile [unoptimized] target(s) in 22.85s

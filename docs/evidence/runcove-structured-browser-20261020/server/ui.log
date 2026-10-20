@@ -1,0 +1,16 @@
+
+> runcove-desktop-ui@0.1.0 test
+> playwright test --reporter=list --output=/home/hualei/msb_demo/agent-space/target/server-desktop-verification/runcove-desktop-caf22de75e/ui-results
+
+
+Running 5 tests using 1 worker
+
+  ✓  1 tests/workbench.spec.ts:51:1 › human can reopen a closed browser without replacing the desktop or control (8.0s)
+  ✓  2 tests/workbench.spec.ts:76:1 › real VNC keyboard, clipboard, English UI and a second viewer (8.5s)
+  ✓  3 tests/workbench.spec.ts:126:1 › a connected passive VNC viewer sleeps after 300 seconds and restores its tabs (5.2m)
+  ✓  4 tests/workbench.spec.ts:144:1 › human takeover allows basic tools and workspace uploads (1.1s)
+  ✓  5 tests/workbench.spec.ts:165:1 › HTTPS proxy with rewritten Host preserves nested workbench and origin boundary (951ms)
+
+  Slow test file: tests/workbench.spec.ts (5.5m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  5 passed (5.5m)

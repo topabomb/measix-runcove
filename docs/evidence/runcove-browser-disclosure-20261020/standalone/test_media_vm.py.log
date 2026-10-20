@@ -1,0 +1,15 @@
+test_01_file_images_on_desktop_and_custom_workspaces (__main__.MediaQualification.test_01_file_images_on_desktop_and_custom_workspaces) ... ok
+test_02_screenshots_semantics_and_intervals (__main__.MediaQualification.test_02_screenshots_semantics_and_intervals) ... ok
+test_02b_original_screenshots_are_downloadable_and_keep_capture_bytes (__main__.MediaQualification.test_02b_original_screenshots_are_downloadable_and_keep_capture_bytes) ... ok
+test_02c_private_directories_share_workspace_file_permissions (__main__.MediaQualification.test_02c_private_directories_share_workspace_file_permissions) ... ok
+test_03_cancel_sequence_preserves_frames_and_allows_browser_work (__main__.MediaQualification.test_03_cancel_sequence_preserves_frames_and_allows_browser_work) ... ok
+test_04_download_outputs_survive_failure_deadline_and_cancellation (__main__.MediaQualification.test_04_download_outputs_survive_failure_deadline_and_cancellation) ... ok
+test_04b_closed_target_preserves_frames_without_switching_tabs (__main__.MediaQualification.test_04b_closed_target_preserves_frames_without_switching_tabs) ... ok
+test_05_desktop_survives_stalled_browser_without_restarting_it (__main__.MediaQualification.test_05_desktop_survives_stalled_browser_without_restarting_it) ... ok
+test_06_parallel_images_and_mcp_cancellation_behind_a_file_lock (__main__.MediaQualification.test_06_parallel_images_and_mcp_cancellation_behind_a_file_lock) ... ok
+test_07_dense_chinese_text_uses_the_shared_1980_pipeline (__main__.MediaQualification.test_07_dense_chinese_text_uses_the_shared_1980_pipeline) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 114.356s
+
+OK

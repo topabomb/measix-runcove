@@ -1,0 +1,1084 @@
+   Compiling agent-space-desktop v0.1.0 (/home/hualei/msb_demo/agent-space/desktop-helper)
+    Finished `test` profile [unoptimized] target(s) in 1.93s
+     Running unittests src/lib.rs (target/debug/deps/agent_engine-e08eb0c09edbe80a)
+
+running 90 tests
+test auth::tests::bearer_header_parsing ... ok
+test config::tests::blank_origins_are_optional_and_dav_ports_are_validated ... ok
+test config::tests::browser_page_limit_defaults_and_validation ... ok
+test config::tests::canonical_conversion_preserves_new_installation_defaults ... ok
+test config::tests::invalid_workspace_resources_fail_before_provisioning_or_conversion ... ok
+test config::tests::lan_webdav_still_requires_a_distinct_authority ... ok
+test config::tests::legacy_conversion_preserves_effective_values_without_overwriting_files ... ok
+test config::tests::native_proxy_config_uses_host_secret_reference ... ok
+test config::tests::omitted_tmpfs_capacity_uses_512_mib ... ok
+test config::tests::public_base_url_builds_user_routes_without_secrets ... ok
+test config::tests::removed_bridge_configuration_is_rejected ... ok
+test config::tests::state_directory_typo_is_rejected_and_mcp_url_is_reachable ... ok
+test config::tests::test_get_user_by_token ... ok
+test config::tests::test_invalid_toml ... ok
+test config::tests::test_logging_defaults ... ok
+test config::tests::test_logging_partial_override ... ok
+test config::tests::test_logging_with_dir ... ok
+test config::tests::test_missing_optional_fields_use_defaults ... ok
+test config::tests::test_network_policy_default_unrestricted ... ok
+test config::tests::test_network_policy_invalid ... ok
+test config::tests::test_network_policy_parsing ... ok
+test config::tests::test_to_profiles_mapping ... ok
+test config::tests::test_valid_toml ... ok
+test config::tests::test_validation_idle_must_exceed_session ... ok
+test config::tests::test_validation_rejects_unknown_engine_type ... ok
+test config::tests::test_validation_requires_positive_session_capacity ... ok
+test config::tests::test_validation_workspace_name_must_have_prefix ... ok
+test config::tests::webdav_allows_empty_origin_with_separate_listener_and_positive_timeouts ... ok
+test control::tests::abandoned_handoff_releases_transition_without_releasing_the_operation ... ok
+test control::tests::another_viewer_cannot_steal_or_release_control ... ok
+test control::tests::passive_view_does_not_extend_lease ... ok
+test control::tests::take_cancels_and_waits_for_owner ... ok
+test control::tests::unconfirmed_cleanup_never_grants_human_or_another_operation ... ok
+test engine::msb::tests::closed_agent_connection_requests_reconnect ... ok
+test engine::msb::tests::lost_exit_event_requests_reconnect_without_replay ... ok
+test engine::msb::tests::missing_user_file_does_not_classify_the_vm_as_dead ... ok
+test engine::process::tests::dropping_waiter_cancels_owner_and_reaps_foreground_descendants ... ok
+test engine::process::tests::local_foreground_owner_enforces_deadline_and_retains_partial_output ... ok
+test engine::process::tests::local_runtime_has_exactly_one_existing_workspace_and_cannot_delete_it ... ok
+test engine::process::tests::output_eof_does_not_leave_a_timed_out_owner_running ... ok
+test image::tests::desktop_requires_immutable_reference ... ok
+test image::tests::selection_is_explicit_and_strict ... ok
+test media::tests::abandoned_codec_waiter_does_not_release_the_workers_permit ... ok
+test media::tests::corrects_exif_orientation_and_composites_only_the_first_gif_frame ... ok
+test media::tests::rejects_invalid_and_oversized_images ... ok
+test media::tests::supported_formats_and_transparency ... ok
+test publication::tests::generated_credentials_and_username_collision_are_scoped_to_active_items ... ok
+test publication::tests::username_capacity_is_released_with_publication ... ok
+test resources::tests::collection_timeout_and_global_limit_are_bounded ... ok
+test resources::tests::concurrent_queries_share_cache_and_runtime_changes_discard_late_samples ... ok
+test resources::tests::deleting_an_inflight_entry_cannot_reinsert_it ... ok
+test resources::tests::failed_final_inspection_is_an_error_and_preserves_only_verified_history ... ok
+test resources::tests::memory_ages_while_waiting_for_disk_collection ... ok
+test resources::tests::memory_distinguishes_missing_invalid_zero_and_stale ... ok
+test resources::tests::partial_failures_preserve_other_fields_and_last_disk_time ... ok
+test resources::tests::stopped_paused_and_recreated_spaces_do_not_collect_or_reuse_live_values ... ok
+test resources::tests::user_detail_rechecks_identity_after_inflight_delete_and_recreation ... ok
+test session::tests::cancelled_managed_start_finishes_with_owned_cleanup_outside_bash_queue ... ok
+test session::tests::dav_cancelled_vm_start_finishes_and_unknown_failure_retains_capacity ... ok
+test session::tests::dav_slot_survives_unpublish_and_drains_before_replacement ... ok
+test session::tests::dav_start_deadline_and_cancelled_waiter_keep_owned_lifecycle ... ok
+test session::tests::dav_vm_exit_before_readiness_releases_capacity_and_guest_state ... ok
+test session::tests::dav_vm_start_survives_deadline_and_failure_releases_known_terminal_capacity ... ok
+test session::tests::desktop_management_ports_are_never_publishable ... ok
+test session::tests::finite_keepalive_protects_both_reapers_and_expires_without_touching_activity ... ok
+test session::tests::media_lane_text_tail_matches_owner_newlines_and_unicode_boundaries ... ok
+test session::tests::probing_a_stopped_port_does_not_create_a_workspace ... ok
+test session::tests::renewal_after_candidate_collection_prevents_stop_and_vm_stop_revokes_all ... ok
+test session::tests::shutdown_has_one_deadline_and_retains_unfinished_owners ... ok
+test session::tests::stale_helper_health_cannot_close_a_recreated_name ... ok
+test session::tests::status_query_does_not_hold_the_session_map_while_waiting_for_runtime ... ok
+test session::tests::terminal_refresh_waits_for_publication_transaction ... ok
+test session::tests::tmpfs_preparation_retries_failure_and_runs_once_per_connection ... ok
+test session::tests::truncation_by_byte_size ... ok
+test session::tests::truncation_by_line_count ... ok
+test session::tests::truncation_byte_second_pass_preserves_tail ... ok
+test session::tests::truncation_no_truncation_needed ... ok
+test session::tests::truncation_preserves_utf8_boundaries ... ok
+test state::standalone_tests::one_configured_identity_uses_no_account_file_and_keeps_credentials_separate ... ok
+test state::tests::corrupt_snapshot_refuses_startup ... ok
+test state::tests::create_persists_digest_and_rejects_duplicate ... ok
+test state::tests::custom_dav_tokens_are_persistent_unique_and_retry_safe ... ok
+test state::tests::dav_keys_are_independent_and_all_invalidation_paths_are_persistent ... ok
+test state::tests::disable_revokes_token_until_stop_is_cleared ... ok
+test state::tests::impossible_cleanup_states_fail_closed_without_rewriting_snapshot ... ok
+test state::tests::init_does_not_replace_a_missing_snapshot_with_empty_users ... ok
+test state::tests::missing_state_is_not_an_empty_user_list ... ok
+test state::tests::readiness_rejects_a_removed_state_file ... ok
+test state::tests::rotation_and_space_id_guard_delete ... ok
+test state::tests::second_process_cannot_take_the_lock ... ok
+
+test result: ok. 90 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.89s
+
+     Running tests/common.rs (target/debug/deps/common-21d0349159c9e13c)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/test_dynamic_directory_vm.rs (target/debug/deps/test_dynamic_directory_vm-3988dcb992d4dd17)
+
+running 1 test
+test dynamic_user_directory_and_stopped_vm_deletion_use_real_resources ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.47s
+
+     Running tests/test_dynamic_restart.rs (target/debug/deps/test_dynamic_restart-35855786a1ad4076)
+
+running 1 test
+test restart_adopts_registered_dynamic_user_only ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/test_guest_tcp.rs (target/debug/deps/test_guest_tcp-6eeac813be148a18)
+
+running 1 test
+test guest_tcp_carries_http_and_can_be_cancelled ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.32s
+
+     Running tests/test_image_migration.rs (target/debug/deps/test_image_migration-0c250fbfd6f3238b)
+
+running 3 tests
+test active_owner_blocks_migration_before_resolving_metadata ... ok
+test failed_resolver_never_changes_state ... ok
+test migration_is_explicit_atomic_and_preserves_identity ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/test_lifecycle.rs (target/debug/deps/test_lifecycle-92fb1573bc5e3130)
+
+running 5 tests
+test test_existing_session_wakes_and_host_adopts_running_vm ... ok
+test test_lifecycle_create_exec_volume_persists_on_restart ... ok
+test test_lifecycle_kill_remove_and_recreate ... ok
+test test_new_manager_reopens_stopped_workspace_without_recreating_data ... ok
+test test_overlay_persists_across_stop_start ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.21s
+
+     Running tests/test_lifecycle_unit.rs (target/debug/deps/test_lifecycle_unit-0e3f6fc89877ba6b)
+
+running 18 tests
+test deleting_cancels_a_running_command_and_rejects_the_next_one ... ok
+test test_lc01_session_timeout ... ok
+test test_lc02_no_timeout_when_tool_active ... ok
+test test_lc03_idle_timeout_tool_idle ... ok
+test test_lc04_no_timeout_no_reclaim ... ok
+test test_lc05_session_timeout_before_idle ... ok
+test test_lc06_session_retained_after_stop ... ok
+test test_lc07_exec_updates_both_activity_clocks ... ok
+test test_lc08_double_check_race_condition ... ok
+test test_lc09_touch_only_updates_request ... ok
+test test_lc10_stop_workspace_no_remove ... ok
+test test_lc11_stop_workspace_not_found ... ok
+test test_lc12_concurrent_get_or_create ... ok
+test test_lc13_workspace_removed_full_cleanup ... ok
+test test_lc14_reports_unregistered_without_deleting ... ok
+test test_lc15_recorded_delete_does_not_touch_other_resources ... ok
+test test_lc16_volume_failure_is_retryable ... ok
+test test_lc17_stop_all_stops_and_clears_sessions ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/test_managed_log.rs (target/debug/deps/test_managed_log-9c534743f705321a)
+
+running 1 test
+test managed_log_is_bounded_and_retains_latest_output ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/test_msb_upgrade.rs (target/debug/deps/test_msb_upgrade-47242818580b27dc)
+
+running 5 tests
+test convergent_activation_and_stale_handle_cannot_stop_replacement ... ok
+test native_socks4_routes_tcp ... ok
+test native_socks5_auth_udp_keeps_password_on_host ... ok
+test native_socks5_routes_traffic_and_policy_still_blocks ... ok
+test single_file_mount_does_not_expose_host_siblings ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.51s
+
+     Running tests/test_multiuser.rs (target/debug/deps/test_multiuser-240be67ca5841d2f)
+
+running 1 test
+test test_multiuser_isolated_sandboxes_cannot_see_other_files ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.77s
+
+     Running tests/test_network_policy.rs (target/debug/deps/test_network_policy-cbbcb8a00c10f014)
+
+running 3 tests
+test test_np01_public_only ... ok
+test test_np02_no_egress ... ok
+test test_np03_connection_limits_are_persisted ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.96s
+
+     Running tests/test_resource_limits.rs (target/debug/deps/test_resource_limits-19b067280e7bb8eb)
+
+running 6 tests
+test test_cpu_and_memory_limits ... ok
+test test_disk_limit_and_reclaim ... ok
+test test_max_sandboxes ... ok
+test test_memory_oom ... ok
+test test_msb_runtime_quota ... ok
+test test_tmpfs_limit ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.43s
+
+     Running tests/test_resources_vm.rs (target/debug/deps/test_resources_vm-7fb501ea93bf3040)
+
+running 1 test
+test real_resource_summary_is_scoped_and_never_keeps_vm_alive ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 19.64s
+
+     Running tests/test_sandbox_status.rs (target/debug/deps/test_sandbox_status-83c7819b67170de5)
+
+running 2 tests
+test test_sandbox_status_running_and_error_on_stopped ... ok
+test test_session_auto_recovery_after_sandbox_stop ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.31s
+
+     Running tests/test_session_consistency.rs (target/debug/deps/test_session_consistency-08ccb2e44b241741)
+
+running 34 tests
+test a_queued_request_rechecks_its_bound_credential_before_execution ... ok
+test abandoned_file_waiter_retains_ownership_and_revocation_cancels_all_files ... ok
+test active_capacity_is_atomic_and_sleep_releases_it ... ok
+test adopted_workspace_that_resumes_externally_attaches_for_guest_tcp ... ok
+test backend_deleted_between_status_and_start_is_recreated_before_exec ... ok
+test blocked_command_in_one_space_does_not_block_another ... ok
+test busy_command_survives_reclaim_and_cancelled_http_waiter ... ok
+test cancellation_during_activation_does_not_submit_the_user_command ... ok
+test closed_client_during_helper_install_recovers_on_next_admission ... ok
+test concurrent_connections_share_one_queue_and_one_activation ... ok
+test dav_closed_client_recovers_while_vm_and_exec_remain_healthy ... ok
+test deleting_recorded_resources_releases_desktop_cache_and_image_projection ... ok
+test desktop_control_never_blocks_basic_tools_and_bash_does_not_block_files ... ok
+test failed_adoption_cleanup_is_retried_before_new_work ... ok
+test failed_orphan_stop_protects_its_volume ... ok
+test failed_wake_preserves_old_session_and_disks_without_recreation ... ok
+test file_deadline_during_activation_never_runs_late_and_owner_is_retained ... ok
+test files_overlap_at_most_four_and_queued_timeout_never_executes ... ok
+test metadata_failure_preserves_workspace_and_recovers_without_replaying_commands ... ok
+test orphan_cleanup_uses_only_the_selected_engines_volume_store ... ok
+test partial_activation_failure_retains_the_running_resource_slot ... ok
+test paused_workspace_keeps_capacity_and_next_tool_resumes_it ... ok
+test publication_closed_client_uses_the_same_recovery_owner ... ok
+test queued_files_recheck_credentials_without_replaying_active_files ... ok
+test removed_sessions_cannot_resurrect_resources ... ok
+test removing_a_lazy_session_also_removes_persisted_backend_resources ... ok
+test request_arriving_during_stop_waits_then_wakes_same_session ... ok
+test restored_desktop_binds_a_fresh_runtime_and_control_owner ... ok
+test revoking_a_workspace_cancels_execution_and_retires_old_sessions ... ok
+test startup_adoption_counts_existing_running_workspaces ... ok
+test startup_adopts_paused_workspace_without_waking_or_losing_capacity ... ok
+test startup_adopts_transitioning_workspace_and_tool_converges_it ... ok
+test uncertain_exec_is_not_replayed_and_next_request_reconnects ... ok
+test unknown_status_does_not_release_capacity_or_restart_the_vm ... ok
+
+test result: ok. 34 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+
+     Running tests/test_shell.rs (target/debug/deps/test_shell-26ffae9912fc7cca)
+
+running 9 tests
+test test_file_edit_operations ... ok
+test test_file_read_edge_cases ... ok
+test test_file_write_and_read_basics ... ok
+test test_session_command_queue_serial_execution ... ok
+test test_session_truncates_output_over_limit ... ok
+test test_shell_custom_workdir ... ok
+test test_shell_echo_exit_code_stderr ... ok
+test test_shell_pipe_and_redirect ... ok
+test test_shell_timeout_kills_and_sandbox_recovers ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 11.91s
+
+     Running tests/test_static_helper_vm.rs (target/debug/deps/test_static_helper_vm-4c54679347884807)
+
+running 2 tests
+test directory_helper_runs_after_install_and_sees_file_changes ... ok
+test restarted_owner_reclaims_only_marked_helper ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.76s
+
+     Running tests/test_tmpfs_growth.rs (target/debug/deps/test_tmpfs_growth-4771e58822e6f581)
+
+running 1 test
+test existing_tmpfs_grows_preserving_files_and_open_handles_and_reapplies_after_restart ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.43s
+
+     Running unittests src/main.rs (target/debug/deps/agent_space_desktop-3bed4b33db9b9912)
+
+running 8 tests
+test desktop::layout_tests::artifacts_migrate_without_overwrite_and_keep_unknown_entries ... ok
+test pages::tests::baseline_preserves_existing_pages_but_reconnect_does_not_adopt_new_overflow ... ok
+test pages::tests::quota_counts_rejected_pages_until_confirmed_closed ... ok
+test process::tests::rejects_a_reused_identity ... ok
+test process::tests::retains_children_when_parent_exits_first ... ok
+test result_tests::worker_result_never_follows_user_links_or_accepts_non_user_owned_files ... ok
+test result_tests::worker_result_rejects_non_object_json_before_attaching_logs ... ok
+test screen::tests::originals_keep_exact_bytes_and_unique_compact_names ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.06s
+
+     Running unittests src/lib.rs (target/debug/deps/agent_space_mcp-ff653a8f1b92d614)
+
+running 30 tests
+test browser_params::tests::optional_null_and_read_modes_are_explicit ... ok
+test browser_params::tests::validates_batches_before_execution_and_separates_task_control ... ok
+test file_read::tests::missing_or_truncated_media_reports_never_become_text ... ok
+test logging::tests::test_cleanup_old_logs_ignores_current_log ... ok
+test logging::tests::test_cleanup_old_logs_ignores_non_matching_files ... ok
+test logging::tests::test_cleanup_old_logs_nonexistent_dir ... ok
+test logging::tests::test_cleanup_old_logs_removes_old_files ... ok
+test mcp_auth::tests::dropped_transport_and_revoked_credential_remove_bindings ... ok
+test mcp_auth::tests::rmcp_idle_expiry_removes_binding_without_a_second_timer ... ok
+test origins::tests::network_changes_do_not_change_authentication_or_browser_boundary ... ok
+test origins::tests::reject_ambiguous_authorities_and_ignore_forwarded_headers ... ok
+test rfb::tests::clipboard_advertisement_is_passive ... ok
+test rfb::tests::clipboard_probes_are_passive_but_contents_require_control ... ok
+test rfb::tests::fragmented_handshake_and_messages_are_reassembled ... ok
+test rfb::tests::malformed_packets_fail_before_unbounded_allocation ... ok
+test server::tests::browser_errors_preserve_effects_cleanup_and_available_outputs ... ok
+test server::tests::error_text_is_bounded_without_dropping_the_cause_or_tail ... ok
+test server::tests::optional_choices_default_on_blank_and_validate_nonempty_values ... ok
+test server::tests::optional_selectors_and_unknown_fields_are_tolerated_without_changing_payloads ... ok
+test server::tests::publication_targets_report_the_actual_invalid_input ... ok
+test server::tests::tool_result_budget_counts_base64_json_and_framing_without_truncation ... ok
+test server::tests::write_preserves_path_and_content_without_shell_expansion ... ok
+test standalone::tests::browser_limit_uses_shared_defaults_and_validation ... ok
+test standalone::tests::dav_defaults_off_and_preserves_common_private_or_https_origin_boundary ... ok
+test standalone::tests::single_space_configuration_rejects_management_vm_and_unused_keepalive_fields ... ok
+test web_publish::tests::both_auth_methods_share_failure_budget_and_preserve_only_application_authorization ... ok
+test web_publish::tests::cookie_scope_preserves_attributes_without_doubling_prefix ... ok
+test webdav::tests::destinations_and_if_tags_keep_conditions_inside_one_dav_root ... ok
+test webdav::tests::idle_deadline_extends_only_on_nonempty_progress ... ok
+test webdav::tests::only_typed_workspace_capacity_rejection_has_an_error_code ... ok
+
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.60s
+
+     Running unittests src/main.rs (target/debug/deps/agent_space_mcp-97b9b546d7d493f9)
+
+running 2 tests
+test tests::image_probe_does_not_touch_an_adopted_workspace_at_capacity ... ok
+test tests::import_command_previews_then_commits_without_tokens ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests src/bin/runcove-standalone.rs (target/debug/deps/runcove_standalone-d2e8a84ff3ae8bc9)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/test_admin_api.rs (target/debug/deps/test_admin_api-cce3eede57701bf6)
+
+running 10 tests
+test accepted_delete_closes_publications_and_old_session_before_cleanup_finishes ... ok
+test admin_create_disable_delete_and_recreate_are_space_scoped ... ok
+test custom_dav_admin_input_retry_and_generation_contract ... ok
+test dav_token_admin_contract_is_independent_and_never_starts_a_vm ... ok
+test disable_cancels_execution_before_waiting_for_another_cleanup ... ok
+test disable_stop_failure_stays_pending_and_volume_only_delete_succeeds ... ok
+test disabling_detached_vm_stops_it_without_an_in_memory_session ... ok
+test pending_stop_retry_does_not_revoke_a_reenabled_account ... ok
+test request_entry_links_change_without_mutating_identity_or_canonical_links ... ok
+test resource_observation_failure_is_partial_and_admin_only ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s
+
+     Running tests/test_desktop_routes.rs (target/debug/deps/test_desktop_routes-aacf2a6f426bf220)
+
+running 3 tests
+test cross_site_requests_and_cross_space_tokens_fail ... ok
+test routes_bind_identity_nonce_and_origin_without_waking_vm ... ok
+test takeover_refreshes_activity_without_polling_or_rejection_doing_so ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/test_dynamic_e2e.rs (target/debug/deps/test_dynamic_e2e-1c859e5eb928222c)
+
+running 4 tests
+test candidate_helper_is_stopped_when_commit_recheck_fails ... ok
+test closing_a_publication_keeps_older_failed_helper_cleanup ... ok
+test failed_helper_stop_is_retried_before_another_helper_starts ... ok
+test revoked_token_cannot_initialize_or_change_publications ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s
+
+     Running tests/test_e2e.rs (target/debug/deps/test_e2e-5b193754efa1aa4d)
+
+running 5 tests
+test authentication_and_builtin_tool_contract ... ok
+test configured_default_and_manual_bash_timeout_are_seconds ... ok
+test every_builtin_tool_resumes_a_paused_workspace ... ok
+test tiny_text_limits_preserve_file_protocol_and_image_results ... ok
+test tool_call_starts_a_stopped_workspace_and_keeps_data ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.37s
+
+     Running tests/test_session_transport.rs (target/debug/deps/test_session_transport-f49148a3227c54fc)
+
+running 3 tests
+test another_valid_token_cannot_reuse_a_bound_mcp_session ... ok
+test modern_protocol_versions_negotiate_and_discover_without_starting_vm ... ok
+test same_http_session_survives_idle_and_workspace_reclaim ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.99s
+
+     Running tests/test_web_publish_http.rs (target/debug/deps/test_web_publish_http-3927c6751d017555)
+
+running 15 tests
+test app_authorization_and_host_survive_without_gateway_credentials ... ok
+test canonical_root_and_identity_auth_scope ... ok
+test chunked_guest_response_is_decoded_before_relay ... ok
+test disabled_account_cannot_access_a_publication ... ok
+test exited_directory_helper_closes_publication ... ok
+test independent_path_credentials_and_revocation ... ok
+test paused_publication_resumes_but_stopped_publication_does_not_start ... ok
+test publication_request_streams_without_buffering_the_whole_body ... ok
+test replacement_cancels_old_stream_and_preserves_basic_access ... ok
+test streaming_post_without_length_is_framed_for_guest ... ok
+test unpolled_response_blocks_reclamation_until_drop_or_idle ... ok
+test unpublish_cancels_an_existing_streaming_response ... ok
+test unpublish_cancels_upload_before_the_request_body_finishes ... ok
+test unpublish_during_guest_connection_prevents_a_late_http_request ... ok
+test unpublish_interrupts_wait_for_upstream_headers_and_closes_guest_connection ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.25s
+
+     Running tests/test_web_publish_mcp.rs (target/debug/deps/test_web_publish_mcp-9d2d0ed0368327b8)
+
+running 5 tests
+test actual_mcp_contract_three_targets_stable_credentials_and_explicit_renewal ... ok
+test desktop_catalog_and_structured_arguments_reach_the_mcp_handlers ... ok
+test mcp_rejects_ambiguous_old_and_malformed_arguments_without_starting_vm ... ok
+test omitted_and_null_keepalive_use_the_configured_server_default ... ok
+test optional_placeholders_and_irrelevant_fields_do_not_block_actions ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+
+     Running tests/test_webdav_proxy.rs (target/debug/deps/test_webdav_proxy-811ee43ffb25f1bf)
+
+running 15 tests
+test account_invalidation_and_shutdown_cancel_unpolled_downloads ... ok
+test active_download_blocks_reclaim_and_client_drop_releases_it ... ok
+test auth_is_purpose_and_user_scoped_before_activation_and_secrets_stay_on_host ... ok
+test connection_timeout_is_not_reported_as_full_capacity ... ok
+test custom_token_auth_and_retry_preserve_transfer_until_replacement ... ok
+test failed_activation_and_draining_helpers_are_not_reported_as_full_capacity ... ok
+test full_capacity_rejects_only_new_workspaces_before_forwarding_and_recovers ... ok
+test idle_headers_upload_and_unpolled_response_release_activity ... ok
+test invalidation_interrupts_activation_and_connect_without_waiting_for_gate ... ok
+test lan_entry_preserves_dav_auth_browser_and_destination_boundaries ... ok
+test ongoing_upload_progress_extends_idle_deadline ... ok
+test real_http_reports_upstream_truncation_and_allows_download_progress ... ok
+test revocation_closes_waiting_headers_and_unpolled_downloads ... ok
+test rotating_dav_key_interrupts_upload_without_waiting_for_body_poll ... ok
+test two_http_listeners_keep_admin_and_dav_routes_separate_even_with_forged_host ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.16s
+
+     Running tests/test_webdav_vm.rs (target/debug/deps/test_webdav_vm-f21dfe84718248b0)
+
+running 1 test
+test real_host_dav_transfer_lock_bash_concurrency_and_restart ... 2026-10-20T05:39:17.591287Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:17.591339Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:17.591348Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:17.592842Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="lookup_vm" phase_elapsed_ms=1 elapsed_ms=1
+2026-10-20T05:39:17.598397Z  INFO forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine::msb: created disk volume, mounting via virtio-blk volume=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60-ws disk_path=/home/hualei/.microsandbox/volumes/test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60-ws/disk.raw
+2026-10-20T05:39:18.186155Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="vm_create" phase_elapsed_ms=593 elapsed_ms=594
+2026-10-20T05:39:18.309442Z  INFO forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::session: workspace activated workspace=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60
+2026-10-20T05:39:18.309534Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=123 elapsed_ms=718
+2026-10-20T05:39:18.775901Z  INFO forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine::managed: started managed service service=Webdav instance=01294feea9b34d07b3f26b1b6c4682e4 port=46499
+2026-10-20T05:39:18.785632Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:18.847991Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:18.848029Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:18.852013Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=4
+2026-10-20T05:39:18.852090Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:18.896159Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:18.899600Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:18.899644Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:18.902994Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:18.903047Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:18.946580Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:18.950019Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:18.950076Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:18.954174Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:18.954243Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:19.005015Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.011871Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.011910Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.015615Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.015680Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:19.064081Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.068789Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.068832Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.073013Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:19.073084Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:19.115559Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:19.118332Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.118362Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.121563Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.121733Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:19.168876Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:19.171892Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.171934Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.175444Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.175501Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:19.223693Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:19.228469Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.228512Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.232887Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:19.232960Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:19.277073Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.280270Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.280314Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.283620Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.283675Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:19.327624Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.331472Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.331512Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.334751Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.334804Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:19.377453Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.379869Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.379896Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.383031Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.383086Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:19.426224Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:19.429075Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.429117Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.433007Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.433068Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:19.483597Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:19.487681Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.487724Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.492577Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:19.492643Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=5
+2026-10-20T05:39:19.542141Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.544841Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.544872Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.547429Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:19.547468Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=2
+2026-10-20T05:39:19.587507Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:19.592339Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.592383Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.596100Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.596166Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:19.638355Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.642462Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.642506Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.645470Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=3
+2026-10-20T05:39:19.645594Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:19.694154Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=5 elapsed_ms=5
+2026-10-20T05:39:19.698000Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.698046Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.701915Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.701979Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:19.745470Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:19.750200Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.750240Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.753308Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.753384Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:19.798937Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.802864Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.802919Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.806237Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.806285Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:19.848697Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.853008Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.853077Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.856699Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.856758Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:19.897287Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.901182Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.901225Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.905482Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:19.905544Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:19.949665Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.953203Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.953234Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:19.957113Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:19.957190Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:20.009513Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:20.013401Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.013447Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.017983Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:20.018052Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:20.064233Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:20.068370Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.068414Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.072535Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:20.072599Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:20.114763Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:20.118870Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.118917Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.123159Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:20.123229Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:20.166194Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:20.168862Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.168908Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.172972Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:20.173035Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:20.216829Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:20.219698Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.219727Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.223823Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:20.223883Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:20.265380Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:20.268257Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.268286Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.272248Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=4
+2026-10-20T05:39:20.272307Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:20.312952Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:20.315529Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.315567Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.318943Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:20.318995Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:20.360707Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:20.363472Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.363514Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.367227Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:20.367283Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:20.412229Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:20.416187Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.416227Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.421240Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=5
+2026-10-20T05:39:20.421345Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=5
+2026-10-20T05:39:20.466714Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=5 elapsed_ms=5
+2026-10-20T05:39:20.470097Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.470141Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.474477Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:20.474540Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:20.514300Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:20.517859Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.517903Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.521028Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:20.521083Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:20.563375Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:20.566045Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.566078Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.570272Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:20.570317Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:20.610090Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:20.613674Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.613710Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.617046Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:20.617093Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:20.656010Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:20.658910Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.658977Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.662095Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:20.662141Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:20.705909Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:20.708929Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.708960Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.711563Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:20.711604Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=2
+2026-10-20T05:39:20.758838Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:20.762338Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.762385Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.766298Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=4
+2026-10-20T05:39:20.766375Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:20.808783Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:20.812109Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.812147Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.815557Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:20.815614Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:20.857576Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:20.860888Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.860921Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.864975Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:20.865039Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:20.912600Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:20.915722Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.915761Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.919784Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:20.919844Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:20.962679Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:20.966073Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.966132Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:20.969206Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:20.969238Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:21.014962Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:21.019948Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.019993Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.024108Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:21.024162Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:21.067681Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.070293Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.070333Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.073911Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.073972Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:21.115109Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:21.117775Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.117818Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.120989Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.121046Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:21.169067Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.173757Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.173799Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.177135Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.177223Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:21.216792Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.220564Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.220604Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.224274Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.224331Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:21.265103Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.268349Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.268393Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.271579Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.271638Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:21.317337Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.320627Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.320672Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.323638Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=3
+2026-10-20T05:39:21.323688Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:21.364453Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.367500Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.367543Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.371400Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.371463Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:21.410951Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:21.414620Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.414676Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.418649Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=4
+2026-10-20T05:39:21.418695Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:21.459970Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.462952Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.462991Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.466262Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.466317Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:21.509476Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.513206Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.513239Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.518015Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:21.518085Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:21.563443Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:21.566496Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.566532Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.569292Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:21.569404Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=2
+2026-10-20T05:39:21.611997Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.615330Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.615370Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.618658Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.618718Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:21.663316Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.666310Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.666360Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.669393Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.669443Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:21.711712Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.714961Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.715014Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.719139Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:21.719207Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:21.766544Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.771234Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.771282Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.775113Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.775176Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:21.820289Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.823231Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.823273Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.827499Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:21.827589Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:21.871343Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.874079Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.874114Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.877319Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:21.877384Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:21.924349Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:21.927927Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.927970Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.933693Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=5 elapsed_ms=5
+2026-10-20T05:39:21.933792Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=5
+2026-10-20T05:39:21.980664Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:21.985175Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.985217Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:21.989663Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:21.989715Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:22.032845Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:22.037200Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.037247Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.040368Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:22.040410Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:22.086387Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:22.090686Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.090726Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.094699Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=4
+2026-10-20T05:39:22.094751Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:22.136354Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:22.140768Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.140808Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.145120Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:22.145182Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:22.187244Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:22.190033Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.190073Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.193445Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:22.193496Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:22.236767Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:22.239724Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.239767Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.242901Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:22.242945Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:22.287780Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:22.291767Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.291810Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.294923Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:22.294981Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:22.343128Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:22.348270Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.348315Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.352586Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:22.352647Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:22.395691Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:22.399132Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.399178Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.403540Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:22.403604Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:22.445814Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:22.449291Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.449325Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.452409Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:22.452452Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:22.493471Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:22.497275Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.497322Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.501167Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:22.501225Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:22.542457Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:22.545069Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.545103Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.549360Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:22.549428Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:22.592094Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:22.595571Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.595618Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.599553Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=4
+2026-10-20T05:39:22.599631Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:22.645204Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:22.649348Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.649464Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.653082Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:22.653150Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:22.695148Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:22.699090Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.699135Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.702217Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:22.702259Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:22.755914Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:22.759811Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.759866Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.765701Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=5 elapsed_ms=6
+2026-10-20T05:39:22.765777Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=6
+2026-10-20T05:39:22.814155Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:22.818635Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.818678Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.823199Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:22.823271Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:22.868325Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:22.871646Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.871690Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.874842Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:22.874884Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:22.927283Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:22.932619Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.932664Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:22.936268Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:22.936324Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:22.984831Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:24.473772Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:24.473819Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:24.476797Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=3
+2026-10-20T05:39:24.476843Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:24.522543Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:25.206679Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:25.206718Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:25.210913Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:25.210974Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:25.264933Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:26.275540Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:26.275590Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:26.280654Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=5 elapsed_ms=5
+2026-10-20T05:39:26.280741Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=5
+2026-10-20T05:39:26.324754Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:58.378338Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.378377Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.381219Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:58.381252Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=2
+2026-10-20T05:39:58.424477Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:58.428933Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.428969Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.431420Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:58.431452Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=2
+2026-10-20T05:39:58.470381Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:58.474594Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.474643Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.477731Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:58.477774Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:58.521316Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:58.570132Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.570176Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.574460Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:58.574502Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:58.619843Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:58.666256Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.666303Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.670992Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:58.671038Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:58.713497Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:58.716237Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.716266Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.720350Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:58.720397Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:58.762233Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:58.787489Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.787535Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.792387Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:58.792447Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:58.835998Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:58.838973Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.839006Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.843593Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:58.843652Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:58.888264Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:58.902959Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.903002Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.907071Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:58.907118Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:58.946772Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:58.953893Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.953944Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:58.957396Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:58.957439Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:59.004079Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:59.009235Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:59.013631Z DEBUG agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:59.013834Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:59.017794Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=8
+2026-10-20T05:39:59.017847Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=8
+2026-10-20T05:39:59.091486Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:59.094385Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:59.094422Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:59.099326Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:59.099376Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=5
+2026-10-20T05:39:59.145870Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=5 elapsed_ms=5
+2026-10-20T05:39:59.195290Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:59.195336Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:59.200131Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=4 elapsed_ms=4
+2026-10-20T05:39:59.200178Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=4
+2026-10-20T05:39:59.243648Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:59.283921Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:59.283958Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:59.287137Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:59.287172Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=0 elapsed_ms=3
+2026-10-20T05:39:59.349071Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:39:59.734139Z  INFO agent_engine::session: workspace stopped; disks retained workspace=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60
+2026-10-20T05:39:59.734816Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_dav_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:59.734842Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="wait_runtime_lock" phase_elapsed_ms=0 elapsed_ms=0
+2026-10-20T05:39:59.737116Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=2 elapsed_ms=2
+2026-10-20T05:39:59.739001Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="lookup_vm" phase_elapsed_ms=1 elapsed_ms=4
+2026-10-20T05:40:00.100391Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="vm_start" phase_elapsed_ms=361 elapsed_ms=365
+2026-10-20T05:40:00.214044Z  INFO forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::session: workspace activated workspace=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60
+2026-10-20T05:40:00.214130Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="prepare_guest" phase_elapsed_ms=113 elapsed_ms=479
+2026-10-20T05:40:00.674644Z  INFO forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine::managed: started managed service service=Webdav instance=c709216ca09246d4bcb26abccfb27bc7 port=35315
+2026-10-20T05:40:00.681324Z DEBUG forward_authenticated{username=alice agentSpaceId=spc_a33015db-8911-469f-9769-126807a39c60 sandboxName=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60}: agent_engine::engine: runtime startup phase completed phase="runtime_status" phase_elapsed_ms=3 elapsed_ms=3
+2026-10-20T05:40:00.922302Z  INFO agent_engine::session: workspace stopped; disks retained workspace=test-dav-host-spc_a33015db-8911-469f-9769-126807a39c60
+ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 43.41s
+
+     Running unittests src/main.rs (target/debug/deps/agent_space_static_http-cda489fbda368cc7)
+
+running 8 tests
+test busy_helper_rejects_without_starting_another_request ... ok
+test large_file_head_matches_streamed_get ... ok
+test tests::directory_listing_escapes_names_and_links_and_hides_symlinks ... ok
+test tests::directory_redirect_stays_on_its_origin_with_repeated_slashes ... ok
+test tests::directory_without_slash_redirects_and_index_stays_inside_root ... ok
+test tests::encoded_traversal_and_symlinks_cannot_escape_root ... ok
+test tests::file_mode_scopes_one_live_file_and_supports_ranges_and_head ... ok
+test tests::single_file_does_not_expand_when_replaced_by_a_directory ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running unittests src/lib.rs (target/debug/deps/agent_space_webdav-600adaca68261df5)
+
+running 2 tests
+test mutations::tests::reservations_are_fair_atomic_and_cancel_safe ... ok
+test tests::failed_lock_resource_commit_releases_undelivered_lock ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running unittests src/main.rs (target/debug/deps/agent_space_webdav-8d3260f62b04e80b)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/build_identity.rs (target/debug/deps/build_identity-6af972d972d72144)
+
+running 1 test
+test binary_identity_ignores_timestamps_but_rejects_different_sources ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+     Running tests/files.rs (target/debug/deps/files-2094f47c83abd435)
+
+running 23 tests
+test atomic_put_and_protocol_operations ... ok
+test conditional_writes_ranges_and_overwrite_keep_preconditions ... ok
+test existing_unowned_staging_directory_is_never_adopted ... ok
+test external_write_and_cancelled_waiter_do_not_replace_target ... ok
+test forbidden_upload_ancestor_move_never_deletes_source_or_destination ... ok
+test incomplete_or_cancelled_upload_keeps_old_file ... ok
+test large_file_streams_without_preview_body_limit ... ok
+test legacy_owned_upload_staging_moves_once_without_overwriting_user_directories ... ok
+test lock_conflicts_refresh_and_release ... ok
+test modification_time_is_applied_atomically_and_properties_do_not_lie ... ok
+test only_exact_upload_staging_is_private_other_internal_and_similar_paths_work ... ok
+test quota_properties_share_the_volume_accounting_at_root_and_children ... ok
+test recursive_failures_are_reported_and_hardlink_copy_preserves_source ... ok
+test repeated_directory_symlink_swaps_never_read_outside_root ... ok
+test review_conditional_etags_use_weak_only_for_if_none_match ... ok
+test review_directory_ancestor_overwrite_preserves_source_and_siblings ... ok
+test review_malformed_etags_do_not_panic_or_modify_files ... ok
+test review_move_into_descendant_preserves_existing_destination ... ok
+test root_aliases_cannot_delete_move_or_replace_workspace_contents ... ok
+test single_file_overwrite_keeps_target_until_adapter_success ... ok
+test staging_recovery_requires_a_different_boot_and_owned_regular_entries ... ok
+test symlinks_special_files_and_private_area_are_inaccessible ... ok
+test unrelated_paths_progress_while_encoded_alias_and_parent_mutations_wait ... ok
+
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.36s
+
+     Running tests/large_reads.rs (target/debug/deps/large_reads-2ba5331601fdd0dc)
+
+running 3 tests
+test four_gib_sparse_ranges_and_version_preconditions ... ok
+test head_short_reads_seek_errors_and_drop_release_files ... ok
+test truncated_get_and_range_fail_without_inventing_bytes ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+     Running tests/vm.rs (target/debug/deps/vm-d12e20cdfd4e1bde)
+
+running 1 test
+test guest_kernel_http_disconnect_and_enospc_keep_previous_file ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.36s
+
+   Doc-tests agent_engine
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests agent_space_mcp
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests agent_space_webdav
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

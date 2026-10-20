@@ -1,0 +1,30 @@
+
+> runcove-desktop-ui@0.1.0 build
+> npm run typecheck && npm run check:i18n && npm run check:ui && vite build && node scripts/licenses.mjs
+
+
+> runcove-desktop-ui@0.1.0 typecheck
+> tsc --noEmit
+
+
+> runcove-desktop-ui@0.1.0 check:i18n
+> node scripts/check-i18n.mjs
+
+Locale parity: 134 keys
+
+> runcove-desktop-ui@0.1.0 check:ui
+> node scripts/check-ui.mjs
+
+UI DOM id contract passed
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 91 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   16.38 kB │ gzip:  5.32 kB
+dist/assets/index-C8gOcvl2.css     7.42 kB │ gzip:  2.36 kB
+dist/assets/index-BkFtORdr.js      2.44 kB │ gzip:  1.20 kB
+dist/assets/i18n-BdoMF_IG.js      61.04 kB │ gzip: 20.33 kB
+dist/assets/desktop-BH75KkJ_.js  228.10 kB │ gzip: 71.13 kB
+
+✓ built in 189ms

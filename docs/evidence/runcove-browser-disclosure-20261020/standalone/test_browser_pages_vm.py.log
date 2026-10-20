@@ -1,0 +1,9 @@
+test_01_full_browser_keeps_navigation_close_and_observation (__main__.PageLimits.test_01_full_browser_keeps_navigation_close_and_observation) ... ok
+test_02_js_popup_and_native_window_share_the_limit (__main__.PageLimits.test_02_js_popup_and_native_window_share_the_limit) ... ok
+test_03_deadline_and_cancel_retain_live_pages (__main__.PageLimits.test_03_deadline_and_cancel_retain_live_pages) ... ok
+test_04_closing_last_tab_is_explicit_and_snapshot_does_not_create_one (__main__.PageLimits.test_04_closing_last_tab_is_explicit_and_snapshot_does_not_create_one) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 79.417s
+
+OK

@@ -1,0 +1,16 @@
+test_00_write_cannot_clear_files_and_bash_reports_timing (__main__.BrowserQualification.test_00_write_cannot_clear_files_and_bash_reports_timing) ... ok
+test_01_exact_catalogue_and_validation (__main__.BrowserQualification.test_01_exact_catalogue_and_validation) ... ok
+test_02_upload_download_and_private_paths (__main__.BrowserQualification.test_02_upload_download_and_private_paths) ... ok
+test_03_deadline_cancellation_and_stable_late_failure (__main__.BrowserQualification.test_03_deadline_cancellation_and_stable_late_failure) ... ok
+test_04_target_selection_and_tabs (__main__.BrowserQualification.test_04_target_selection_and_tabs) ... ok
+test_05_identity_window_and_unicode (__main__.BrowserQualification.test_05_identity_window_and_unicode) ... ok
+test_06_native_chooser_and_stale_coordinates (__main__.BrowserQualification.test_06_native_chooser_and_stale_coordinates) ... ok
+test_07_unresponsive_tab_observation_and_explicit_close (__main__.BrowserQualification.test_07_unresponsive_tab_observation_and_explicit_close) ... ok
+test_08_lost_http_waiter_does_not_replay_or_release_slot (__main__.BrowserQualification.test_08_lost_http_waiter_does_not_replay_or_release_slot) ... ok
+test_09_root_browser_reopens_uid1001_profile (__main__.BrowserQualification.test_09_root_browser_reopens_uid1001_profile) ... skipped 'Server upgrade from the previous UID1001 desktop'
+test_transient_status_read_failure_does_not_cancel_the_task (__main__.BrowserQualification.test_transient_status_read_failure_does_not_cancel_the_task) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 136.076s
+
+OK (skipped=1)

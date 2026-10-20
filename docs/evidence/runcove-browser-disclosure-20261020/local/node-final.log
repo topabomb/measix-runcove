@@ -1,0 +1,227 @@
+TAP version 13
+# Subtest: field refs are immediately usable without an earlier snapshot
+ok 1 - field refs are immediately usable without an earlier snapshot
+  ---
+  duration_ms: 3183.344385
+  type: 'test'
+  ...
+# Subtest: unique replaced nodes and new documents never inherit old refs
+ok 2 - unique replaced nodes and new documents never inherit old refs
+  ---
+  duration_ms: 4279.332445
+  type: 'test'
+  ...
+# Subtest: duplicate node identity survives insertion and reordering
+ok 3 - duplicate node identity survives insertion and reordering
+  ---
+  duration_ms: 2842.746229
+  type: 'test'
+  ...
+# Subtest: frame content is observable and actionable: /iframe
+ok 4 - frame content is observable and actionable: /iframe
+  ---
+  duration_ms: 3958.08274
+  type: 'test'
+  ...
+# Subtest: frame content is observable and actionable: /nested
+ok 5 - frame content is observable and actionable: /nested
+  ---
+  duration_ms: 4031.629348
+  type: 'test'
+  ...
+# Subtest: frame content is observable and actionable: /xorigin
+ok 6 - frame content is observable and actionable: /xorigin
+  ---
+  duration_ms: 3882.533259
+  type: 'test'
+  ...
+# Subtest: removed/reinserted iframe invalidates its old refs
+ok 7 - removed/reinserted iframe invalidates its old refs
+  ---
+  duration_ms: 6966.379212
+  type: 'test'
+  ...
+# Subtest: popup reports its page identity and is readable and closable
+ok 8 - popup reports its page identity and is readable and closable
+  ---
+  duration_ms: 2671.95157
+  type: 'test'
+  ...
+# Subtest: JS menu, hover tooltip, popover and nested modal are observable and interactive
+ok 9 - JS menu, hover tooltip, popover and nested modal are observable and interactive
+  ---
+  duration_ms: 14651.319506
+  type: 'test'
+  ...
+# Subtest: floating panels inside an iframe expose usable frame refs
+ok 10 - floating panels inside an iframe expose usable frame refs
+  ---
+  duration_ms: 4437.218329
+  type: 'test'
+  ...
+# Subtest: script new windows and named-window reuse preserve page identity
+ok 11 - script new windows and named-window reuse preserve page identity
+  ---
+  duration_ms: 5303.612703
+  type: 'test'
+  ...
+# Subtest: signup workflow, shadow DOM and navigation history use structured steps
+ok 12 - signup workflow, shadow DOM and navigation history use structured steps
+  ---
+  duration_ms: 10853.691762
+  type: 'test'
+  ...
+# Subtest: native HTML dialogs and shadow-root dialogs are identified and interactive
+ok 13 - native HTML dialogs and shadow-root dialogs are identified and interactive
+  ---
+  duration_ms: 7083.976027
+  type: 'test'
+  ...
+# Subtest: scoped field extraction excludes other forms and issues working refs
+ok 14 - scoped field extraction excludes other forms and issues working refs
+  ---
+  duration_ms: 2549.981071
+  type: 'test'
+  ...
+# Subtest: screen page capture covers the entire document without scrolling and bottom coordinates work
+ok 15 - screen page capture covers the entire document without scrolling and bottom coordinates work
+  ---
+  duration_ms: 2930.782859
+  type: 'test'
+  ...
+# Subtest: page images retain correct pixel mapping at native device scale 2
+ok 16 - page images retain correct pixel mapping at native device scale 2 # SKIP Run again with DEVICE_SCALE=2 for native device scaling
+  ---
+  duration_ms: 0.41863
+  type: 'test'
+  ...
+# Subtest: ref and image drags deliver browser drag events
+ok 17 - ref and image drags deliver browser drag events
+  ---
+  duration_ms: 4573.435516
+  type: 'test'
+  ...
+# Subtest: table bounds apply globally across iframes
+ok 18 - table bounds apply globally across iframes
+  ---
+  duration_ms: 1768.866458
+  type: 'test'
+  ...
+# Subtest: passive tools do not dismiss an already-open JS dialog
+ok 19 - passive tools do not dismiss an already-open JS dialog
+  ---
+  duration_ms: 4933.41465
+  type: 'test'
+  ...
+# Subtest: Unicode limits preserve full scalar characters and report text removals
+ok 20 - Unicode limits preserve full scalar characters and report text removals
+  ---
+  duration_ms: 7752.22277
+  type: 'test'
+  ...
+# Subtest: whole-batch validation rejects later invalid steps before any click
+ok 21 - whole-batch validation rejects later invalid steps before any click
+  ---
+  duration_ms: 1333.131788
+  type: 'test'
+  ...
+# Subtest: failed scroll and already-clicked single chooser report possible side effects
+ok 22 - failed scroll and already-clicked single chooser report possible side effects
+  ---
+  duration_ms: 4580.317059
+  type: 'test'
+  ...
+# Subtest: upload and download preserve exact bytes through production outputs
+ok 23 - upload and download preserve exact bytes through production outputs
+  ---
+  duration_ms: 4031.446324
+  type: 'test'
+  ...
+# Subtest: wait matches visible text and accessible names literally across frames and shadow DOM
+ok 24 - wait matches visible text and accessible names literally across frames and shadow DOM
+  ---
+  duration_ms: 9298.949246
+  type: 'test'
+  ...
+# Subtest: query ref scopes matches and ordinary results omit redundant healthy metadata
+ok 25 - query ref scopes matches and ordinary results omit redundant healthy metadata
+  ---
+  duration_ms: 4241.937433
+  type: 'test'
+  ...
+# Subtest: stale second step preserves completed count, side effects and failure metadata
+ok 26 - stale second step preserves completed count, side effects and failure metadata
+  ---
+  duration_ms: 5147.892459
+  type: 'test'
+  ...
+# Subtest: rounded preview dimensions map each coordinate axis independently
+ok 27 - rounded preview dimensions map each coordinate axis independently
+  ---
+  duration_ms: 4114.750956
+  type: 'test'
+  ...
+# Subtest: native process exit codes never become numeric tool error codes
+ok 28 - native process exit codes never become numeric tool error codes
+  ---
+  duration_ms: 3.310313
+  type: 'test'
+  ...
+# WAIT_TIMING {"fixedSeconds":2,"measuredMs":2589.7999999970198,"defaultConditionMeasuredMs":11273,"explicitTimeoutSeconds":1}
+# Subtest: seconds waits honor real timers, early conditions and the 60 second default
+ok 29 - seconds waits honor real timers, early conditions and the 60 second default
+  ---
+  duration_ms: 16676.099333
+  type: 'test'
+  ...
+# Subtest: fixed waits do not access a page or request observations
+ok 30 - fixed waits do not access a page or request observations
+  ---
+  duration_ms: 1003.268709
+  type: 'test'
+  ...
+# Subtest: merged actions use refs, coordinates and navigation without retired names
+ok 31 - merged actions use refs, coordinates and navigation without retired names
+  ---
+  duration_ms: 6578.19517
+  type: 'test'
+  ...
+# Subtest: long document URLs and titles stay bounded and explicitly truncated
+ok 32 - long document URLs and titles stay bounded and explicitly truncated
+  ---
+  duration_ms: 3372.164996
+  type: 'test'
+  ...
+# Subtest: observation timeout becomes a bounded public error
+ok 33 - observation timeout becomes a bounded public error
+  ---
+  duration_ms: 371.727653
+  type: 'test'
+  ...
+# Subtest: killed observation and non-timeout exit codes remain distinct
+ok 34 - killed observation and non-timeout exit codes remain distinct
+  ---
+  duration_ms: 7.674048
+  type: 'test'
+  ...
+# Subtest: successful observation keeps its result
+ok 35 - successful observation keeps its result
+  ---
+  duration_ms: 1.44482
+  type: 'test'
+  ...
+# Subtest: tabs view needs observation only, not a responsive page or a DOM snapshot
+ok 36 - tabs view needs observation only, not a responsive page or a DOM snapshot
+  ---
+  duration_ms: 2.123622
+  type: 'test'
+  ...
+1..36
+# tests 36
+# suites 0
+# pass 35
+# fail 0
+# cancelled 0
+# skipped 1
+# todo 0
+# duration_ms 159558.355694

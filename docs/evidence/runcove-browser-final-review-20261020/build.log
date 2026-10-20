@@ -1,0 +1,125 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.export
+#1 transferring dockerfile: 4.43kB 0.0s done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/rust:1.96-slim
+#2 DONE 2.3s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 626B done
+#3 DONE 0.0s
+
+#4 [builder  1/23] FROM docker.io/library/rust:1.96-slim@sha256:31ee7fc65186be7e0e0ccb3f2ca305f14e4739e7642a1ae65753aa5d7b874523
+#4 resolve docker.io/library/rust:1.96-slim@sha256:31ee7fc65186be7e0e0ccb3f2ca305f14e4739e7642a1ae65753aa5d7b874523 0.0s done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 510.69kB 0.0s done
+#5 DONE 0.0s
+
+#6 [builder  2/23] RUN apt-get update && apt-get install -y --no-install-recommends     ca-certificates curl patch python3 pkg-config libcap-ng-dev libdbus-1-dev libgcc-s1 &&     rm -rf /var/lib/apt/lists/*
+#6 CACHED
+
+#7 [builder  3/23] RUN curl --fail --location --silent --show-error       "https://www.sqlite.org/2026/sqlite-autoconf-3510300.tar.gz" -o /tmp/sqlite.tar.gz &&     echo "81f5be397049b0cae1b167f2225af7646fc0f82e4a9b3c48c9ea3a533e21d77a  /tmp/sqlite.tar.gz" | sha256sum -c - &&     mkdir -p /opt/sqlite/lib/pkgconfig /opt/sqlite/include &&     tar -xzf /tmp/sqlite.tar.gz -C /tmp &&     cp "/tmp/sqlite-autoconf-3510300/sqlite3.h" /opt/sqlite/include/ &&     cc -O2 -fPIC -DSQLITE_CORE -DSQLITE_DEFAULT_FOREIGN_KEYS=1       -DSQLITE_ENABLE_API_ARMOR -DSQLITE_ENABLE_COLUMN_METADATA       -DSQLITE_ENABLE_DBSTAT_VTAB -DSQLITE_ENABLE_FTS3       -DSQLITE_ENABLE_FTS3_PARENTHESIS -DSQLITE_ENABLE_FTS5       -DSQLITE_ENABLE_JSON1 -DSQLITE_ENABLE_LOAD_EXTENSION=1       -DSQLITE_ENABLE_MEMORY_MANAGEMENT -DSQLITE_ENABLE_RTREE       -DSQLITE_ENABLE_STAT4 -DSQLITE_ENABLE_UNLOCK_NOTIFY       -DSQLITE_SOUNDEX -DSQLITE_THREADSAFE=1       -DSQLITE_USE_URI -DHAVE_USLEEP=1 -DHAVE_ISNAN -DHAVE_LOCALTIME_R       -c "/tmp/sqlite-autoconf-3510300/sqlite3.c" -o /tmp/sqlite3.o &&     ar rcs /opt/sqlite/lib/libsqlite3.a /tmp/sqlite3.o &&     printf 'prefix=/opt/sqlite\nlibdir=${prefix}/lib\nincludedir=${prefix}/include\nName: sqlite3\nDescription: pinned SQLite for Agent Space\nVersion: 3.51.3\nLibs: -L${libdir} -lsqlite3\nCflags: -I${includedir}\n' > /opt/sqlite/lib/pkgconfig/sqlite3.pc &&     rm -rf /tmp/sqlite-autoconf-* /tmp/sqlite.tar.gz /tmp/sqlite3.o
+#7 CACHED
+
+#8 [builder  4/23] WORKDIR /build
+#8 CACHED
+
+#9 [builder  5/23] COPY Cargo.toml Cargo.lock ./
+#9 DONE 0.0s
+
+#10 [builder  6/23] COPY agent-space-mcp/Cargo.toml ./agent-space-mcp/
+#10 DONE 0.0s
+
+#11 [builder  7/23] COPY src/ ./src/
+#11 DONE 0.0s
+
+#12 [builder  8/23] COPY agent-space-mcp/src/ ./agent-space-mcp/src/
+#12 DONE 0.0s
+
+#13 [builder  9/23] COPY static-http/ ./static-http/
+#13 DONE 0.0s
+
+#14 [builder 10/23] COPY webdav/ ./webdav/
+#14 DONE 0.0s
+
+#15 [builder 11/23] COPY vendor/ ./vendor/
+#15 DONE 0.2s
+
+#16 [builder 12/23] COPY build-support/ ./build-support/
+#16 DONE 0.0s
+
+#17 [builder 13/23] COPY guest/ ./guest/
+#17 DONE 0.0s
+
+#18 [builder 14/23] COPY images/ ./images/
+#18 DONE 0.0s
+
+#19 [builder 15/23] COPY desktop-helper/ ./desktop-helper/
+#19 DONE 0.0s
+
+#20 [builder 16/23] COPY docker/apply-msb-patch.py /build/docker/
+#20 DONE 0.0s
+
+#21 [builder 17/23] COPY docker/patches/ /build/docker/patches/
+#21 DONE 0.0s
+
+#22 [builder 18/23] RUN python3 /build/docker/apply-msb-patch.py --vendor-root /build/vendor
+#22 DONE 0.6s
+
+#23 [builder 19/23] RUN --mount=type=cache,id=runcove-server-registry,target=/usr/local/cargo/registry     --mount=type=cache,id=runcove-server-target,target=/build/target     CARGO_BUILD_JOBS=2 cargo build --release --workspace --locked &&     mkdir -p /out && cp /build/target/release/agent-space-mcp /build/target/release/agent-space-static-http /build/target/release/agent-space-webdav /build/target/release/agent-space-desktop /out/
+#23 0.443     Updating crates.io index
+#23 1.963  Downloading crates ...
+#23 4.168   Downloaded webp v0.3.1
+#23 4.443   Downloaded libwebp-sys v0.9.6
+#23 5.394    Compiling glob v0.3.3
+#23 5.403    Compiling microsandbox v0.7.2 (/build/vendor/microsandbox)
+#23 6.802    Compiling libwebp-sys v0.9.6
+#23 42.16    Compiling webp v0.3.1
+#23 42.45    Compiling agent-engine v0.1.0 (/build)
+#23 94.80    Compiling agent-space-webdav v0.1.0 (/build/webdav)
+#23 94.83    Compiling agent-space-mcp v0.1.0 (/build/agent-space-mcp)
+#23 157.0    Compiling agent-space-static-http v0.1.0 (/build/static-http)
+#23 242.9    Compiling agent-space-desktop v0.1.0 (/build/desktop-helper)
+#23 316.0     Finished `release` profile [optimized] target(s) in 5m 15s
+#23 DONE 316.3s
+
+#24 [builder 20/23] RUN ! ldd /out/agent-space-mcp | grep -q libsqlite3 &&     grep -aq '3.51.3' /out/agent-space-mcp
+#24 DONE 0.3s
+
+#25 [builder 21/23] RUN apt-get update && apt-get install -y --no-install-recommends python3 &&     rm -rf /var/lib/apt/lists/*
+#25 10.98 Get:1 http://deb.debian.org/debian trixie InRelease [140 kB]
+#25 11.51 Get:2 http://deb.debian.org/debian trixie-updates InRelease [47.3 kB]
+#25 11.68 Get:3 http://deb.debian.org/debian-security trixie-security InRelease [43.4 kB]
+#25 11.84 Get:4 http://deb.debian.org/debian trixie/main amd64 Packages [9678 kB]
+#25 12.98 Get:5 http://deb.debian.org/debian trixie-updates/main amd64 Packages [4412 B]
+#25 13.11 Get:6 http://deb.debian.org/debian-security trixie-security/main amd64 Packages [269 kB]
+#25 14.09 Fetched 10.2 MB in 14s (738 kB/s)
+#25 14.09 Reading package lists...
+#25 14.89 Reading package lists...
+#25 15.67 Building dependency tree...
+#25 15.90 Reading state information...
+#25 16.23 python3 is already the newest version (3.13.5-1).
+#25 16.23 0 upgraded, 0 newly installed, 0 to remove and 27 not upgraded.
+#25 DONE 16.3s
+
+#26 [builder 22/23] COPY docker/verify-sqlite-link.py docker/sqlite-check.c /build/docker/
+#26 DONE 0.1s
+
+#27 [builder 23/23] RUN python3 /build/docker/verify-sqlite-link.py /out/agent-space-mcp &&     cc -O2 -I/opt/sqlite/include /build/docker/sqlite-check.c       /opt/sqlite/lib/libsqlite3.a -ldl -lpthread -lm -o /build/sqlite-check
+#27 0.589 agent-space-mcp: linked SQLite 3.51.3
+#27 DONE 0.8s
+
+#28 [binary 1/2] COPY --from=builder /out/agent-space-mcp /agent-space-mcp
+#28 DONE 0.1s
+
+#29 [binary 2/2] COPY --from=builder /out/agent-space-desktop /agent-space-desktop
+#29 DONE 0.1s
+
+#30 exporting to client directory
+#30 copying files 30.02MB 0.1s
+#30 copying files 78.63MB 0.2s done
+#30 DONE 0.2s

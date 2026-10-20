@@ -1,0 +1,9 @@
+test_01_stream_one_gib_and_ranges (__main__.DesktopFiles.test_01_stream_one_gib_and_ranges) ... ok
+test_02_no_overwrite_and_unreadable_cross_space (__main__.DesktopFiles.test_02_no_overwrite_and_unreadable_cross_space) ... ok
+test_03_interrupted_put_never_commits_partial_file (__main__.DesktopFiles.test_03_interrupted_put_never_commits_partial_file) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 15.893s
+
+OK
+1 GiB PUT/GET + ranges verified in 14.6s; bounded 64 KiB client buffers

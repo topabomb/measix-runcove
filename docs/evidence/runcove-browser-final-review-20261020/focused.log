@@ -1,0 +1,18 @@
+   Compiling agent-engine v0.1.0 (/home/hualei/msb_demo/agent-space)
+   Compiling agent-space-desktop v0.1.0 (/home/hualei/msb_demo/agent-space/desktop-helper)
+    Finished `test` profile [unoptimized] target(s) in 7.40s
+     Running unittests src/main.rs (target/debug/deps/agent_space_desktop-588fcfae0234f67d)
+
+running 9 tests
+test desktop::layout_tests::artifacts_migrate_without_overwrite_and_keep_unknown_entries ... ok
+test pages::tests::baseline_preserves_existing_pages_but_reconnect_does_not_adopt_new_overflow ... ok
+test pages::tests::quota_counts_rejected_pages_until_confirmed_closed ... ok
+test process::tests::rejects_a_reused_identity ... ok
+test process::tests::retains_children_when_parent_exits_first ... ok
+test result_tests::worker_result_never_follows_user_links_or_accepts_non_user_owned_files ... ok
+test result_tests::worker_result_rejects_non_object_json_before_attaching_logs ... ok
+test screen::image_tests::snapshot_failure_never_publishes_private_png_or_geometry ... ok
+test screen::tests::originals_keep_exact_bytes_and_unique_compact_names ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.06s
+

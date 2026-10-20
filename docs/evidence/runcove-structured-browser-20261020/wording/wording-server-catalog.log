@@ -1,0 +1,13 @@
+   Compiling agent-space-mcp v0.1.0 (/home/hualei/msb_demo/agent-space/agent-space-mcp)
+    Finished `test` profile [unoptimized] target(s) in 11.48s
+     Running tests/wording_catalog_probe.rs (target/debug/deps/wording_catalog_probe-1090e7bcfbffeecc)
+
+running 5 tests
+test actual_mcp_contract_three_targets_stable_credentials_and_explicit_renewal ... ok
+test desktop_catalog_and_structured_arguments_reach_the_mcp_handlers ... ok
+test mcp_rejects_ambiguous_old_and_malformed_arguments_without_starting_vm ... ok
+test omitted_and_null_keepalive_use_the_configured_server_default ... ok
+test optional_placeholders_and_irrelevant_fields_do_not_block_actions ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+

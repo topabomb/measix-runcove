@@ -1,0 +1,7 @@
+test_passive_polling_does_not_keep_desktop_alive_and_wake_preserves_tabs (__main__.DesktopLifecycle.test_passive_polling_does_not_keep_desktop_alive_and_wake_preserves_tabs) ... five-minute passive polling / frozen-browser termination / wake verified; ignored 2 preparing polls; tabs and profile preserved
+ok
+
+----------------------------------------------------------------------
+Ran 1 test in 323.497s
+
+OK

@@ -1,0 +1,42 @@
+   Compiling agent-space-mcp v0.1.0 (/home/hualei/msb_demo/agent-space/agent-space-mcp)
+    Finished `test` profile [unoptimized] target(s) in 9.11s
+     Running unittests src/lib.rs (target/debug/deps/agent_space_mcp-d0a3df6b4a928964)
+
+running 34 tests
+test browser_params::tests::optional_null_and_read_modes_are_explicit ... ok
+test file_read::tests::missing_or_truncated_media_reports_never_become_text ... ok
+test browser_params::tests::validates_batches_before_execution_and_separates_task_control ... ok
+test browser_params::tests::unified_actions_ignore_inactive_fields_before_type_checks ... ok
+test logging::tests::test_cleanup_old_logs_nonexistent_dir ... ok
+test origins::tests::reject_ambiguous_authorities_and_ignore_forwarded_headers ... ok
+test rfb::tests::clipboard_advertisement_is_passive ... ok
+test rfb::tests::clipboard_probes_are_passive_but_contents_require_control ... ok
+test rfb::tests::fragmented_handshake_and_messages_are_reassembled ... ok
+test rfb::tests::malformed_packets_fail_before_unbounded_allocation ... ok
+test browser_params::tests::seconds_limits_and_irrelevant_wait_deadlines ... ok
+test logging::tests::test_cleanup_old_logs_ignores_non_matching_files ... ok
+test logging::tests::test_cleanup_old_logs_removes_old_files ... ok
+test logging::tests::test_cleanup_old_logs_ignores_current_log ... ok
+test server::tests::browser_errors_preserve_effects_cleanup_and_available_outputs ... ok
+test server::tests::browser_feedback_keeps_actionable_errors_without_worker_logs ... ok
+test server::tests::browser_timing_and_success_metadata_are_compact_without_losing_failures ... ok
+test server::tests::optional_choices_default_on_blank_and_validate_nonempty_values ... ok
+test server::tests::publication_targets_report_the_actual_invalid_input ... ok
+test server::tests::optional_selectors_and_unknown_fields_are_tolerated_without_changing_payloads ... ok
+test standalone::tests::browser_limit_uses_shared_defaults_and_validation ... ok
+test origins::tests::network_changes_do_not_change_authentication_or_browser_boundary ... ok
+test server::tests::error_text_is_bounded_without_dropping_the_cause_or_tail ... ok
+test web_publish::tests::cookie_scope_preserves_attributes_without_doubling_prefix ... ok
+test web_publish::tests::both_auth_methods_share_failure_budget_and_preserve_only_application_authorization ... ok
+test standalone::tests::single_space_configuration_rejects_management_vm_and_unused_keepalive_fields ... ok
+test standalone::tests::dav_defaults_off_and_preserves_common_private_or_https_origin_boundary ... ok
+test webdav::tests::idle_deadline_extends_only_on_nonempty_progress ... ok
+test webdav::tests::destinations_and_if_tags_keep_conditions_inside_one_dav_root ... ok
+test webdav::tests::only_typed_workspace_capacity_rejection_has_an_error_code ... ok
+test mcp_auth::tests::dropped_transport_and_revoked_credential_remove_bindings ... ok
+test server::tests::write_preserves_path_and_content_without_shell_expansion ... ok
+test server::tests::tool_result_budget_counts_base64_json_and_framing_without_truncation ... ok
+test mcp_auth::tests::rmcp_idle_expiry_removes_binding_without_a_second_timer ... ok
+
+test result: ok. 34 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.02s
+

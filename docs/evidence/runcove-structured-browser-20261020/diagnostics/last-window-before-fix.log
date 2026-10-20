@@ -1,0 +1,18 @@
+test_01_full_browser_keeps_navigation_close_and_observation (__main__.PageLimits.test_01_full_browser_keeps_navigation_close_and_observation) ... ok
+test_02_js_popup_and_native_window_share_the_limit (__main__.PageLimits.test_02_js_popup_and_native_window_share_the_limit) ... ok
+test_03_deadline_and_cancel_retain_live_pages (__main__.PageLimits.test_03_deadline_and_cancel_retain_live_pages) ... ok
+test_04_closing_last_tab_is_explicit_and_snapshot_does_not_create_one (__main__.PageLimits.test_04_closing_last_tab_is_explicit_and_snapshot_does_not_create_one) ... FAIL
+
+======================================================================
+FAIL: test_04_closing_last_tab_is_explicit_and_snapshot_does_not_create_one (__main__.PageLimits.test_04_closing_last_tab_is_explicit_and_snapshot_does_not_create_one)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/hualei/msb_demo/agent-space/tests/test_browser_pages_vm.py", line 53, in test_04_closing_last_tab_is_explicit_and_snapshot_does_not_create_one
+    target=self.client.snapshot()['page_id'];value,reply=self.client.act([{'do':'tab','action':'close','page_id':target}]);self.assertFalse(reply.get('isError'),value)
+                                                                                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false : {'control': {'mode': 'AI'}, 'error': {'code': 'PAGE_UNRESPONSIVE', 'message': 'CDP command timed out'}, 'failed_step': {'do': 'tab', 'index': 0}, 'logs': {'stderr': 'PAGE_UNRESPONSIVE: CDP command timed out\n'}, 'side_effects': 'may_have_occurred', 'state': 'failed', 'task_id': 'faba1752-98e3-4502-80d4-2b82c3671e3b', 'value': {'completed': 0, 'of': 1, 'page_id': 'FF829DDC3D2A7C81C325A324E8712D6D'}}
+
+----------------------------------------------------------------------
+Ran 4 tests in 87.011s
+
+FAILED (failures=1)

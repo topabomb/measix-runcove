@@ -1,0 +1,36 @@
+   Compiling tokio v1.52.3
+   Compiling aws-lc-rs v1.17.0
+   Compiling rustls v0.23.40
+   Compiling rustls-webpki v0.103.13
+   Compiling hyper v1.10.1
+   Compiling hyper-util v0.1.20
+   Compiling tower v0.5.3
+   Compiling tokio-rustls v0.26.4
+   Compiling tokio-util v0.7.18
+   Compiling png v0.18.1
+   Compiling hyper-rustls v0.27.9
+   Compiling rustls-platform-verifier v0.7.0
+   Compiling tower-http v0.6.11
+   Compiling axum-core v0.5.6
+   Compiling reqwest v0.13.4
+   Compiling image v0.25.10
+   Compiling tokio-tungstenite v0.29.0
+   Compiling tokio-stream v0.1.18
+   Compiling rmcp v1.7.0
+   Compiling agent-engine v0.1.0 (/home/hualei/msb_demo/agent-space)
+   Compiling axum v0.8.9
+   Compiling agent-space-mcp v0.1.0 (/home/hualei/msb_demo/agent-space/agent-space-mcp)
+   Compiling tempfile v3.27.0
+   Compiling serial_test v3.5.0
+    Finished `test` profile [unoptimized] target(s) in 22.92s
+     Running tests/wording_catalog_probe.rs (target/debug/deps/wording_catalog_probe-7fbc84bd78d9f7d0)
+
+running 5 tests
+test actual_mcp_contract_three_targets_stable_credentials_and_explicit_renewal ... ok
+test desktop_catalog_and_structured_arguments_reach_the_mcp_handlers ... ok
+test mcp_rejects_ambiguous_old_and_malformed_arguments_without_starting_vm ... ok
+test omitted_and_null_keepalive_use_the_configured_server_default ... ok
+test optional_placeholders_and_irrelevant_fields_do_not_block_actions ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s
+

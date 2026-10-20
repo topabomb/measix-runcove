@@ -1,0 +1,25 @@
+   Compiling agent-engine v0.1.0 (/home/hualei/msb_demo/agent-space)
+   Compiling agent-space-mcp v0.1.0 (/home/hualei/msb_demo/agent-space/agent-space-mcp)
+    Finished `test` profile [unoptimized] target(s) in 28.79s
+     Running tests/test_e2e.rs (target/debug/deps/test_e2e-4e601c8851cd6215)
+
+running 5 tests
+test authentication_and_builtin_tool_contract ... ok
+test configured_default_and_manual_bash_timeout_are_seconds ... ok
+test every_builtin_tool_resumes_a_paused_workspace ... ok
+test tiny_text_limits_preserve_file_protocol_and_image_results ... ok
+test tool_call_starts_a_stopped_workspace_and_keeps_data ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.81s
+
+     Running tests/test_web_publish_mcp.rs (target/debug/deps/test_web_publish_mcp-1215c21727c3cb6c)
+
+running 5 tests
+test actual_mcp_contract_three_targets_stable_credentials_and_explicit_renewal ... ok
+test desktop_catalog_and_structured_arguments_reach_the_mcp_handlers ... ok
+test mcp_rejects_ambiguous_old_and_malformed_arguments_without_starting_vm ... ok
+test omitted_and_null_keepalive_use_the_configured_server_default ... ok
+test optional_placeholders_and_irrelevant_fields_do_not_block_actions ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.33s
+

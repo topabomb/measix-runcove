@@ -1,0 +1,11 @@
+test_blocked_path_does_not_block_other_path_and_cancel_releases_lock (__main__.Files.test_blocked_path_does_not_block_other_path_and_cancel_releases_lock) ... ok
+test_directory_and_missing_file_are_distinct (__main__.Files.test_directory_and_missing_file_are_distinct) ... ok
+test_empty_write_preserves_existing_file_and_does_not_create_paths (__main__.Files.test_empty_write_preserves_existing_file_and_does_not_create_paths) ... ok
+test_parallel_edits_and_symlink_aliases_do_not_lose_updates (__main__.Files.test_parallel_edits_and_symlink_aliases_do_not_lose_updates) ... ok
+test_replace_failure_preserves_old_file_and_removes_temporary (__main__.Files.test_replace_failure_preserves_old_file_and_removes_temporary) ... ok
+test_unicode_pagination_crlf_and_failed_edit_preserve_content (__main__.Files.test_unicode_pagination_crlf_and_failed_edit_preserve_content) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.564s
+
+OK

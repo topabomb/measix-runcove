@@ -1,0 +1,15 @@
+test_dialog_policy_and_bounded_reads (__main__.StructuredBrowser.test_dialog_policy_and_bounded_reads) ... ok
+test_fields_and_replacement_identity (__main__.StructuredBrowser.test_fields_and_replacement_identity) ... ok
+test_frames_nested_cross_site_and_dynamic (__main__.StructuredBrowser.test_frames_nested_cross_site_and_dynamic) ... ok
+test_js_menu_popover_tooltip_and_nested_modal (__main__.StructuredBrowser.test_js_menu_popover_tooltip_and_nested_modal) ... ok
+test_long_page_images_preserve_bottom_pixels_and_scaled_coordinates (__main__.StructuredBrowser.test_long_page_images_preserve_bottom_pixels_and_scaled_coordinates) ... ok
+test_parameter_normalization_and_semantic_wait (__main__.StructuredBrowser.test_parameter_normalization_and_semantic_wait) ... ok
+test_pending_native_js_dialog_uses_desktop_without_passive_dismissal (__main__.StructuredBrowser.test_pending_native_js_dialog_uses_desktop_without_passive_dismissal) ... ok
+test_popups_are_identified_readable_and_closable (__main__.StructuredBrowser.test_popups_are_identified_readable_and_closable) ... ok
+test_screenshot_coordinates_and_navigation_invalidation (__main__.StructuredBrowser.test_screenshot_coordinates_and_navigation_invalidation) ... ok
+test_unicode_text_limits_are_valid_in_the_rust_task_owner (__main__.StructuredBrowser.test_unicode_text_limits_are_valid_in_the_rust_task_owner) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 133.153s
+
+OK

@@ -1,0 +1,21 @@
+test_passive_polling_does_not_keep_desktop_alive_and_wake_preserves_tabs (__main__.DesktopLifecycle.test_passive_polling_does_not_keep_desktop_alive_and_wake_preserves_tabs) ... FAIL
+
+======================================================================
+FAIL: test_passive_polling_does_not_keep_desktop_alive_and_wake_preserves_tabs (__main__.DesktopLifecycle.test_passive_polling_does_not_keep_desktop_alive_and_wake_preserves_tabs)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/hualei/msb_demo/agent-space/tests/test_browser_lifecycle_vm.py", line 66, in test_passive_polling_does_not_keep_desktop_alive_and_wake_preserves_tabs
+    self.assertEqual(sorted(t['url'] for t in observed['tabs']),before)
+AssertionError: Lists differ: ['chrome://newtab/'] != ['http://127.0.0.1:8124/']
+
+First differing element 0:
+'chrome://newtab/'
+'http://127.0.0.1:8124/'
+
+- ['chrome://newtab/']
++ ['http://127.0.0.1:8124/']
+
+----------------------------------------------------------------------
+Ran 1 test in 321.975s
+
+FAILED (failures=1)

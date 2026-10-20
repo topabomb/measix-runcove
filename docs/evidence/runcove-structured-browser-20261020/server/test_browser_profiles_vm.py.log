@@ -1,0 +1,8 @@
+test_picker_reopen_profiles_and_last_used_preference (__main__.BrowserProfiles.test_picker_reopen_profiles_and_last_used_preference) ... Waiting for real 300-second multi-profile idle
+PASS idle wake restores profiles and selection without changing picker preference
+ok
+
+----------------------------------------------------------------------
+Ran 1 test in 341.225s
+
+OK
