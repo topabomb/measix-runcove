@@ -12,7 +12,11 @@
 
 图片读取与截图均使用共享管线：仅当长边超过1980时进行一次等比例缩小，小图不放大；所有图片仍编码为 WebP Q90（method=6），保留透明度。因此1024×1536 PNG不需要缩小，但不能原样透传PNG；原文件和截图原始PNG下载保持原字节。旧生产读图PNG及截图JPEG不代表本轮候选已部署。
 
-最终源码摘要 `a23c9bf33af9305b7696a2c3cc0bacaa447bd438ad90d09c528b29fbb8496310`。本次针对性验证：helper9项、MCP HTTP10项、协议8项通过；真实桌面Node35项通过、1项DPR2专属场景跳过；Clippy workspace/all-targets、格式、验证器调用回归通过。生产二进制以锁定Docker构建链构建，SQLite实际链接3.51.3，在Server基础镜像及Workspace中核对依赖。下方330项Rust和两入口完整共享回归属于其各自冻结输入，不改写为此次最终修补后的整轮资格。当前生产切换记录将在提交后单独追加。
+最终源码摘要 `a23c9bf33af9305b7696a2c3cc0bacaa447bd438ad90d09c528b29fbb8496310`。本次针对性验证：helper9项、MCP HTTP10项、协议8项通过；真实桌面Node35项通过、1项DPR2专属场景跳过；Clippy workspace/all-targets、格式、验证器调用回归通过。生产二进制以锁定Docker构建链构建，SQLite实际链接3.51.3，在Server基础镜像及Workspace中核对依赖。下方330项Rust和两入口完整共享回归属于其各自冻结输入，不改写为此次最终修补后的整轮资格。生产已按下段定向更新并验收。
+
+提交 `0e613f8` 后按明确授权快速更新原生产容器，同时替换MCP与desktop helper并同步release/runtime元数据，未备份、未迁移、未快照，也未重建基础镜像。安装程序、运行PID1、helper及元数据摘要一致，原容器/镜像/配置/挂载/端口保持。更新前创建的临时空间在更新后继续使用原凭据和agentSpaceId，工作文件与浏览器页面恢复，helper及内嵌worker已升级；真实ref点击、iframe填写和读取通过。固定秒级等待及重复查询计时稳定；32秒间隔截图通过默认30秒任务等待完成，实际该次等待24.48秒。
+
+同一张临时测试PNG（1024×1536，非用户引用的肖像文件）更新前read返回PNG，Base64为3186124字节；更新后返回WebP，为1573152字节（减少约50.6%），尺寸保持1024×1536。生产页面与桌面截图通过，保存原始PNG后read所得WebP与该次页面截图一致，长标题截断标记通过。临时空间及上传暂存已清理，原账号记录未变，生产和相邻服务健康。此为容器可写层覆盖，重建容器需重新应用或构建新镜像。[实际生产验收](evidence/runcove-browser-final-review-20261020/production.json)。
 
 [审查与验证](evidence/runcove-browser-final-review-20261020/verification.json) · [生产二进制及运行库核对](evidence/runcove-browser-final-review-20261020/build-verification.json)。未重建最终镜像或离线包，未重新执行完整发布资格。
 

@@ -40,7 +40,17 @@
     "Full two-target VM suite repeat after the final metadata-only fixes",
     "Third-party Google Flow risk-control or generation validation"
   ],
-  "production": "Recorded separately after the reviewed commit and live update",
+  "production": {
+    "passed": true,
+    "report": "production.json",
+    "source_revision": "0e613f8aa06418c329eab6be6035d31f2a769903",
+    "source_sha256": "a23c9bf33af9305b7696a2c3cc0bacaa447bd438ad90d09c528b29fbb8496310",
+    "backup": false,
+    "migration": false,
+    "snapshot": false,
+    "image_rebuilt": false,
+    "persistence": "container writable-layer override; recreation requires reapplication or an image build"
+  },
   "tested_source_sha256": "79ad785e263278ba55825cd410da7754fd8fee3dee0c877fc233c533e4b6ee2e",
   "source_difference": "Only one trailing empty line in guest/README.md; reconstructed digest confirms no other differences. Final production binaries rebuilt from final source.",
   "reviewed_paths": [

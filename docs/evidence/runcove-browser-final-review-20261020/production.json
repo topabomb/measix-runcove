@@ -1,0 +1,90 @@
+{
+  "date": "2026-10-20",
+  "source_revision": "0e613f8aa06418c329eab6be6035d31f2a769903",
+  "source_sha256": "a23c9bf33af9305b7696a2c3cc0bacaa447bd438ad90d09c528b29fbb8496310",
+  "binary_sha256": {
+    "agent-space-mcp": "6a59e27d6ab66ebcdd96762e8c5e16b0e6ef4e4550ef6a4807162e5e51c3f188",
+    "agent-space-desktop": "bcab0c49f5652d4ab9d5412194cb5c91c114e15578e3cb50cc6cf55e5b0bfb11"
+  },
+  "baseline": {
+    "id": "c21b40ef655aaa7fa2f0a868cff192b8480141b68d6fbee7cb23f1d12772a67e",
+    "image": "sha256:dc5d61e08fa29c02775089083efe31ae2968ad6246d317600d5a52e90cb4b861",
+    "mounts": [
+      {
+        "Type": "bind",
+        "Name": null,
+        "Source": "/run/desktop/mnt/host/wsl/docker-desktop-bind-mounts/Ubuntu/1f1a4c07b0718ca49ef443f0d7308e60b3a7e15a5852182776f98c8702ee1caa",
+        "Destination": "/etc/agent-space/config.toml",
+        "RW": false
+      },
+      {
+        "Type": "volume",
+        "Name": "agent-space-data-runcove-20261016",
+        "Source": "/var/lib/docker/volumes/agent-space-data-runcove-20261016/_data",
+        "Destination": "/var/lib/microsandbox",
+        "RW": true
+      },
+      {
+        "Type": "volume",
+        "Name": "agent-space-logs-runcove-20261016",
+        "Source": "/var/lib/docker/volumes/agent-space-logs-runcove-20261016/_data",
+        "Destination": "/var/log/agent-space",
+        "RW": true
+      }
+    ],
+    "ports": {
+      "8932/tcp": [
+        {
+          "HostIp": "0.0.0.0",
+          "HostPort": "8933"
+        }
+      ],
+      "8933/tcp": [
+        {
+          "HostIp": "0.0.0.0",
+          "HostPort": "8934"
+        }
+      ]
+    },
+    "config_sha256": "e97ac7134c987c5c3d342372411d9171cc3c4dc7ff533343f8e05af4d34618cd"
+  },
+  "backup": false,
+  "migration": false,
+  "snapshot": false,
+  "image_rebuilt": false,
+  "passed": true,
+  "checks": [
+    "existing_temporary_space_initialized_with_old_helper_and_file",
+    "running_and_installed_programs_metadata_container_config_ports_mounts_match",
+    "live_four_browser_tool_schemas_match_reviewed_contract",
+    "read_1024x1536_png_is_always_compressed_to_webp_without_unnecessary_resize",
+    "original_token_space_files_profile_and_helper_upgrade_real_click_iframe_read",
+    "seconds_wait_is_real_page_independent_and_preserves_task_timing",
+    "page_desktop_webp_original_reread_and_screenshot_truncation_metadata",
+    "async_sequence_uses_seconds_and_default_thirty_second_task_wait",
+    "temporary_space_removed_original_accounts_preserved_production_and_peer_healthy"
+  ],
+  "original_user_count": 2,
+  "portrait_fixture_before": {
+    "mime_type": "image/png",
+    "width": 1024,
+    "height": 1536,
+    "base64_bytes": 3186124,
+    "encoded_bytes": 2389591
+  },
+  "screen_before": {
+    "mime_type": "image/jpeg",
+    "base64_bytes": 112408
+  },
+  "temporary_space_id_sha256": "fa4d43fd7d3aa92c4ca5e40d432a924f66b963a81384197ca59f4f7a4f005880",
+  "live_catalogue_sha256": "a2c071d3b9b65188316443af8daa599fa1571237d8faf9c3805bcc405db1b689",
+  "portrait_fixture_after": {
+    "mime_type": "image/webp",
+    "width": 1024,
+    "height": 1536,
+    "base64_bytes": 1573152,
+    "encoded_bytes": 1179862
+  },
+  "default_wait_observed_secs": 24.48,
+  "upload_staging_removed": true
+}
