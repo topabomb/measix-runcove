@@ -1,0 +1,112 @@
+{
+  "checked_on": "2026-10-20",
+  "projection": "Sanitized summary; business identifiers, paths, URLs, images and raw messages remain private.",
+  "scope": "Read-only correlation of an existing business task, its pre-existing space, tool-output attachments and Runcove completion logs; qualification calls excluded.",
+  "timezone": "Africa/Nairobi (UTC+03:00)",
+  "production_cutover": "2026-10-20T18:38:48+03:00",
+  "production_source_revision": "0e613f8aa06418c329eab6be6035d31f2a769903",
+  "running_mcp_sha256": "6a59e27d6ab66ebcdd96762e8c5e16b0e6ef4e4550ef6a4807162e5e51c3f188",
+  "installed_desktop_sha256": "bcab0c49f5652d4ab9d5412194cb5c91c114e15578e3cb50cc6cf55e5b0bfb11",
+  "image_verification": "Matched call IDs to tool-output attachment provenance and decoded image headers. Byte counts exclude the data-URL prefix.",
+  "historical_image_returns": [
+    {
+      "kind": "portrait_reference_read",
+      "returned_at": "2026-10-20T17:21:42+03:00",
+      "before_cutover": true,
+      "declared_mime": "image/png",
+      "decoded_mime": "image/png",
+      "width": 1024,
+      "height": 1536,
+      "encoded_bytes": 2092897,
+      "base64_bytes": 2790532
+    },
+    {
+      "kind": "desktop_screen_observe",
+      "returned_at": "2026-10-20T17:55:14+03:00",
+      "before_cutover": true,
+      "declared_mime": "image/jpeg",
+      "decoded_mime": "image/jpeg",
+      "width": 1440,
+      "height": 900,
+      "encoded_bytes": 173522,
+      "base64_bytes": 231364
+    },
+    {
+      "kind": "page_screen_observe",
+      "returned_at": "2026-10-20T18:30:15+03:00",
+      "before_cutover": true,
+      "declared_mime": "image/jpeg",
+      "decoded_mime": "image/jpeg",
+      "width": 1440,
+      "height": 781,
+      "encoded_bytes": 89534,
+      "base64_bytes": 119380
+    }
+  ],
+  "post_update_image_calls_in_reviewed_business_task": {
+    "portrait_reference_read": 0,
+    "screen_observe": 0
+  },
+  "existing_space_new_implementation": {
+    "new_helper_started_at": "2026-10-20T18:56:11+03:00",
+    "wait_started_at": "2026-10-20T19:04:48+03:00",
+    "input": {
+      "actions": [
+        {
+          "do": "wait",
+          "secs": 5
+        }
+      ],
+      "then": "none"
+    },
+    "result": {
+      "state": "succeeded",
+      "value": {
+        "completed": 1,
+        "of": 1
+      }
+    },
+    "duration_secs": 5.1,
+    "new_timing_fields_present": [
+      "started_at",
+      "duration_secs"
+    ]
+  },
+  "post_update_browser_responses": {
+    "total": 15,
+    "terminal_success": 11,
+    "initial_running": 1,
+    "error_responses": 3
+  },
+  "error_groups": [
+    {
+      "responses": 1,
+      "code": "INVALID_PARAMS",
+      "cause": "Retired top-level action field; caller corrected to op."
+    },
+    {
+      "responses": 1,
+      "code": "STALE_REF",
+      "reported_by": "op=wait polling the original click task",
+      "completed": 0,
+      "side_effects": "not_started",
+      "recovery": "Fresh snapshot followed by a successful click."
+    },
+    {
+      "responses": 1,
+      "code": "INVALID_PARAMS",
+      "cause": "Retired wait.ms field; caller corrected to wait.secs and succeeded."
+    }
+  ],
+  "limits": [
+    "No post-update return for the actual portrait read or screen_observe exists in the reviewed task; its updated image format and byte size were not measured.",
+    "The separate synthetic PNG comparison does not measure this business portrait.",
+    "Old input fields are proven; cached tool definitions versus conversation history is not established.",
+    "One broad cross-filesystem SQLite events read returned DatabaseError; targeted primary-key reads succeeded and evidence was cross-checked with service logs. Database integrity was not assessed.",
+    "No new business image read or browser action was submitted for this audit."
+  ],
+  "recommendations": [
+    "Re-discover the MCP tool catalogue for new turns after the breaking protocol update",
+    "Refresh refs with browser_snapshot after page or browser restoration"
+  ]
+}

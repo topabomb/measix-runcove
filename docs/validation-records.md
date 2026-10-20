@@ -20,6 +20,14 @@
 
 [审查与验证](evidence/runcove-browser-final-review-20261020/verification.json) · [生产二进制及运行库核对](evidence/runcove-browser-final-review-20261020/build-verification.json)。未重建最终镜像或离线包，未重新执行完整发布资格。
 
+### 更新后生产调用复核（2026-10-20）
+
+只读关联同一业务任务、已有空间、工具结果附件与服务完成日志，排除资格测试调用；解码图片头核对实际格式和尺寸。切换点为18:38:48（Africa/Nairobi，UTC+3）。此前肖像参考图read返回PNG 1024×1536，编码2092897字节、Base64 2790532字节；桌面screen_observe为JPEG 1440×900，编码173522字节、Base64 231364字节；页面截图为JPEG 1440×781，编码89534字节、Base64 119380字节。三次均发生在切换前。受查业务任务在切换后没有该肖像read或screen_observe，不能据此宣称该图的新WebP体积已实测，也不能套用上方临时测试PNG的压缩比例。
+
+已有空间在切换后启动新helper，成功执行wait.secs=5，返回新版计时字段及duration_secs=5.1。切换后15次业务浏览器响应中，11次完成成功、1次初始运行中、3次错误；两次仍传已移除的action/ms参数，一次查询报告原点击任务的STALE_REF（completed=0、side_effects=not_started）。调用方改用新参数、重新快照取得ref后成功。旧参数来自目录缓存还是对话历史尚未确定；建议协议更新后重新发现工具定义，页面恢复后重新获取ref，不增加旧协议兼容入口。
+
+[脱敏调用复核](evidence/runcove-browser-final-review-20261020/production-call-audit.json)保留输入版本、图片字节统计、恢复证据与检查边界；原始业务消息和标识仅保存在本机运维目录。本轮未修改服务实现、未触发新的业务调用，也未重新执行发布资格。
+
 ## 浏览器工具统一接口与完整验证（2026-10-20）
 
 本轮完成四个浏览器工具的最终接口与 Agent 披露调整，同时完成下方五个基础工具首次快改的后续验证。browser_act 说明连续多步执行和通用固定等待，顶层统一 op=execute/wait/cancel；动作由22种合并为16种，旧动作名和旧顶层 action 入口已删除。click/drag 统一 ref 或图片坐标；press/scroll 使用 page/desktop 目标；navigate 使用 open/back/forward/reload。已知但无关的步骤字段先归一化再验证，真实意图冲突仍报错。
