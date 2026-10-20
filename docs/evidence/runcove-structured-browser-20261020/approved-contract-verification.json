@@ -1,0 +1,69 @@
+{
+  "scope": "User-approved model-visible descriptions and 30-second task wait contract",
+  "catalog": "browser-tools-approved.json",
+  "catalog_sha256": "7b2498c1900ac3c7388693da8842e8d6eaf4f0f637b12b33fedd81452baef79e",
+  "tool_count": 4,
+  "action_branch_count": 22,
+  "approved_description_exact_matches": 103,
+  "actual_http_mcp_catalogs_equal_across_features": true,
+  "actions_items_reference": "#/$defs/ActStep",
+  "all_action_and_parameter_descriptions_present": true,
+  "wait_secs": {
+    "runtime_default": 30,
+    "schema_default": 30,
+    "minimum": 0,
+    "maximum": 30,
+    "mcp_handler_boundary_cases": [
+      "omitted",
+      "30",
+      "31"
+    ],
+    "real_30_second_timeout_retains_running_task": true,
+    "completion_after_21_seconds_returned_within_wait": true,
+    "cancellation_notification_returned": true
+  },
+  "other_parameter_names_types_enums_required_and_defaults_unchanged": true,
+  "execution_changes_limited_to_wait_default_maximum_and_range_errors": true,
+  "source_files": [
+    {
+      "path": "agent-space-mcp/src/browser_params.rs",
+      "before_sha256": "a5da8c3a64232292f0b057e183523902ca3c91b8ea17013645e9729a1ec539c2",
+      "after_sha256": "ff81c327334f00a790344f69a93d2c34ac4dcf880c55e512ed1d7781dc63312b"
+    },
+    {
+      "path": "agent-space-mcp/src/server.rs",
+      "before_sha256": "3664e316a7b4ef3ed4296e971f7135b5459b0c861b096ca0276484a093e917ad",
+      "after_sha256": "1c278303b61b0ffbd9f58b1bae909d4c172f5f5990d6657b579473156b8c4b4f"
+    },
+    {
+      "path": "src/desktop.rs",
+      "before_sha256": "9a70490777c48ec92a4d58746369cf7f60ae5803bfde1c2253003fad80b7924c",
+      "after_sha256": "71e94e44e7be44495095c720563f904b4aa3d584587483cd7988556909f2df91"
+    }
+  ],
+  "tests": {
+    "server": {
+      "mcp_library": 30,
+      "http_mcp_contract": 5,
+      "catalog_probe": 1
+    },
+    "standalone": {
+      "mcp_library": 30,
+      "http_mcp_contract": 5,
+      "catalog_probe": 1
+    },
+    "task_owner_real_wait": {
+      "passed": 1,
+      "duration_seconds": 30.0
+    }
+  },
+  "clippy": {
+    "workspace_all_targets": true,
+    "standalone_lib_binary_and_contract_test": true
+  },
+  "standalone_no_msb_binary_build_passed": true,
+  "validation_adjustment": "Initial no-default-features --all-targets Clippy included MSB-only VM tests and failed on unavailable MSB imports; rerun on Standalone library, binary and shared MCP contract test passed. No VM test source changes.",
+  "temporary_probe_sha256": "fdeb4293ba372716905fcc4da56a3dda36a2a67c8a92adaa7e1aa6b0dd6d135b",
+  "temporary_probe_removed": true,
+  "production_or_release_image_updated": false
+}

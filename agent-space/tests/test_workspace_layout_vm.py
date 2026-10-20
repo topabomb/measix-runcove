@@ -19,7 +19,7 @@ class WorkspaceLayout(unittest.TestCase):
  def python(cls,code):
   result=cls.client.tool('bash',{'cmd':'python3 -c '+shlex.quote(code),'workdir':'','timeout_secs':None,'unused':True})
   assert not result.get('isError'),text(result)
-  assert result['content'][-1]['text']=='Exit code: 0',result
+  assert any(c.get('text')=='Exit code: 0' for c in result['content']),result
   return text(result)
  def test_01_optional_inputs_and_internal_files(self):
   for folder in ['.agent-space/notes','.agent-space-backup','nested/.agent-space/uploads','.agent-space-upload']:
@@ -30,20 +30,18 @@ class WorkspaceLayout(unittest.TestCase):
    self.good('read',{'path':path,'offset':None,'limit':None,'unused':False})
   path='/workspace/layout-public.txt'
   self.good('write',{'path':path,'content':'public'})
-  self.good('web_publish',{'action':'list','name':None,'port':'unused','keep_alive_minutes':10})
-  self.good('web_publish',{'action':'publish','name':'layout','file':path,'directory':'','port':None,'keep_alive_minutes':None})
-  self.good('web_publish',{'action':'get','name':'layout','file':False,'keep_alive_minutes':'unused'})
-  result=self.good('web_publish',{'action':'unpublish','name':'layout','file':None,'directory':None,'port':None,'keep_alive_minutes':10})
+  self.good('web_publish',{'action':'list','name':None,'port':'unused','keep_alive_secs':10})
+  self.good('web_publish',{'action':'publish','name':'layout','file':path,'directory':'','port':None,'keep_alive_secs':None})
+  self.good('web_publish',{'action':'get','name':'layout','file':False,'keep_alive_secs':'unused'})
+  result=self.good('web_publish',{'action':'unpublish','name':'layout','file':None,'directory':None,'port':None,'keep_alive_secs':10})
   self.assertEqual(result['status'],'unpublished')
  def test_02_legacy_artifacts_and_default_download_location(self):
   self.python("from pathlib import Path;import json;p=Path('/workspace/.agent-space/desktop');a=p/'artifacts';a.mkdir(parents=True);(a/'same.txt').write_text('old');(a/'other.txt').write_text('other');(a/'unknown').mkdir();n=Path('/workspace/agent-space/artifacts');n.mkdir(parents=True);(n/'same.txt').write_text('new');d=p/'profile/Default';d.mkdir(parents=True);(d/'Preferences').write_text(json.dumps({'download':{'default_directory':str(a),'prompt_for_download':False}}))")
-  observed=self.good('browser_observe',{'page_id':'','recent_tasks_limit':None,'unused':True})
-  self.assertTrue(observed['health']['browser'],observed)
+  observed=self.client.snapshot(page_id='',recent_tasks_limit=None)
+  self.assertTrue(observed.get('page_id'),observed)
   self.python("from pathlib import Path;import json;p=Path('/workspace/.agent-space/desktop');n=Path('/workspace/agent-space/artifacts');assert (n/'same.txt').read_text()=='new';assert (n/'other.txt').read_text()=='other';assert len([f for f in n.glob('*same.txt') if f.read_text()=='old'])==1;assert (p/'artifacts/unknown').is_dir();assert not (p/'artifacts/same.txt').exists();assert not Path('/workspace/agent-space/README.md').exists();assert json.loads((p/'profile/Default/Preferences').read_text())['download']['default_directory']==str(n)")
-  result=self.good('browser_run',{'code':"return await output.file('/workspace/layout-public.txt');",'page_id':'','timeout_secs':None,'script_path':None})
-  while result['state']=='running':result=self.good('browser_task',{'task_id':result['task_id'],'action':'wait','wait_secs':None,'extra':None})
-  self.assertEqual(result['state'],'succeeded',result)
-  self.assertEqual(result['value']['path'],'/workspace/layout-public.txt')
+  result,reply=self.client.act([{'do':'wait','secs':1}])
+  self.assertFalse(reply.get('isError'),result)
  def test_03_dav_protects_only_upload_staging(self):
   req=urllib.request.Request(BASE+'/admin/v1/users/desktop/dav-token',data=json.dumps({'agentSpaceId':USERS['desktop']['agentSpaceId']}).encode(),headers={'Authorization':'Bearer '+(Q/'admin-token').read_text(),'Content-Type':'application/json'})
   with urllib.request.urlopen(req) as response:issued=json.load(response)
@@ -69,10 +67,9 @@ class WorkspaceLayout(unittest.TestCase):
   def run(code):
    result=client.tool('bash',{'cmd':'python3 -c '+shlex.quote(code),'timeout_secs':60})
    self.assertFalse(result.get('isError'),text(result))
-   self.assertEqual(result['content'][-1]['text'],'Exit code: 0',result)
+   self.assertTrue(any(c.get('text')=='Exit code: 0' for c in result['content']),result)
   run("from pathlib import Path;import json;p=Path('/workspace/.agent-space/desktop');d=p/'profile/Default';d.mkdir(parents=True);(p/'artifacts').write_text('user-owned');Path('/workspace/my-downloads').mkdir();(d/'Preferences').write_text(json.dumps({'download':{'default_directory':'/workspace/my-downloads'}}))")
-  response=client.tool('browser_observe',{})
-  self.assertFalse(response.get('isError'),text(response));self.assertTrue(text(response)['health']['browser'])
+  observed=client.snapshot();self.assertTrue(observed.get('page_id'))
   run("from pathlib import Path;import json;p=Path('/workspace/.agent-space/desktop');assert json.loads((p/'profile/Default/Preferences').read_text())['download']['default_directory']=='/workspace/my-downloads';assert (p/'artifacts').read_text()=='user-owned';assert not Path('/workspace/agent-space/README.md').exists()")
 
 if __name__=='__main__':unittest.main(verbosity=2)

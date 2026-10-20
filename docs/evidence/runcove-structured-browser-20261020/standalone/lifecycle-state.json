@@ -1,0 +1,45 @@
+{
+  "expected_urls": [
+    "http://127.0.0.1:8124/"
+  ],
+  "sleep_health": {
+    "desktop": false,
+    "worker_contract": 1
+  },
+  "preparing_polls": 1,
+  "stopped": {
+    "old_process_alive": false,
+    "was": {
+      "restarted": true
+    },
+    "last_active_profiles": [
+      "Default"
+    ]
+  },
+  "first_wake": {
+    "element_count": 6,
+    "elements": "eJSIHnmdIGe heading \"Upload/download\" [level=1]\neaG7NuMbtpZ button \"Upload fixture\"\nesRgvFzCWon button \"Count once\"\net5YJt17Po_ textbox \"Clipboard fixture\"\neQeZfF_A1mB button \"Generate\"\neD43XOndv2d link \"Download\"",
+    "health": {
+      "browser": true,
+      "desktop": true,
+      "native_window": false,
+      "page": true
+    },
+    "layers": [],
+    "layers_truncated": false,
+    "page_id": "66E8A4B87ED11CD8AAF5AEAD66669217",
+    "tabs": [
+      {
+        "page_id": "66E8A4B87ED11CD8AAF5AEAD66669217",
+        "title": "Automation fixture",
+        "url": "http://127.0.0.1:8124/"
+      }
+    ],
+    "title": "Automation fixture",
+    "truncated": false,
+    "url": "http://127.0.0.1:8124/",
+    "control": {
+      "mode": "AI"
+    }
+  }
+}

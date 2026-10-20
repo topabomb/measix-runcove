@@ -15,7 +15,7 @@ pub enum WebPublishParams {
         #[serde(default)]
         port: Option<u16>,
         #[serde(default)]
-        keep_alive_minutes: Option<u32>,
+        keep_alive_secs: Option<u32>,
     },
     Get {
         name: String,
@@ -57,12 +57,12 @@ impl JsonSchema for WebPublishParams {
         let value: Value = json!({
             "type":"object",
             "properties":{
-                "action":{"type":"string","enum":["publish","get","list","unpublish"],"description":"\"publish\" creates or updates a publication; provide name and exactly one of file, directory, or port. \"get\" returns one publication and its credentials; provide name. \"list\" returns publications without credentials. \"unpublish\" removes the named publication without deleting files or stopping the application; provide name. get/list do not renew keepalive."},
-                "name":{"type":["string","null"],"description":"Publication name, required for publish, get, and unpublish: 1-64 ASCII letters, digits, underscores, or hyphens."},
-                "file":{"type":["string","null"],"description":"For publish: absolute path of an existing regular file, e.g. /workspace/report.html. The returned URL serves that file only, without exposing its parent directory."},
-                "directory":{"type":["string","null"],"description":"For publish: absolute path of an existing directory, e.g. /workspace/site. Publishes its contents, serving index.html if present or a directory listing otherwise."},
-                "port":{"type":["integer","null"],"description":"For publish: port of an HTTP application you have already started. Range 1024-65535; 2222, 5353, 8080, and ports used by Runcove services are reserved. Assets, API URLs, and redirects must work under the returned URL's path prefix; hard-coded root paths are not rewritten."},
-                "keep_alive_minutes":{"type":["integer","null"],"description":"For publish: minutes of protection from automatic idle shutdown, not a link lifetime. Omit or pass JSON null for the configured default; accepts 1-1440 within configured limits. Re-publishing can extend protection without accumulating durations. Expiry removes protection, not the publication."}
+                "action":{"type":"string","enum":["publish","get","list","unpublish"],"description":"publish creates or updates: provide name and exactly one of file/directory/port. get returns one publication with credentials; list omits credentials. unpublish removes access while retaining files and the app. get/list do not renew keepalive."},
+                "name":{"type":["string","null"],"description":"Required for publish/get/unpublish: 1-64 ASCII letters, digits, underscores or hyphens."},
+                "file":{"type":["string","null"],"description":"Publish only: absolute path to an existing file. Serves that file alone."},
+                "directory":{"type":["string","null"],"description":"Publish only: absolute path to an existing directory. Serves index.html when present, otherwise a directory listing."},
+                "port":{"type":["integer","null"],"description":"Publish only: port of an already running HTTP app, 1024-65535; 8080 is reserved. The app must support the returned URL path prefix for assets, APIs and redirects."},
+                "keep_alive_secs":{"type":["integer","null"],"description":"Publish only: idle-shutdown protection in seconds. Omit or null uses the space default. Re-publish to extend protection. Expiry ends idle protection; publication lifetime follows the space."}
             },
             "required":["action"],"additionalProperties":true
         });

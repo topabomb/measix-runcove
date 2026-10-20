@@ -1,0 +1,59 @@
+{
+  "task": {
+    "control": {
+      "mode": "AI"
+    },
+    "duration_secs": 1.2,
+    "state": "succeeded",
+    "task_id": "4b021834-f1ae-4f45-a44c-91b93a637b20",
+    "value": {
+      "element_count": 38,
+      "elements": "eGHz1riACl_ link \"Home\"\neBkOQoajQBJ link \"Help\"\nev9qpXLVsUt link \"Pricing\"\neTX5uVqRaEk heading \"Sign in\" [level=1]\necJQqHlGoyl textbox \"Email\"\neMTLebsKlVr textbox \"Password\"\ne3Un8jbkEpg checkbox \"Remember me\"\nelI2JE7pXmj button \"Sign in\"\nervSrNrfb3A link \"Footer link 0\"\nema8RPKthGl link \"Footer link 1\"\nemWD0hGw3E4 link \"Footer link 2\"\nevNJkuIk27e link \"Footer link 3\"\nea3M4Lc6dcs link \"Footer link 4\"\neVTSABMxLL7 link \"Footer link 5\"\ne8yZ6DzWEEH link \"Footer link 6\"\neWyrJiA5OmJ link \"Footer link 7\"\neAc1yTH-DLR link \"Footer link 8\"\ne_BL0ZRJtvk link \"Footer link 9\"\neHhjGprTEQo link \"Footer link 10\"\nexSRaSIVVjB link \"Footer link 11\"\neeaSNLcGqs5 link \"Footer link 12\"\neWBmoSMavgG link \"Footer link 13\"\neasVrMPAw3Q link \"Footer link 14\"\nejyp6pe6_hR link \"Footer link 15\"\neKIZhWmgXv9 link \"Footer link 16\"\neSBs5WnzHwW link \"Footer link 17\"\neVXDLvqwW7l link \"Footer link 18\"\necAdRvMgvP3 link \"Footer link 19\"\ne6NIJm49Kbr link \"Footer link 20\"\ne1vDH--G4zC link \"Footer link 21\"\ne9XgdLHuKvG link \"Footer link 22\"\neGD2pNnajbq link \"Footer link 23\"\neJlfDsqhqks link \"Footer link 24\"\nee5sDjZRSBS link \"Footer link 25\"\neoYQ_E2JyF7 link \"Footer link 26\"\ne2pL9E2PZoQ link \"Footer link 27\"\netOSLjwRM3Z link \"Footer link 28\"\nejIKgb9qH8W link \"Footer link 29\"",
+      "page_id": "DD309EF0A1C97512FF4F9602034191E8",
+      "title": "Sign in",
+      "url": "http://127.0.0.1:8125/login"
+    }
+  },
+  "current_page": {
+    "element_count": 38,
+    "elements": "eGHz1riACl_ link \"Home\"\neBkOQoajQBJ link \"Help\"\nev9qpXLVsUt link \"Pricing\"\neTX5uVqRaEk heading \"Sign in\" [level=1]\necJQqHlGoyl textbox \"Email\"\neMTLebsKlVr textbox \"Password\"\ne3Un8jbkEpg checkbox \"Remember me\"\nelI2JE7pXmj button \"Sign in\"\nervSrNrfb3A link \"Footer link 0\"\nema8RPKthGl link \"Footer link 1\"\nemWD0hGw3E4 link \"Footer link 2\"\nevNJkuIk27e link \"Footer link 3\"\nea3M4Lc6dcs link \"Footer link 4\"\neVTSABMxLL7 link \"Footer link 5\"\ne8yZ6DzWEEH link \"Footer link 6\"\neWyrJiA5OmJ link \"Footer link 7\"\neAc1yTH-DLR link \"Footer link 8\"\ne_BL0ZRJtvk link \"Footer link 9\"\neHhjGprTEQo link \"Footer link 10\"\nexSRaSIVVjB link \"Footer link 11\"\neeaSNLcGqs5 link \"Footer link 12\"\neWBmoSMavgG link \"Footer link 13\"\neasVrMPAw3Q link \"Footer link 14\"\nejyp6pe6_hR link \"Footer link 15\"\neKIZhWmgXv9 link \"Footer link 16\"\neSBs5WnzHwW link \"Footer link 17\"\neVXDLvqwW7l link \"Footer link 18\"\necAdRvMgvP3 link \"Footer link 19\"\ne6NIJm49Kbr link \"Footer link 20\"\ne1vDH--G4zC link \"Footer link 21\"\ne9XgdLHuKvG link \"Footer link 22\"\neGD2pNnajbq link \"Footer link 23\"\neJlfDsqhqks link \"Footer link 24\"\nee5sDjZRSBS link \"Footer link 25\"\neoYQ_E2JyF7 link \"Footer link 26\"\ne2pL9E2PZoQ link \"Footer link 27\"\netOSLjwRM3Z link \"Footer link 28\"\nejIKgb9qH8W link \"Footer link 29\"",
+    "page_id": "DD309EF0A1C97512FF4F9602034191E8",
+    "title": "Sign in",
+    "url": "http://127.0.0.1:8125/login"
+  },
+  "pages": {
+    "tabs": [
+      {
+        "page_id": "6600F072CCC4800BDD923A38A0A3EA91",
+        "title": "Other 2",
+        "url": "data:text/html,<title>Other 2</title>"
+      },
+      {
+        "page_id": "638EEFB12E754C4E4308AE9D3BFA4526",
+        "title": "Other 1",
+        "url": "data:text/html,<title>Other 1</title>"
+      },
+      {
+        "page_id": "A568E992AD436188A22CFA47ADD0554C",
+        "title": "Other 0",
+        "url": "data:text/html,<title>Other 0</title>"
+      },
+      {
+        "page_id": "DD309EF0A1C97512FF4F9602034191E8",
+        "title": "Sign in",
+        "url": "http://127.0.0.1:8125/login"
+      }
+    ]
+  },
+  "query": {
+    "matches": [
+      {
+        "name": "Email",
+        "ref": "ecJQqHlGoyl",
+        "role": "textbox"
+      }
+    ],
+    "page_id": "DD309EF0A1C97512FF4F9602034191E8",
+    "url": "http://127.0.0.1:8125/login"
+  }
+}

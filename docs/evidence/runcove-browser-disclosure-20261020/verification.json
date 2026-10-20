@@ -1,0 +1,215 @@
+{
+  "status": "passed",
+  "completed_at": "2026-10-20T15:11:03Z",
+  "source_digest": "6f4beb28654039b4cfb17a2ac7e7b21dc1a2ecba20335ecd031607856d3487e7",
+  "local_checks": {
+    "rust_workspace_passed": 330,
+    "rust_standalone_lib_passed": 34,
+    "final_mcp_integration_passed": 10,
+    "node_passed": 35,
+    "node_inapplicable_dpr2_skip": 1,
+    "node_dpr2_passed": 2,
+    "python_passed": 22,
+    "workspace_clippy_all_targets": true,
+    "standalone_clippy_scope": "--no-default-features --lib --bins",
+    "release_builds": "workspace and no-default standalone",
+    "diff_check_passed": true
+  },
+  "targets": {
+    "server": {
+      "passed": true,
+      "shared_tests_passed": 48,
+      "shared_tests_skipped": 0,
+      "python_suites": [
+        {
+          "suite": "test_browser_vm.py.log",
+          "tests": 11,
+          "skipped": 0,
+          "duration_secs": 173.501
+        },
+        {
+          "suite": "test_desktop_files_vm.py.log",
+          "tests": 3,
+          "skipped": 0,
+          "duration_secs": 15.893
+        },
+        {
+          "suite": "test_browser_lifecycle_vm.py.log",
+          "tests": 1,
+          "skipped": 0,
+          "duration_secs": 325.413
+        },
+        {
+          "suite": "test_media_vm.py.log",
+          "tests": 10,
+          "skipped": 0,
+          "duration_secs": 128.068
+        },
+        {
+          "suite": "test_browser_profiles_vm.py.log",
+          "tests": 1,
+          "skipped": 0,
+          "duration_secs": 350.17
+        },
+        {
+          "suite": "test_browser_pages_vm.py.log",
+          "tests": 4,
+          "skipped": 0,
+          "duration_secs": 93.999
+        },
+        {
+          "suite": "test_browser_structured_vm.py.log",
+          "tests": 13,
+          "skipped": 0,
+          "duration_secs": 388.021
+        }
+      ],
+      "ui_tests_passed": 5,
+      "report": "server/result.json",
+      "seconds_wait_timing": {
+        "fixed_secs": 60,
+        "fixed_elapsed_secs": 60.24780534199817,
+        "default_condition_elapsed_secs": 61.129314881996834,
+        "initial_state": "running"
+      },
+      "pure_wait_while_asleep": {
+        "duration_secs": 1.1,
+        "desktop_awake_after_wait": false,
+        "page_feedback_returned": false
+      },
+      "page_limit_restart": {
+        "initial_limit": 4,
+        "restarted_limit": 1,
+        "restored_pages": 4,
+        "restored_after_profile_picker": true,
+        "clean_profile_verified": true,
+        "restored_urls_match": true,
+        "new_page_error": "PAGE_LIMIT_REACHED",
+        "existing_page_navigation_and_close": true
+      },
+      "cleanup_passed": true,
+      "named_checks": [
+        "shared_test_browser_vm.py",
+        "shared_test_browser_structured_vm.py",
+        "shared_test_browser_pages_vm.py",
+        "shared_test_media_vm.py",
+        "shared_test_browser_profiles_vm.py",
+        "shared_test_desktop_files_vm.py",
+        "shared_test_browser_lifecycle_vm.py",
+        "shared_real_vnc_keyboard_clipboard_viewers_responsive_and_idle",
+        "reduced_page_limit_after_restart_preserves_profile_and_existing_pages"
+      ]
+    },
+    "standalone": {
+      "passed": true,
+      "shared_tests_passed": 47,
+      "shared_tests_skipped": 1,
+      "python_suites": [
+        {
+          "suite": "test_browser_vm.py.log",
+          "tests": 11,
+          "skipped": 1,
+          "duration_secs": 136.076
+        },
+        {
+          "suite": "test_desktop_files_vm.py.log",
+          "tests": 3,
+          "skipped": 0,
+          "duration_secs": 5.912
+        },
+        {
+          "suite": "test_browser_lifecycle_vm.py.log",
+          "tests": 1,
+          "skipped": 0,
+          "duration_secs": 322.795
+        },
+        {
+          "suite": "test_media_vm.py.log",
+          "tests": 10,
+          "skipped": 0,
+          "duration_secs": 114.356
+        },
+        {
+          "suite": "test_browser_profiles_vm.py.log",
+          "tests": 1,
+          "skipped": 0,
+          "duration_secs": 337.674
+        },
+        {
+          "suite": "test_browser_pages_vm.py.log",
+          "tests": 4,
+          "skipped": 0,
+          "duration_secs": 79.417
+        },
+        {
+          "suite": "test_browser_structured_vm.py.log",
+          "tests": 13,
+          "skipped": 0,
+          "duration_secs": 307.081
+        }
+      ],
+      "ui_tests_passed": 5,
+      "report": "standalone/result.json",
+      "seconds_wait_timing": {
+        "fixed_secs": 60,
+        "fixed_elapsed_secs": 60.137639368003875,
+        "default_condition_elapsed_secs": 61.32951457799936,
+        "initial_state": "running"
+      },
+      "pure_wait_while_asleep": {
+        "duration_secs": 1.0,
+        "desktop_awake_after_wait": false,
+        "page_feedback_returned": false
+      },
+      "page_limit_restart": {
+        "initial_limit": 4,
+        "restarted_limit": 1,
+        "restored_pages": 4,
+        "restored_after_profile_picker": true,
+        "clean_profile_verified": true,
+        "restored_urls_match": true,
+        "new_page_error": "PAGE_LIMIT_REACHED",
+        "existing_page_navigation_and_close": true
+      },
+      "cleanup_passed": true,
+      "named_checks": [
+        "starts_without_kvm_msb_or_docker_socket",
+        "single_space_routes_have_no_management_or_user_selection",
+        "shared_nine_tools_and_nonroot_secret_isolation",
+        "profile_preparation_cannot_follow_user_links_with_root_privileges",
+        "real_shared_desktop_screenshot",
+        "root_task_owner_keeps_final_results_without_following_user_paths",
+        "dav_workbench_and_mcp_edits_share_writable_user_ownership",
+        "artifact_listing_respects_payload_permissions_through_user_symlinks",
+        "publication_uses_single_space_address",
+        "stopped_data_child_dies_with_killed_control_owner_and_helper_recovers",
+        "shared_test_browser_vm.py",
+        "shared_test_browser_structured_vm.py",
+        "shared_test_browser_pages_vm.py",
+        "shared_test_media_vm.py",
+        "shared_test_browser_profiles_vm.py",
+        "shared_test_desktop_files_vm.py",
+        "shared_test_browser_lifecycle_vm.py",
+        "shared_real_vnc_keyboard_clipboard_viewers_responsive_and_idle",
+        "rewritten_host_workbench_preserves_own_origin_and_nonce_checks",
+        "lost_desktop_owner_blocks_recreation_and_control_until_container_restart",
+        "active_mcp_sse_closes_on_graceful_shutdown",
+        "graceful_restart_preserves_workspace_and_expires_page_session",
+        "reduced_page_limit_after_restart_preserves_profile_and_existing_pages"
+      ]
+    }
+  },
+  "catalog_equal_server_standalone": true,
+  "shared_helpers_identical": true,
+  "standalone_runtime_no_default_features": true,
+  "disclosure_comparison": {
+    "metric": "compact JSON character count; not model tokens",
+    "baseline_characters": 21427,
+    "current_characters": 18681,
+    "reduction_percent": 12.8,
+    "actions_before": 22,
+    "actions_after": 16
+  },
+  "scope": "Frozen current development binaries in disposable Server and Standalone environments. Release binaries built; final release images not rebuilt or qualified. No production deployment.",
+  "external_boundary": "Google Flow login, risk checks and paid generation success are outside these local tool-contract checks."
+}

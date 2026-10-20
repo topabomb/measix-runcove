@@ -1,6 +1,6 @@
 # Measix Runcove Web 发布参考
 
-两种部署共用发布工具、认证和文件/端口代理。Server 使用 `/u/{username}/pub/{name}/`；Standalone 使用 `/pub/{name}/`，没有 VM 空闲回收，`keep_alive_minutes` 不产生容器停机或链接 TTL，到期不撤销发布。独立配置不暴露 VM 保活策略；生命周期差异见[架构](architecture.md)。
+两种部署共用发布工具、认证和文件/端口代理。Server 使用 `/u/{username}/pub/{name}/`；Standalone 使用 `/pub/{name}/`，没有 VM 空闲回收，`keep_alive_secs` 不产生容器停机或链接 TTL，到期不撤销发布。独立配置不暴露 VM 保活策略；生命周期差异见[架构](architecture.md)。
 
 本文描述当前工具、认证与生命周期合同。固定版本验收与部署身份见 [验证记录](validation-records.md)。
 
@@ -17,7 +17,7 @@
 
 ## 2. 生命周期
 
-- 可选 `keep_alive_minutes`，服务端默认 10、单次上限 1440；显式数值只接受正整数，不接受无限值；省略或null使用配置默认值，非publish动作忽略。
+- 可选 `keep_alive_secs`，单位秒，默认和上限由当前配置换算后随工具目录披露；内置默认600秒，范围60..86400秒。省略或null使用配置默认值，非publish动作忽略。工具仅使用秒字段；服务配置仍保留分钟单位。
 - 同目标 publish 将截止时间延到 max(原截止, 当前时间+请求时长)，不累计叠加；URL/密码不变。
 - 存在未到期保活时，两条自动回收路径（session/idle）均不得停止 VM；多发布按最晚截止时间保护。截止判断使用单调时钟，不在工具结果中暴露内部截止时间。
 - 到期只解除保活，不关闭发布、不重置最后活动时间。既有空闲回收与全传输活动租约继续生效；真实工作可以延长 VM 运行。
@@ -39,7 +39,7 @@
 
 ```json
 {"action":"publish","name":"report","file":"/workspace/report.pdf"}
-{"action":"publish","name":"site","directory":"/workspace/site","keep_alive_minutes":10}
+{"action":"publish","name":"site","directory":"/workspace/site","keep_alive_secs":600}
 {"action":"publish","name":"api","port":3000}
 {"action":"get","name":"site"}
 {"action":"list"}

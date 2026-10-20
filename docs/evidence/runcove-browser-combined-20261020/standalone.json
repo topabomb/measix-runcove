@@ -1,0 +1,63 @@
+{
+  "target": "standalone",
+  "scope": "development assets",
+  "image": "runcove-workspace:build",
+  "checks": [
+    "starts_without_kvm_msb_or_docker_socket",
+    "single_space_routes_have_no_management_or_user_selection",
+    "shared_nine_tools_and_nonroot_secret_isolation",
+    "profile_preparation_cannot_follow_user_links_with_root_privileges",
+    "real_shared_desktop_screenshot",
+    "root_task_owner_keeps_final_results_without_following_user_paths",
+    "dav_workbench_and_mcp_edits_share_writable_user_ownership",
+    "artifact_listing_respects_payload_permissions_through_user_symlinks",
+    "publication_uses_single_space_address",
+    "stopped_data_child_dies_with_killed_control_owner_and_helper_recovers",
+    "shared_test_browser_vm.py",
+    "shared_test_browser_structured_vm.py",
+    "shared_test_browser_pages_vm.py",
+    "shared_test_media_vm.py",
+    "shared_test_browser_profiles_vm.py",
+    "shared_test_desktop_files_vm.py",
+    "shared_test_browser_lifecycle_vm.py",
+    "shared_real_vnc_keyboard_clipboard_viewers_responsive_and_idle",
+    "rewritten_host_workbench_preserves_own_origin_and_nonce_checks",
+    "lost_desktop_owner_blocks_recreation_and_control_until_container_restart",
+    "active_mcp_sse_closes_on_graceful_shutdown",
+    "graceful_restart_preserves_workspace_and_expires_page_session",
+    "reduced_page_limit_after_restart_preserves_profile_and_existing_pages"
+  ],
+  "passed": true,
+  "image_id": "sha256:faa012b38c50eb07a333a6caf9be6c4e9d1cd09c67489f2f1164e63715cddc96",
+  "source_digest": "655fa29ea8493690085bf78029641a030525e597dd73176fdbb3601202005022",
+  "binaries_sha256": {
+    "runcove-standalone": "84a42031f7acbcff865fd73377fd74a017b3858be1b2e123308916da0eb68651",
+    "agent-space-static-http": "d0a008d3adb94ca7a5e102575ce2042e1ad3131e231ffbc17048aae8e4ba3287",
+    "agent-space-webdav": "cb9e3020827001a1e143a7a07a2cc7eee616f26e8b13faf31eaf3f38e8f240cf",
+    "agent-space-desktop": "3ad665a9f916b2b7e06dbd6c5110b744dd5a019fdaf585811e95ec68b60762f3"
+  },
+  "suite_logs": {
+    "test_browser_lifecycle_vm.py.log": "f06b77906418ff73acd4a82eab01a587e758353b2c20f70c8c021812259c346f",
+    "test_browser_pages_vm.py.log": "e288d584998b7ff95409f99e4eac9bd24c75334af655086a56e815de22b840ec",
+    "test_browser_profiles_vm.py.log": "f1caa28632f34b5d0cf064cb98a968058d2fbce6cd55060f14634523b15265dc",
+    "test_browser_structured_vm.py.log": "3f7aa7e49df7ae95d108ecc9b7997f7b0a6a4be93463e58dce4ed944d26cbcb9",
+    "test_browser_vm.py.log": "9d315b48797839b18d78bd6fa1bb31050c8afc66119da5a739d87affdf757112",
+    "test_desktop_files_vm.py.log": "cdb57119b82d9815cb25938e9d9b2ff45d52a14a070129015d37ed4958a971ae",
+    "test_media_vm.py.log": "c3b2382daaa1ed72ea4606285ee0ab2010b7bf2a50dee7cc3e3dc1db4020019f",
+    "ui.log": "6c70d06a5eab24fc68654df4b792319e1892ea3392619a847d614223946ccbb7"
+  },
+  "full": false,
+  "shared_full": true,
+  "tools_only": false,
+  "page_limit_restart": {
+    "initial_limit": 4,
+    "restarted_limit": 1,
+    "restored_pages": 4,
+    "restored_after_profile_picker": true,
+    "clean_profile_verified": true,
+    "restored_urls_match": true,
+    "new_page_error": "PAGE_LIMIT_REACHED",
+    "existing_page_navigation_and_close": true
+  },
+  "cleanup_passed": true
+}

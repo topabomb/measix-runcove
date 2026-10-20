@@ -1,93 +1,61 @@
 #!/usr/bin/env python3
-"""Shared Page admission regressions; only run against a dedicated test Host."""
-import json,time,unittest
-from browser_client import Client,text,Q
-
+"""Shared admission for structured tabs, JS popups and native windows."""
+import json,shlex,time,unittest
+from browser_client import Client,text,Q,element,reset_tabs
 class PageLimits(unittest.TestCase):
  @classmethod
  def setUpClass(cls):
-  cls.client=Client('desktop');cls.client.initialize()
-  cls.maximum=int((Q/'max_pages').read_text()) if (Q/'max_pages').exists() else 4
- @classmethod
- def finish(cls,reply):
-  value=text(reply)
-  while value.get('state')=='running':
-   reply=cls.client.tool('browser_task',{'task_id':value['task_id']});value=text(reply)
-  return value,reply
- @classmethod
- def run_code(cls,code,**args):return cls.finish(cls.client.tool('browser_run',{'code':code,**args}))
- def setUp(self):
-  result,reply=self.run_code("for(const p of context.pages())if(p!==page)await p.close();await page.goto('http://127.0.0.1:8124/');await page.bringToFront();return context.pages().length;")
-  self.assertFalse(reply.get('isError'),result);self.assertEqual(result['value'],1)
- def tearDown(self):
-  result,reply=self.run_code("for(const p of context.pages())if(p!==page)await p.close();return true;")
-  self.assertFalse(reply.get('isError'),result)
+  cls.client=Client('desktop');cls.client.initialize();cls.maximum=int((Q/'max_pages').read_text()) if (Q/'max_pages').exists() else 4
+ def setUp(self):reset_tabs(self.client)
+ def tearDown(self):reset_tabs(self.client)
  def fill(self):
-  result,reply=self.run_code(f"while(context.pages().length<{self.maximum})await context.newPage();return context.pages().length;")
-  self.assertFalse(reply.get('isError'),result);self.assertEqual(result['value'],self.maximum)
- def count(self):
-  observed=self.client.tool('browser_observe',{})
-  self.assertFalse(observed.get('isError'),text(observed))
-  return len(text(observed)['tabs'])
- def limited(self,code):
-  value,reply=self.run_code(code)
-  self.assertTrue(reply.get('isError'),value);self.assertEqual(value['state'],'failed')
-  self.assertEqual(value['error']['code'],'PAGE_LIMIT_REACHED',value)
-  self.assertIn(str(self.maximum),value['error']['message'])
-  self.assertEqual(set(value['error']),{'code','message'})
-  self.assertFalse({'usage','remaining','max_pages','page_count'}&set(value))
-  polled=self.client.tool('browser_task',{'task_id':value['task_id'],'wait_secs':0})
-  self.assertEqual(polled,reply)
+  count=len(self.client.snapshot(view='tabs')['tabs'])
+  value,reply=self.client.act([{'do':'tab','action':'new'} for _ in range(self.maximum-count)]) if count<self.maximum else ({}, {})
+  self.assertFalse(reply.get('isError'),value);self.assertEqual(self.count(),self.maximum)
+ def count(self):return len(self.client.snapshot(view='tabs')['tabs'])
+ def limited(self,steps,**args):
+  value,reply=self.client.act(steps,**args);self.assertTrue(reply.get('isError'),value);self.assertEqual(value['state'],'failed');self.assertEqual(value['error']['code'],'PAGE_LIMIT_REACHED',value)
+  self.assertEqual(self.client.tool('browser_act',{'op':'wait','task_id':value['task_id'],'wait_secs':0}),reply)
   return value
- def test_01_full_browser_keeps_observation_navigation_close_and_outputs(self):
-  shape=set(text(self.client.tool('browser_observe',{})))
-  self.fill()
-  value=self.limited("const fs=await import('node:fs');fs.writeFileSync('/workspace/page-limit-marker.txt','preserved');await output.file('/workspace/page-limit-marker.txt');await context.newPage();")
-  self.assertEqual(value['files'][0]['path'],'/workspace/page-limit-marker.txt')
-  self.assertEqual(set(text(self.client.tool('browser_observe',{}))),shape)
-  image=self.client.tool('screen_observe',{'view':'page'})
-  self.assertFalse(image.get('isError'),text(image))
-  value,reply=self.run_code("await page.goto('http://127.0.0.1:8124/');const other=context.pages().find(p=>p!==page);if(other)await other.close();await context.newPage();return context.pages().length;")
-  self.assertFalse(reply.get('isError'),value);self.assertEqual(value['value'],self.maximum)
- def test_02_concurrent_creation_has_one_shared_limit(self):
-  value,reply=self.run_code(f"const results=await Promise.allSettled(Array.from({{length:{self.maximum*2}}},()=>context.newPage()));return {{opened:results.filter(r=>r.status==='fulfilled').length,errors:results.filter(r=>r.status==='rejected').map(r=>r.reason.message),count:context.pages().length}};")
-  self.assertFalse(reply.get('isError'),value)
-  self.assertEqual(value['value']['opened'],self.maximum-1)
-  self.assertEqual(value['value']['count'],self.maximum)
-  self.assertTrue(all(e.startswith('PAGE_LIMIT_REACHED:') for e in value['value']['errors']))
- def test_03_popup_and_new_window_use_the_same_limit(self):
-  value,reply=self.run_code("const pending=page.waitForEvent('popup');await page.evaluate(()=>window.open('about:blank','_blank'));const popup=await pending;await popup.close();return true;")
-  self.assertFalse(reply.get('isError'),value)
-  self.fill()
-  self.limited("const pending=page.waitForEvent('popup');await page.evaluate(()=>window.open('about:blank','_blank'));await pending;await new Promise(r=>setTimeout(r,3000));")
+ def test_01_full_browser_keeps_navigation_close_and_observation(self):
+  self.fill();self.limited([{'do':'tab','action':'new'}]);self.client.good('screen_observe',{'view':'page'})
+  self.client.navigate('http://127.0.0.1:8124/');tabs=self.client.snapshot(view='tabs')['tabs']
+  value,reply=self.client.act([{'do':'tab','action':'close','page_id':tabs[-1]['page_id']},{'do':'tab','action':'new'}]);self.assertFalse(reply.get('isError'),value);self.assertEqual(self.count(),self.maximum)
+ def test_02_js_popup_and_native_window_share_the_limit(self):
+  view=self.client.navigate('http://127.0.0.1:8125/popup');self.fill();view=self.client.snapshot(page_id=view['page_id'])
+  self.limited([{'do':'click','ref':element(view,'link','Open invoices in new tab')}],page_id=view['page_id']);self.assertEqual(self.count(),self.maximum)
+  # Real browser keyboard creates a native Chrome window through the same guard.
+  self.client.act([{'do':'press','target':'desktop','key':'Control+n'}]);self.assertEqual(self.count(),self.maximum)
+  # A separate CDP client simulates a hostile page opening a burst of windows.
+  script="""(async()=>{
+const target=(await(await fetch('http://127.0.0.1:9222/json/list')).json()).find(t=>t.id===PAGE_ID);
+if(!target)throw Error('fixture target missing');
+let count=0;for(let i=0;i<12;i++)count+=Number(await new Promise((resolve,reject)=>{
+ const w=new WebSocket(target.webSocketDebuggerUrl),timer=setTimeout(()=>{w.close();reject(Error('burst injection timed out'));},5000);
+ w.onopen=()=>w.send(JSON.stringify({id:1,method:'Runtime.evaluate',params:{expression:"!!window.open('about:blank','_blank')",returnByValue:true,userGesture:true}}));
+ w.onmessage=e=>{const m=JSON.parse(e.data);if(m.id!==1)return;clearTimeout(timer);w.close();m.error||m.result.exceptionDetails?reject(Error(JSON.stringify(m.error||m.result.exceptionDetails))):resolve(m.result.result.value);};
+ w.onerror=()=>{clearTimeout(timer);reject(Error('burst CDP connection failed'));};
+}));
+console.log('popup_requests='+count);await new Promise(r=>setTimeout(r,600));
+})().then(()=>process.exit()).catch(e=>{console.error(e);process.exit(1)});""".replace('PAGE_ID',json.dumps(view['page_id']))
+  result=self.client.good('bash',{'cmd':'node -e '+shlex.quote(script)})
+  self.assertIn('popup_requests=12',result['text'])
   self.assertEqual(self.count(),self.maximum)
-  for _ in range(20):
-   self.limited("await page.evaluate(()=>{window.open('about:blank','_blank');return true;});return true;")
-   self.assertEqual(self.count(),self.maximum)
-  self.limited("const cdp=await context.browser().newBrowserCDPSession();await cdp.send('Target.createTarget',{url:'about:blank',newWindow:true});await new Promise(r=>setTimeout(r,3000));")
-  self.assertEqual(self.count(),self.maximum)
- def test_04_native_new_window_does_not_poison_later_observation(self):
-  self.fill()
-  result=self.client.tool('bash',{'cmd':'DISPLAY=:1 xdotool key --clearmodifiers ctrl+n; sleep 1'})
-  self.assertFalse(result.get('isError'),text(result))
-  self.assertEqual(self.count(),self.maximum)
-  value,reply=self.run_code('return 23;')
-  self.assertFalse(reply.get('isError'),value);self.assertEqual(value['value'],23)
- def test_05_timeout_and_cancel_do_not_release_live_pages(self):
+ def test_03_deadline_and_cancel_retain_live_pages(self):
   for cancel in [False,True]:
-   self.setUp()
-   code="await context.newPage();await new Promise(r=>setTimeout(r,60000));"
-   started=self.client.tool('browser_run',{'code':code,'timeout_secs':60 if cancel else 2})
+   reset_tabs(self.client)
+   started=self.client.tool('browser_act',{'actions':[{'do':'tab','action':'new'},{'do':'wait','secs':10},{'do':'wait','secs':10}],'timeout_secs':60 if cancel else 3})
    if cancel:
-    value=text(started);self.assertEqual(value['state'],'running',value)
-    started=self.client.tool('browser_task',{'task_id':value['task_id'],'action':'cancel'})
-   value,reply=self.finish(started)
-   self.assertEqual(value['state'],'cancelled' if cancel else 'timed_out',value)
-   self.assertEqual(self.count(),2)
-   self.fill();self.limited('await context.newPage();')
- def test_06_closing_last_page_completes_and_next_observation_reopens(self):
-  value,reply=self.run_code('await page.close();return true;')
-  self.assertFalse(reply.get('isError'),value);self.assertTrue(value['value'])
-  self.assertGreater(self.count(),0)
-
+    value=text(started);self.assertEqual(value['state'],'running',value);started=self.client.tool('browser_act',{'op':'cancel','task_id':value['task_id']})
+   value,_=self.client.finish(started);self.assertEqual(value['state'],'cancelled' if cancel else 'timed_out',value);self.assertEqual(self.count(),2)
+   self.fill();self.limited([{'do':'tab','action':'new'}])
+ def test_04_closing_last_tab_is_explicit_and_snapshot_does_not_create_one(self):
+  for _ in range(3):
+   reset_tabs(self.client)
+   target=self.client.snapshot()['page_id'];value,reply=self.client.act([{'do':'tab','action':'close','page_id':target}]);self.assertFalse(reply.get('isError'),value)
+   # Chromium can quit before replying when its last window closes. A later
+   # start owns the native startup tab; snapshot never calls the page guard.
+   view=self.client.snapshot(view='tabs');self.assertIsInstance(view['tabs'],list)
+   self.assertNotIn(target,[t['page_id'] for t in view['tabs']])
+  value,reply=self.client.act([{'do':'tab','action':'new','url':'http://127.0.0.1:8124/'}]);self.assertFalse(reply.get('isError'),value)
 if __name__=='__main__':unittest.main(verbosity=2)

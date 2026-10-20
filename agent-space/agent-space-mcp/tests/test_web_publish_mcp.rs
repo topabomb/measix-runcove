@@ -162,9 +162,7 @@ async fn actual_mcp_contract_three_targets_stable_credentials_and_explicit_renew
     assert!(schema.get("oneOf").is_none());
     assert_eq!(schema["additionalProperties"], true);
     // The default comes from server configuration, not a fixed client-side value.
-    assert!(schema["properties"]["keep_alive_minutes"]
-        .get("default")
-        .is_none());
+    assert_eq!(schema["properties"]["keep_alive_secs"]["default"], 600);
     std::fs::create_dir_all("target/web-publish-verification").unwrap();
     std::fs::write(
         "target/web-publish-verification/input-schema.json",
@@ -224,7 +222,7 @@ async fn actual_mcp_contract_three_targets_stable_credentials_and_explicit_renew
         before.keep_alive_until
     );
     let renewed = h
-        .call(json!({"action":"publish","name":"api","port":3000,"keep_alive_minutes":120}))
+        .call(json!({"action":"publish","name":"api","port":3000,"keep_alive_secs":7200}))
         .await;
     assert_eq!(renewed["url"], get["url"]);
     assert_eq!(renewed["password"], get["password"]);
@@ -237,7 +235,7 @@ async fn actual_mcp_contract_three_targets_stable_credentials_and_explicit_renew
             >= Duration::from_secs(6599)
     );
     let shorter = h
-        .call(json!({"action":"publish","name":"api","port":3000,"keep_alive_minutes":1}))
+        .call(json!({"action":"publish","name":"api","port":3000,"keep_alive_secs":60}))
         .await;
     assert_eq!(shorter, renewed);
     assert_eq!(
@@ -294,8 +292,8 @@ async fn mcp_rejects_ambiguous_old_and_malformed_arguments_without_starting_vm()
         json!({"action":"publish","name":"a","port":8080}),
         json!({"action":"publish","name":"a","port":65536}),
         json!({"action":"publish","name":"a","port":"8000"}),
-        json!({"action":"publish","name":"a","port":8000,"keep_alive_minutes":0}),
-        json!({"action":"publish","name":"a","port":8000,"keep_alive_minutes":1441}),
+        json!({"action":"publish","name":"a","port":8000,"keep_alive_secs":0}),
+        json!({"action":"publish","name":"a","port":8000,"keep_alive_secs":86401}),
         json!({"action":"get"}),
     ] {
         h.rejects(args).await;
@@ -309,24 +307,24 @@ async fn optional_placeholders_and_irrelevant_fields_do_not_block_actions() {
     let h = Harness::new().await;
     assert_eq!(
         h.call(
-            json!({"action":"list","name":null,"port":"unused","keep_alive_minutes":10,"extra":{}})
+            json!({"action":"list","name":null,"port":"unused","keep_alive_secs":10,"extra":{}})
         )
         .await,
         json!([])
     );
     let session = h.sessions.get_session(&h.sandbox).await.unwrap();
     session.exec("true", Duration::from_secs(1)).await.unwrap();
-    let result=h.call(json!({"action":"publish","name":"api","port":3000,"file":null,"directory":"","keep_alive_minutes":null,"extra":true})).await;
+    let result=h.call(json!({"action":"publish","name":"api","port":3000,"file":null,"directory":"","keep_alive_secs":null,"extra":true})).await;
     assert!(result["url"].is_string());
     let got = h
-        .call(json!({"action":"get","name":"api","file":false,"keep_alive_minutes":"unused"}))
+        .call(json!({"action":"get","name":"api","file":false,"keep_alive_secs":"unused"}))
         .await;
     assert_eq!(result, got);
-    assert_eq!(h.call(json!({"action":"unpublish","name":"api","file":null,"directory":null,"port":null,"keep_alive_minutes":10})).await["status"],"unpublished");
+    assert_eq!(h.call(json!({"action":"unpublish","name":"api","file":null,"directory":null,"port":null,"keep_alive_secs":10})).await["status"],"unpublished");
 }
 
 #[tokio::test]
-async fn desktop_catalog_and_permissive_arguments_reach_the_mcp_handlers() {
+async fn desktop_catalog_and_structured_arguments_reach_the_mcp_handlers() {
     let h = Harness::with_browser(true).await;
     let tools = h.client.list_all_tools().await.unwrap();
     assert_eq!(tools.len(), 9);
@@ -334,10 +332,12 @@ async fn desktop_catalog_and_permissive_arguments_reach_the_mcp_handlers() {
         let description = tool.description.as_deref().unwrap();
         assert!(!description.trim().is_empty());
         assert!(!description.contains("README.md"));
-        assert_ne!(
-            tool.input_schema.get("additionalProperties"),
-            Some(&json!(false))
-        );
+        if ["browser_snapshot", "browser_act", "browser_read"].contains(&tool.name.as_ref()) {
+            assert_eq!(
+                tool.input_schema.get("additionalProperties"),
+                Some(&json!(false))
+            );
+        }
     }
     let schema = |name: &str| &tools.iter().find(|t| t.name == name).unwrap().input_schema;
     assert_eq!(schema("bash")["required"], json!(["cmd"]));
@@ -355,52 +355,155 @@ async fn desktop_catalog_and_permissive_arguments_reach_the_mcp_handlers() {
         )
         .await
         .is_err());
+    for old in ["browser_observe", "browser_run", "browser_task"] {
+        assert!(!tools.iter().any(|tool| tool.name == old));
+    }
     assert_eq!(
-        schema("browser_observe")["$defs"]["BrowserView"]["enum"],
-        json!(["dom", "ax", "page", "desktop"])
+        schema("browser_act")["$defs"]["ActAction"]["enum"],
+        json!(["execute", "wait", "cancel"])
     );
     assert_eq!(
-        schema("browser_task")["$defs"]["TaskAction"]["enum"],
-        json!(["wait", "cancel"])
-    );
-    assert_eq!(
-        schema("browser_run")["properties"]["timeout_secs"]["minimum"],
+        schema("browser_act")["properties"]["timeout_secs"]["minimum"],
         1
     );
     assert_eq!(
-        schema("browser_run")["properties"]["timeout_secs"]["maximum"],
+        schema("browser_act")["properties"]["timeout_secs"]["maximum"],
         600
     );
     assert_eq!(
-        schema("browser_observe")["properties"]["recent_tasks_limit"]["maximum"],
+        schema("browser_snapshot")["properties"]["recent_tasks_limit"]["maximum"],
         10
     );
     assert_eq!(
-        schema("browser_observe")["properties"]["recent_tasks_limit"]["minimum"],
-        0
+        schema("browser_read")["properties"]["max_chars"]["maximum"],
+        20000
     );
+    // Advertised constraints must match the existing pre-execution validator.
+    let act = schema("browser_act");
+    assert_eq!(act["properties"]["actions"]["minItems"], 1);
+    assert_eq!(act["properties"]["actions"]["maxItems"], 20);
+    assert_eq!(act["properties"]["action_timeout_secs"]["maximum"], 30);
+    assert!(!serde_json::to_string(&act).unwrap().contains("timeout_ms"));
+    let steps = act["$defs"]["ActStep"]["oneOf"].as_array().unwrap();
+    let step = |name: &str| {
+        &steps
+            .iter()
+            .find(|s| s["properties"]["do"]["const"] == name)
+            .unwrap()["properties"]
+    };
+    for (name, param, min, max) in [
+        ("download", "timeout_secs", 1, 60),
+        ("scroll", "dy", -20000, 20000),
+        ("scroll", "max", 1, 30),
+        ("wait", "secs", 0, 60),
+        ("wait", "timeout_secs", 1, 60),
+        ("scroll", "delta", -30, 30),
+    ] {
+        let p = &step(name)[param];
+        assert_eq!(p["minimum"], min, "{name}.{param}");
+        assert_eq!(p["maximum"], max, "{name}.{param}");
+    }
+    assert_eq!(step("upload")["paths"]["minItems"], 1);
+    assert_eq!(step("upload")["paths"]["maxItems"], 20);
+    assert_eq!(steps.len(), 16);
+    assert!(act["properties"].get("action").is_none());
+    assert_eq!(act["properties"]["op"]["default"], "execute");
+    let catalog = serde_json::to_string(&tools).unwrap();
+    for removed in [
+        "click_at",
+        "drag_at",
+        "desktop_press",
+        "desktop_scroll",
+        "Params\"",
+        "uint64",
+        "uint32",
+        "int32",
+        "\"$schema\"",
+    ] {
+        assert!(
+            !catalog.contains(removed),
+            "catalog still exposes {removed}"
+        );
+    }
+    std::fs::create_dir_all("target/browser-contract").unwrap();
+    std::fs::write(
+        "target/browser-contract/tools.json",
+        serde_json::to_vec_pretty(&tools).unwrap(),
+    )
+    .unwrap();
+    for s in steps {
+        assert!(!s["description"].as_str().unwrap().is_empty());
+        for (name, p) in s["properties"].as_object().unwrap() {
+            if name != "do" {
+                assert!(
+                    !p["description"].as_str().unwrap().is_empty(),
+                    "{}.{name}",
+                    s["properties"]["do"]["const"]
+                );
+            }
+            if name == "ref" || name == "to_ref" {
+                assert!(p.get("pattern").is_none());
+                assert!(p["description"].as_str().unwrap().contains("ref"));
+            }
+            if ["x", "y", "to_x", "to_y"].contains(&name.as_str()) {
+                assert_eq!(p["minimum"], 0);
+            }
+        }
+    }
+    for name in ["browser_snapshot", "browser_read"] {
+        assert!(schema(name)["properties"]["ref"].get("pattern").is_none());
+    }
     assert_eq!(schema("read")["properties"]["multimodal"]["default"], false);
     assert_eq!(schema("screen_observe")["required"], json!(["view"]));
     for name in [
         "page_id",
         "count",
-        "interval_ms",
+        "interval_secs",
         "save_original",
         "save_dir",
     ] {
-        assert!(schema("screen_observe")["properties"][name]["description"]
+        assert!(!schema("screen_observe")["properties"][name]["description"]
             .as_str()
             .unwrap()
-            .starts_with("Optional"));
+            .is_empty());
     }
     assert_eq!(
         schema("screen_observe")["properties"]["save_original"]["default"],
         false
     );
     assert_eq!(
-        schema("browser_task")["properties"]["wait_secs"]["maximum"],
-        20
+        schema("browser_act")["properties"]["wait_secs"]["maximum"],
+        30
     );
+    // The runtime default is conditional on wait/cancel, not execute.
+    assert_eq!(
+        schema("browser_act")["properties"]["wait_secs"]["default"],
+        30
+    );
+    for action in ["wait", "cancel"] {
+        for wait in [None, Some(30), Some(31)] {
+            let mut args = json!({"op": action, "task_id": "missing"});
+            if let Some(wait) = wait {
+                args["wait_secs"] = json!(wait);
+            }
+            let result = h
+                .client
+                .call_tool(
+                    CallToolRequestParams::new("browser_act")
+                        .with_arguments(args.as_object().unwrap().clone()),
+                )
+                .await;
+            if wait == Some(31) {
+                assert!(result.is_err());
+            } else {
+                let result = result.unwrap();
+                assert_eq!(result.is_error, Some(true));
+                assert!(serde_json::to_string(&result)
+                    .unwrap()
+                    .contains("TASK_NOT_FOUND"));
+            }
+        }
+    }
     // Valid optional selectors and arbitrary extra fields pass the real HTTP/SDK
     // decoding layer. Browser failures below are deliberate runtime validation,
     // rather than deserialization errors or real browser execution.
@@ -417,7 +520,7 @@ async fn desktop_catalog_and_permissive_arguments_reach_the_mcp_handlers() {
         ),
         (
             "write",
-            json!({"path":"/workspace/a", "content":"", "extra":[]}),
+            json!({"path":"/workspace/a", "content":"nonempty", "extra":[]}),
             None,
         ),
         (
@@ -431,8 +534,8 @@ async fn desktop_catalog_and_permissive_arguments_reach_the_mcp_handlers() {
             None,
         ),
         (
-            "browser_task",
-            json!({"task_id":"missing","action":" ","wait_secs":0,"extra":true}),
+            "browser_act",
+            json!({"task_id":"missing","op":"wait","wait_secs":0,"actions":[],"page_id":"old","then":"snapshot","action_timeout_secs":0,"timeout_secs":0}),
             Some("TASK_NOT_FOUND"),
         ),
     ] {
@@ -461,22 +564,26 @@ async fn desktop_catalog_and_permissive_arguments_reach_the_mcp_handlers() {
             "write",
             json!({"path":"/workspace/a", "content":null,"extra":true}),
         ),
-        ("browser_observe", json!({"view":"unknown"})),
-        ("browser_observe", json!({"recent_tasks_limit":11})),
+        ("browser_snapshot", json!({"view":"unknown"})),
+        ("browser_snapshot", json!({"recent_tasks_limit":11})),
+        ("browser_snapshot", json!({"ref":"eabcdefghij","diff":true})),
         (
-            "browser_run",
+            "browser_act",
             json!({"code":"","page_id":null,"timeout_secs":null,"extra":{}}),
         ),
         ("screen_observe", json!({"view":"desktop","count":9})),
         (
             "screen_observe",
-            json!({"view":"page","count":8,"interval_ms":100000}),
+            json!({"view":"page","count":8,"interval_secs":100000}),
         ),
         ("screen_observe", json!({})),
+        ("write", json!({"path":"/workspace/a","content":""})),
+        ("browser_act", json!({"action":"wait","task_id":"missing"})),
         (
-            "browser_task",
-            json!({"task_id":"missing","action":"unknown"}),
+            "browser_act",
+            json!({"actions":[{"do":"click_at","image_id":"x","x":1,"y":1}]}),
         ),
+        ("browser_act", json!({"task_id":"missing","op":"unknown"})),
         ("web_publish", json!({"action":"unknown","extra":true})),
     ] {
         let result = h
@@ -510,7 +617,7 @@ async fn omitted_and_null_keepalive_use_the_configured_server_default() {
     session.exec("true", Duration::from_secs(1)).await.unwrap();
     for args in [
         json!({"action":"publish","name":"omitted","port":3000}),
-        json!({"action":"publish","name":"null","port":3000,"keep_alive_minutes":null}),
+        json!({"action":"publish","name":"null","port":3000,"keep_alive_secs":null}),
     ] {
         let name = args["name"].as_str().unwrap().to_owned();
         h.call(args).await;

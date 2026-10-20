@@ -1,0 +1,27 @@
+{
+  "source_sha256": "a23c9bf33af9305b7696a2c3cc0bacaa447bd438ad90d09c528b29fbb8496310",
+  "binaries_sha256": {
+    "agent-space-desktop": "bcab0c49f5652d4ab9d5412194cb5c91c114e15578e3cb50cc6cf55e5b0bfb11",
+    "agent-space-mcp": "6a59e27d6ab66ebcdd96762e8c5e16b0e6ef4e4550ef6a4807162e5e51c3f188"
+  },
+  "checks": [
+    {
+      "image_id": "sha256:dc5d61e08fa29c02775089083efe31ae2968ad6246d317600d5a52e90cb4b861",
+      "binary": "agent-space-mcp",
+      "dependencies_resolved": true
+    },
+    {
+      "image_id": "sha256:dc5d61e08fa29c02775089083efe31ae2968ad6246d317600d5a52e90cb4b861",
+      "binary": "agent-space-desktop",
+      "dependencies_resolved": true
+    },
+    {
+      "image_id": "sha256:faa012b38c50eb07a333a6caf9be6c4e9d1cd09c67489f2f1164e63715cddc96",
+      "binary": "agent-space-desktop",
+      "dependencies_resolved": true
+    }
+  ],
+  "server_help_exit": 0,
+  "sqlite_link_version": "3.51.3",
+  "passed": true
+}

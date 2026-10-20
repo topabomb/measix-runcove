@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Disposable real-container qualification. No existing container or volume is used."""
-import argparse,hashlib,http.client,json,os,secrets,subprocess,sys,time,uuid
+import argparse,hashlib,http.client,json,os,secrets,shutil,subprocess,sys,time,uuid
 from pathlib import Path
 from release_identity import source_digest
 
@@ -45,9 +45,15 @@ def main():
   create=['docker','create','--name',name,'--init','--memory','3g','--cpus','2','--shm-size','512m','--security-opt','seccomp='+str(ROOT/'docker/playwright-seccomp.json'),'-p','127.0.0.1::8932','-p','127.0.0.1::8933','--tmpfs','/tmp:size=256m,mode=1777','--tmpfs','/run:size=64m,mode=755','--env','RUNCOVE_TOKEN','--env','RUNCOVE_DAV_TOKEN','--env','RUNCOVE_PRIVATE_MARKER','--mount','type=volume,src='+volume+',dst=/workspace','--mount','type=bind,src='+str(config)+',dst=/etc/runcove/config.toml,readonly']
   if args.development_assets:
    report['source_digest']=source_digest()
+   frozen=output/'inputs';frozen.mkdir()
+   report['binaries_sha256']={}
    for file in ['runcove-standalone','agent-space-static-http','agent-space-webdav','agent-space-desktop']:
-    create+=['--mount',f'type=bind,src={ROOT}/target/debug/{file},dst=/usr/local/bin/{file},readonly']
-   create+=['--mount',f'type=bind,src={ROOT}/desktop-ui/dist,dst=/opt/agent-space/desktop-ui,readonly','--mount',f'type=bind,src={ROOT}/docker/standalone-entrypoint.sh,dst=/entrypoint.sh,readonly','--env','AGENT_SPACE_DESKTOP_UI=/opt/agent-space/desktop-ui','--entrypoint','/bin/bash',args.image,'/entrypoint.sh','--config','/etc/runcove/config.toml']
+    shutil.copy2(ROOT/'target/debug'/file,frozen/file)
+    report['binaries_sha256'][file]=hashlib.file_digest((frozen/file).open('rb'),'sha256').hexdigest()
+    create+=['--mount',f'type=bind,src={frozen}/{file},dst=/usr/local/bin/{file},readonly']
+   shutil.copytree(ROOT/'desktop-ui/dist',frozen/'ui')
+   shutil.copy2(ROOT/'docker/standalone-entrypoint.sh',frozen/'entrypoint.sh')
+   create+=['--mount',f'type=bind,src={frozen}/ui,dst=/opt/agent-space/desktop-ui,readonly','--mount',f'type=bind,src={frozen}/entrypoint.sh,dst=/entrypoint.sh,readonly','--env','AGENT_SPACE_DESKTOP_UI=/opt/agent-space/desktop-ui','--entrypoint','/bin/bash',args.image,'/entrypoint.sh','--config','/etc/runcove/config.toml']
   else:create+=[args.image]
   container=command(*create)
   command('docker','start',container)
@@ -85,23 +91,26 @@ def main():
   # Exercise actual root-controller startup against user-prepared symlinks.
   command('docker','exec',container,'bash','-c','mkdir -m 700 /tmp/root-private-directory')
   tool('bash',{'cmd':'mkdir -p /workspace/.agent-space/desktop/profile; ln -s /tmp/root-private-directory /workspace/.agent-space/desktop/profile/Default'})
-  assert client.tool('browser_observe',{}).get('isError')
+  assert client.tool('browser_snapshot',{}).get('isError')
   tool('bash',{'cmd':'rm /workspace/.agent-space/desktop/profile/Default; mkdir /workspace/.agent-space/desktop/profile/Default'})
   tool('write',{'path':'/workspace/.agent-space/desktop/profile/Default/Preferences','content':json.dumps({'download':{'default_directory':'/workspace/.agent-space/desktop/artifacts'}})})
   tool('bash',{'cmd':'ln -s /tmp/root-private /workspace/.agent-space/desktop/profile/Default/Preferences.agent-space-migrate'})
-  assert client.tool('browser_observe',{}).get('isError')
+  assert client.tool('browser_snapshot',{}).get('isError')
   assert command('docker','exec',container,'cat','/tmp/root-private')=='root-private'
   tool('bash',{'cmd':'rm /workspace/.agent-space/desktop/profile/Default/Preferences.agent-space-migrate'})
   check('profile_preparation_cannot_follow_user_links_with_root_privileges')
-  observed=client.tool('browser_observe',{'view':'desktop'})
+  observed=client.tool('screen_observe',{'view':'desktop'})
   assert not observed.get('isError'),text(observed)
   assert text(observed)['captured_count']==1 and any(c['type']=='image' for c in observed['content'])
   check('real_shared_desktop_screenshot')
-  attack=tool('browser_run',{'code':"const fs=await import('node:fs');const path=await import('node:path');fs.symlinkSync('/tmp/root-private',path.join(path.dirname(process.env.AGENT_RESULT),'observation.json'));return 'safe';"})
-  while attack.get('state')=='running':attack=tool('browser_task',{'task_id':attack['task_id']})
-  assert attack['state']=='succeeded',attack
+  # The fixed browser API accepts no code or worker-result path. Inject a
+  # user-owned link separately while a real browser task runs as UID1001.
+  task=text(client.tool('browser_act',{'actions':[{'do':'wait','secs':10}]}))
+  job=command('docker','exec',container,'python3','-c',"from pathlib import Path;import sys;dirs=list(Path('/tmp/agent-space').glob('*/job-'+sys.argv[1]));assert len(dirs)==1;print(dirs[0])",task['task_id'])
+  command('docker','exec','--user','1001:1001',container,'python3','-c',"from pathlib import Path;import sys;(Path(sys.argv[1])/'observation.json').symlink_to('/tmp/root-private')",job)
+  completed,_=client.finish(client.tool('browser_act',{'op':'wait','task_id':task['task_id']}));assert completed['state']=='succeeded',completed
   assert command('docker','exec',container,'cat','/tmp/root-private')=='root-private'
-  check('root_task_owner_keeps_final_results_in_memory_without_following_user_paths')
+  check('root_task_owner_keeps_final_results_without_following_user_paths')
   auth={'Authorization':'Bearer '+dav}
   status,_,data=request('PUT','/dav/interop.txt',b'from-dav',auth,dav_port)
   assert status==201,(status,data.decode(errors='replace'))
@@ -167,13 +176,13 @@ print('stopped data child reaped after parent death')"""
   proxy_headers['Origin']='https://wrong.example'
   assert request('GET','/desktop/api/control',headers=proxy_headers)[0]==403
   check('rewritten_host_workbench_preserves_own_origin_and_nonce_checks')
-  assert not client.tool('browser_observe',{}).get('isError')
+  assert not client.tool('browser_snapshot',{}).get('isError')
   desktop_probe=ownership_probe.replace("b'/agent-space-webdav'","b'/agent-space-desktop'")
   # Desktop descendants are intentionally retained as unconfirmed until Docker
   # restarts the namespace. Recreating another owner is forbidden in this state.
   desktop_probe=desktop_probe[:desktop_probe.index('children=')]+"assert any(p.read_text().split() for p in pathlib.Path(f'/proc/{parent}/task').glob('*/children'));os.kill(parent,signal.SIGKILL);print('desktop owner killed')"
   command('docker','exec',container,'python3','-c',desktop_probe)
-  assert client.tool('browser_observe',{}).get('isError')
+  assert client.tool('browser_snapshot',{}).get('isError')
   status,_,body=request('GET','/desktop/api/control',headers=ui_headers)
   assert status==200 and json.loads(body)['control']=='BLOCKED',(status,body)
   assert 'still-available' in json.dumps(tool('bash',{'cmd':'echo still-available'}))
@@ -181,7 +190,8 @@ print('stopped data child reaped after parent death')"""
   stream=http.client.HTTPConnection('127.0.0.1',main_port,timeout=15)
   stream.request('GET','/mcp',headers={'Authorization':'Bearer '+token,'Accept':'text/event-stream','Mcp-Session-Id':client.session,'MCP-Protocol-Version':'2025-11-25'})
   stream_response=stream.getresponse();assert stream_response.status==200
-  report['full']=args.full
+  report['full']=args.full and not args.development_assets
+  report['shared_full']=args.full
   report['tools_only']=args.tools_only
   command('docker','stop','--time','45',container,timeout=60)
   stream_response.read();stream.close()
@@ -202,8 +212,7 @@ print('stopped data child reaped after parent death')"""
   assert request('GET',path,headers=ui_headers)[0]==401
   client=Client('desktop');client.initialize()
   assert 'ui-edited' in json.dumps(tool('read',{'path':'/workspace/agent-space/artifacts/from-workbench.txt'}))
-  observed=client.tool('browser_observe',{});assert not observed.get('isError'),text(observed)
-  assert text(observed)['health']['browser']
+  assert client.snapshot().get('page_id')
   check('graceful_restart_preserves_workspace_and_expires_page_session')
   if args.full or args.tools_only:
    from qualification import verify_page_limit_restart

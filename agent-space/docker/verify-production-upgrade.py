@@ -48,18 +48,29 @@ def main():
   assert status in (200,201),(status,raw.decode(errors='replace'));return json.loads(raw)
  def snapshot(name):return json.loads(docker('exec',name,'cat',STATE))
  def client(port,token):return Client(port,token,username='desktop',authority='127.0.0.1:'+str(port))
- def browser(c,code):
+ def legacy_browser(c,code):
   value=json.loads(c.tool('browser_run',code=code))
   while value.get('state')=='running':value=json.loads(c.tool('browser_task',task_id=value['task_id']))
   assert value['state']=='succeeded',value;return value.get('value')
+ def current(c,name,**args):
+  value=json.loads(c.tool(name,**args))
+  while value.get('state')=='running':value=json.loads(c.tool('browser_act',op='wait',task_id=value['task_id']))
+  assert value['state']=='succeeded',value
+  return value.get('value',value)
  def verify_space(name,port,dav_port,token,dav_token,original,expected_tools,bash_key='cmd'):
   assert snapshot(name)==original,'persistent identity/credential/resource/image changed'
   c=client(port,token);assert {tool['name'] for tool in c.request('tools/list')['tools']}==expected_tools
   text=c.tool('bash',**{bash_key:'cat /root/runcove-migration-marker /workspace/runcove-migration-marker'})
   assert 'root-before' in text and 'workspace-before' in text
   c.tool('bash',**{bash_key:'nohup python3 -m http.server 8128 --bind 127.0.0.1 --directory /workspace/migration-site >/tmp/migration-site.log 2>&1 </dev/null &'})
-  assert browser(c,"await page.goto('http://127.0.0.1:8128/');return await page.evaluate(()=>localStorage.getItem('migration-profile'));")=='preserved'
-  assert any(x['type']=='image' for x in c.tool_result('browser_observe',view='desktop')['content'])
+  if bash_key=='command':
+   assert legacy_browser(c,"await page.goto('http://127.0.0.1:8128/');return await page.evaluate(()=>localStorage.getItem('migration-profile'));")=='preserved'
+   image=c.tool_result('browser_observe',view='desktop')
+  else:
+   current(c,'browser_act',actions=[{'do':'navigate','url':'http://127.0.0.1:8128/'}])
+   assert 'preserved' in current(c,'browser_read')['text']
+   image=c.tool_result('screen_observe',view='desktop')
+  assert any(x['type']=='image' for x in image['content'])
   status,body=request(dav_port,'PROPFIND','/u/desktop/dav/',headers={'Authorization':'Bearer '+dav_token,'Depth':'1'});assert status==207
   assert request(dav_port,'GET','/u/desktop/dav/runcove-migration-marker',headers={'Authorization':'Bearer '+dav_token})==(200,b'workspace-before')
   return c
@@ -70,8 +81,8 @@ def main():
   dav_token=admin(port,'POST','/desktop/dav-token',{'agentSpaceId':space})['token']
   c=client(port,token)
   original_tools={tool['name'] for tool in c.request('tools/list')['tools']}
-  c.tool('bash',command="printf root-before >/root/runcove-migration-marker; printf workspace-before >/workspace/runcove-migration-marker; mkdir -p /workspace/migration-site; printf '<title>Migration</title>' >/workspace/migration-site/index.html; nohup python3 -m http.server 8128 --bind 127.0.0.1 --directory /workspace/migration-site >/tmp/migration-site.log 2>&1 </dev/null &")
-  browser(c,"await page.goto('http://127.0.0.1:8128/');await page.evaluate(()=>localStorage.setItem('migration-profile','preserved'));return true;")
+  c.tool('bash',command="printf root-before >/root/runcove-migration-marker; printf workspace-before >/workspace/runcove-migration-marker; mkdir -p /workspace/migration-site; printf '<title>Migration</title><p id=marker></p><script>marker.textContent=localStorage.getItem(\"migration-profile\")</script>' >/workspace/migration-site/index.html; nohup python3 -m http.server 8128 --bind 127.0.0.1 --directory /workspace/migration-site >/tmp/migration-site.log 2>&1 </dev/null &")
+  legacy_browser(c,"await page.goto('http://127.0.0.1:8128/');await page.evaluate(()=>localStorage.setItem('migration-profile','preserved'));return true;")
   original=snapshot(source);original_hash=hashlib.sha256(json.dumps(original,sort_keys=True).encode()).hexdigest();stop(source)
   backup=root/'complete-data.tar.gz'
   docker('run','--rm','--entrypoint','tar','-v',data+':/data:ro','-v',str(root)+':/backup',a.old_image,'czf','/backup/'+backup.name,'-C','/data','.',timeout=600)
@@ -83,7 +94,7 @@ def main():
    assert json.loads(result)['applied']==apply
    if not apply:assert not converted.exists()
   candidate,port,dav_port=launch(a.image,data,converted,'candidate')
-  current_tools={'bash','read','write','edit','web_publish','browser_observe','screen_observe','browser_run','browser_task'}
+  current_tools={'bash','read','write','edit','web_publish','browser_snapshot','browser_act','browser_read','screen_observe'}
   c=verify_space(candidate,port,dav_port,token,dav_token,original,current_tools);check('original_credentials_and_identity');check('workspace_profile_and_files')
   publication=json.loads(c.tool('web_publish',action='publish',name='migration',file='/workspace/runcove-migration-marker'))
   assert '/u/desktop/pub/migration/' in json.dumps(publication)

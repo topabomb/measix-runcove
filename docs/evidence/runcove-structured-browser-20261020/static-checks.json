@@ -1,0 +1,29 @@
+{
+  "source_digest": "0ce59840fc600d3c789929d308af0c6b0e57c30757f019c2028f85affd117845",
+  "rust_workspace_passed": 323,
+  "chromium_component_cases_passed": 23,
+  "chromium_native_device_scale": 2,
+  "python_passed": 26,
+  "clippy_workspace_all_targets": true,
+  "clippy_standalone_no_default_features": true,
+  "ui_typecheck_i18n_dom_build": true,
+  "original_log_sha256": {
+    "python.log": "b4e0cb0c2baa00ce86f36c0a90b089d5c813739087ee09b6d86b00b7f3bc20b2",
+    "ui-build.log": "e0b760f960646988aa2cbfbe747476b9aedb9b8a1e49f7d821e5a77e4cea0e4c",
+    "rust-final-tab-close.log": "77e9de91cdcf7d6352f1bbcf89c59f6bec1030e34b739b37da67fcd051341f07",
+    "node-final-tab-close.log": "91b9d81bb80bbe8bd60062a35dd621cce986940ac0cd4fdb321561f8fc96f3d5",
+    "node-dpr2-final-tab-close.log": "f0a8bd864251df203393581ec66dde9944e4dc4fa49de3b281aa15f2932bafdd",
+    "clippy-final-tab-close.log": "148008a3dc2c6b75a26c1aeb8523e537a1b87f96be0df0e649a3ed5d2efd948f",
+    "clippy-standalone-final-tab-close.log": "1b06c206522a9ad6653edd56b1bb9e19254f4cd592480fbc8b10cbddc2b994e9",
+    "helper-final-build.log": "f75789718e0444841b8352de0df8b8c652920f762fa65b6ab041e73dd0701561",
+    "helper-final-unit.log": "99c3fefd4630b673ac4413a6923998a8890f3669eebcb41d0c885bb0f8070cc9",
+    "standalone-final-tab-close-build.log": "40108eb5c2e432741fc7f36afdf5c793ec02b19e7b1ce5e51bdd2ba377bd26cb"
+  },
+  "unchanged_checks_reused_from_source_digest": "86a0b9ee453cf562f2419e611986cb73b201219d6df6eb3027b24b4b1245c232",
+  "unchanged_checks_reused": [
+    "python.log",
+    "ui-build.log"
+  ],
+  "final_helper_unit_passed": 8,
+  "rust_scope": "Workspace regression on unchanged Rust sources; final helper rebuilt and its eight unit tests rerun after the JS-only closure-confirmation adjustment."
+}

@@ -1,0 +1,6 @@
+{
+  "tested_source": "79ad785e263278ba55825cd410da7754fd8fee3dee0c877fc233c533e4b6ee2e",
+  "final_source": "a23c9bf33af9305b7696a2c3cc0bacaa447bd438ad90d09c528b29fbb8496310",
+  "only_difference": "Removed one trailing empty line from guest/README.md; source digest reconstruction verified",
+  "passed": true
+}

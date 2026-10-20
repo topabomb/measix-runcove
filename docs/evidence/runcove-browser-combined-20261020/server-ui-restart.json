@@ -1,0 +1,35 @@
+{
+  "target": "server",
+  "image": "runcove-server:runcove-61a1d41f93a18d9b",
+  "image_id": "sha256:dc5d61e08fa29c02775089083efe31ae2968ad6246d317600d5a52e90cb4b861",
+  "scope": "development assets: UI and page-limit restart supplement",
+  "full": false,
+  "shared_full": false,
+  "checks": [
+    "shared_real_vnc_keyboard_clipboard_viewers_responsive_and_idle",
+    "reduced_page_limit_after_restart_preserves_profile_and_existing_pages"
+  ],
+  "passed": true,
+  "source_digest": "655fa29ea8493690085bf78029641a030525e597dd73176fdbb3601202005022",
+  "binaries_sha256": {
+    "agent-space-mcp": "a0c0d8274d734167f0370f9f1cb69f837e02d554e19c6c229bc2eb3972866654",
+    "agent-space-static-http": "d0a008d3adb94ca7a5e102575ce2042e1ad3131e231ffbc17048aae8e4ba3287",
+    "agent-space-webdav": "cb9e3020827001a1e143a7a07a2cc7eee616f26e8b13faf31eaf3f38e8f240cf",
+    "agent-space-desktop": "3ad665a9f916b2b7e06dbd6c5110b744dd5a019fdaf585811e95ec68b60762f3"
+  },
+  "suite_logs": {
+    "ui.log": "28e472e0e099d5a0e3a2c9f50bfa8c1730112005c4b6a5372c6f68b9d863ac69"
+  },
+  "page_limit_restart": {
+    "initial_limit": 4,
+    "restarted_limit": 1,
+    "restored_pages": 4,
+    "restored_after_profile_picker": true,
+    "clean_profile_verified": true,
+    "restored_urls_match": true,
+    "new_page_error": "PAGE_LIMIT_REACHED",
+    "existing_page_navigation_and_close": true
+  },
+  "cleanup_passed": true,
+  "supplements": "runcove-desktop-09d51cc205"
+}

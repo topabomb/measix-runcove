@@ -25,6 +25,17 @@ def command(operation, path, **kw):
 
 
 class Files(unittest.TestCase):
+    def test_empty_write_preserves_existing_file_and_does_not_create_paths(self):
+        with tempfile.TemporaryDirectory() as d:
+            existing = Path(d) / "existing"
+            existing.write_text("preserve")
+            for path in [existing, Path(d) / "missing" / "new"]:
+                result = subprocess.run(command("write", path, content=""), capture_output=True, text=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("nonempty", result.stderr)
+            self.assertEqual(existing.read_text(), "preserve")
+            self.assertFalse((Path(d) / "missing").exists())
+
     def test_directory_and_missing_file_are_distinct(self):
         with tempfile.TemporaryDirectory() as d:
             result = subprocess.run(command("read", d, offset=1, limit=5), capture_output=True, text=True)

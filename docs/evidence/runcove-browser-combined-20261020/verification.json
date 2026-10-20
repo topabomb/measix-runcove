@@ -1,0 +1,284 @@
+{
+  "status": "complete",
+  "source_digest": "655fa29ea8493690085bf78029641a030525e597dd73176fdbb3601202005022",
+  "rust": {
+    "full_workspace_passed": 329,
+    "full_workspace_failed": 0,
+    "final_targeted_checks_passed": 77,
+    "features": [
+      "msb",
+      "no-default-features"
+    ],
+    "full_workspace_phase": "Before the final timing visibility/status-read refinements; final affected modules covered by 77 checks and final Clippy/builds.",
+    "final_clippy_workspace_all_targets": true,
+    "standalone_no_default_features_clippy": true
+  },
+  "chromium": {
+    "regular_and_worker_faults_passed": 32,
+    "dpr2_passed": 2,
+    "regular_dpr2_inapplicable_skip": 1
+  },
+  "releases": {
+    "agent-space-mcp": {
+      "sha256": "9a6159e40af647ff810966e5a3a4c4fda3ff8f19492f9ccd9a91e56239c2d733",
+      "dynamic_dependencies_resolved": true,
+      "help_exit": 0
+    },
+    "runcove-standalone": {
+      "sha256": "c06649aab317c8424f675567e0bc2dd21cf02b10022cd85717a4a4e00a32327a",
+      "dynamic_dependencies_resolved": true,
+      "help_exit": 0
+    },
+    "agent-space-desktop": {
+      "sha256": "0eabc86cae06975ed42e15e8f49a209eaf24a841c5dfcef33f465a6de775ded6",
+      "dynamic_dependencies_resolved": true
+    },
+    "agent-space-static-http": {
+      "sha256": "1945f05db73f86961f51117b2cbb8a1a1bc6ac33828b10aa756c2662b7a041d0",
+      "dynamic_dependencies_resolved": true
+    },
+    "agent-space-webdav": {
+      "sha256": "fa49448b52e0315e92d1ac11c4e512ade5f848da8df70e07da8c977b8f8c987f",
+      "dynamic_dependencies_resolved": true
+    }
+  },
+  "logs": {
+    "rust-final.log": "f8165650e140225575b239320e3023f4391d22b3be29381970864b25683a8f8a",
+    "final-contract-rust.log": "a7dfb78836edb3d51eef40328189172d59a39b0d369c30890cd417016835bf0f",
+    "timing-policy-final.log": "709cc19310a4bc968fc720c543cca61a70d7ddf36ef0230f6594a2951826aa0b",
+    "compact-node.log": "407e61a056d9c4d81fea5d06a08167987b3e482eb88f17189c4c926e623144ad",
+    "dpr2-final.log": "5b24d272b50b82fd1ea325f65cb47bd32a6da6fa93115487a3ffe6222784cf58",
+    "release-final.log": "9e882092a932489182402c27821d5b0fb9806650562e4399f80bdc7dc9a6fc1f",
+    "python.log": "25cfccf3d1aa676b1982e2a0f6e83d0d0b1d0728545d46705b82b09c11b95cf5",
+    "transfer-root.log": "c6d4a1ad85b23a9f763b37962e04a75d310b95682983715803e2c48bbb246884",
+    "ui-build.log": "30d4574cddab33d0a799e751915408012e1869a9e842951fd7be3fb241a1be67",
+    "ui-fixture-source-proof.json": "80b6124d9b808ca2220c9c7f3bf0c44347829fc6800acf694e6fbdb4bf071e8c"
+  },
+  "delivery": {
+    "production_updated": false,
+    "committed": false,
+    "final_release_image_qualified": false
+  },
+  "notes": [
+    "All qualification uses disposable development assets, not final release images.",
+    "Raw failed runs and interrupted frozen-input runs are not counted as passing.",
+    "The inapplicable 1440x10000 fixture at DPR2 correctly exceeded the original-image pixel limit; applicable DPR2 cases both passed.",
+    "Server results combine seven passed shared suites and a separate UI/restart supplement with identical product sources/binaries. The only source-digest change is two UI test wait parameters."
+  ],
+  "catalog": {
+    "tools": [
+      "browser_snapshot",
+      "browser_act",
+      "browser_read",
+      "screen_observe"
+    ],
+    "compact_utf8_bytes": 21427,
+    "configurable_millisecond_fields": false,
+    "identical_between_targets": true
+  },
+  "source_regression_fixtures": {
+    "tests/test_browser_profiles_vm.py": "b1704fdda68a241b18f7f177d107bcb1efd5eb5e16e1b3083e9bdf49abbf3003",
+    "tests/test_browser_structured_vm.py": "5ba4255a05d0a943263bbdf72ccb41edb4e920863dbe7ce7d64dda3da07c0723",
+    "tests/test_browser_vm.py": "99989821060dd4dd609b39f540ae92b2e0ba7257d1c34a7d5da5ec52f7c5b519",
+    "tests/browser_client.py": "0e6d33e211a7d84f004aa446795c4a361afdbe01d2a0fabea62ad8e57061f4ed",
+    "tests/browser_tools.node.cjs": "cb1f950649e40bcc05f81007e99b9306818395db331b36454a5025a30ca2fc8f",
+    "tests/browser_worker_errors.node.cjs": "51e93f64b708204afbb1818ccb9479d2e09beddb667adf160c3ad44c11849916",
+    "docker/qualification.py": "5a48cb88f32567dd1d0258a17b801c35ab9e811947b0d68e0574811cf147623f",
+    "desktop-ui/tests/workbench.spec.ts": "7fb0345cc4ee69b89095baad8169e46adbad8a823c332bd28e8d395f58a821c0"
+  },
+  "runtime_source_equivalence": {
+    "previous_source_digest": "5a201196b227f00b7b4d0ed5305ab375037a71c66b03d33b2071d34058b64689",
+    "source_digest": "655fa29ea8493690085bf78029641a030525e597dd73176fdbb3601202005022",
+    "only_change": "desktop-ui/tests/workbench.spec.ts: two fixture calls wait.ms -> wait.secs",
+    "runtime_sources_unchanged": true,
+    "binaries_unchanged": true
+  },
+  "server": {
+    "coverage_complete": true,
+    "single_uninterrupted_run": false,
+    "scope": "development assets; seven shared suites plus UI and restart supplement",
+    "passed_test_cases": 47,
+    "shared_suites": {
+      "test_browser_vm.py.log": {
+        "passed": 10,
+        "duration_secs": 172.365,
+        "sha256": "9f7d6794b1854e872f2f659f781a902b81b482020f1ee40c98db3938185346c0"
+      },
+      "test_desktop_files_vm.py.log": {
+        "passed": 3,
+        "duration_secs": 22.693,
+        "sha256": "8bfeb3867ebf52b822a09657b3a16bc92ddc6c9092eec0648a41742a4e62fb65"
+      },
+      "test_browser_lifecycle_vm.py.log": {
+        "passed": 1,
+        "duration_secs": 325.111,
+        "sha256": "90bf86312923ef3e3a658337fe3824d87a56bbf6901b41431355feb27fbc6146"
+      },
+      "test_media_vm.py.log": {
+        "passed": 10,
+        "duration_secs": 142.313,
+        "sha256": "ac8e7f7d58ac7ecaa0b97bd465900e68f177a168e39e54965f4eea2928efbbc4"
+      },
+      "test_browser_profiles_vm.py.log": {
+        "passed": 1,
+        "duration_secs": 356.273,
+        "sha256": "9665de197a3c1c7a50c77fc3be7623700e11209f892fc95b4de87a533c896c7e"
+      },
+      "test_browser_pages_vm.py.log": {
+        "passed": 4,
+        "duration_secs": 99.211,
+        "sha256": "ea98ff085c3f5bc711a927e5051e2f0669cd6d6c07a08a6956e71847d1d8c8eb"
+      },
+      "test_browser_structured_vm.py.log": {
+        "passed": 13,
+        "duration_secs": 355.198,
+        "sha256": "071359325477a49ab5c0813b4768a4a9e2f2e4bfba562103972a861637cd9fe6"
+      }
+    },
+    "ui_passed": 5,
+    "all_owned_resources_cleaned": true,
+    "shared_run": "runcove-desktop-09d51cc205",
+    "supplement_run": "runcove-desktop-374f073db1",
+    "binaries_sha256": {
+      "agent-space-mcp": "a0c0d8274d734167f0370f9f1cb69f837e02d554e19c6c229bc2eb3972866654",
+      "agent-space-static-http": "d0a008d3adb94ca7a5e102575ce2042e1ad3131e231ffbc17048aae8e4ba3287",
+      "agent-space-webdav": "cb9e3020827001a1e143a7a07a2cc7eee616f26e8b13faf31eaf3f38e8f240cf",
+      "agent-space-desktop": "3ad665a9f916b2b7e06dbd6c5110b744dd5a019fdaf585811e95ec68b60762f3"
+    },
+    "page_limit_restart": {
+      "initial_limit": 4,
+      "restarted_limit": 1,
+      "restored_pages": 4,
+      "restored_after_profile_picker": true,
+      "clean_profile_verified": true,
+      "restored_urls_match": true,
+      "new_page_error": "PAGE_LIMIT_REACHED",
+      "existing_page_navigation_and_close": true
+    },
+    "runtime_source_equivalence": {
+      "previous_source_digest": "5a201196b227f00b7b4d0ed5305ab375037a71c66b03d33b2071d34058b64689",
+      "source_digest": "655fa29ea8493690085bf78029641a030525e597dd73176fdbb3601202005022",
+      "only_change": "desktop-ui/tests/workbench.spec.ts: two fixture calls wait.ms -> wait.secs",
+      "runtime_sources_unchanged": true,
+      "binaries_unchanged": true
+    },
+    "full_release_qualification": false,
+    "shared_run_report": "server-shared-run.json",
+    "supplement_report": "server-ui-restart.json"
+  },
+  "releases_built_from_source_digest": "5a201196b227f00b7b4d0ed5305ab375037a71c66b03d33b2071d34058b64689",
+  "python": {
+    "standard_suites_passed": 40,
+    "standard_suites_skipped": 5,
+    "root_container_transfer_passed": 9,
+    "note": "The root-container run covers the five environment-dependent skips."
+  },
+  "ui_build_passed": true,
+  "nonpassing_runs": [
+    {
+      "run": "runcove-desktop-0a7b72fe1e",
+      "passed": false,
+      "cleanup_passed": true,
+      "report_sha256": "6aa42265b2779620814b98ebbc467fc236d659b5f4cd1d259f03262208b7f7e1",
+      "reason": "Profile test waited for removed normal health.page field; changed to page_id readiness."
+    },
+    {
+      "run": "runcove-desktop-09d51cc205",
+      "passed": false,
+      "cleanup_passed": true,
+      "report_sha256": "7c9879bdf1c6cb1dfdd401ada96753bfe2603594f054f1bd2728a3466cc63f75",
+      "reason": "Seven shared suites passed; workbench tests retained two wait.ms calls. Fixed those test calls and completed separate UI/restart supplement."
+    },
+    {
+      "run": "runcove-desktop-5c17ea1371",
+      "passed": false,
+      "cleanup_passed": true,
+      "report_sha256": "9d8a35d71544d588c4a9c529379df4ac33bb997b100d5a8742a3796b8b6552d6",
+      "reason": "Earlier revision returned cancelled on VNC wake. Historical cause not proven; status-read cancellation behavior was corrected and covered by explicit fault injection. Final UI supplement passed."
+    },
+    {
+      "run": "runcove-desktop-9a0c5aa1ee",
+      "passed": false,
+      "cleanup_passed": true,
+      "report_sha256": "70f8c265383ade1dc4790adaf777c5cc6752b3856c6dbdfa9f48f4acde0823a3",
+      "reason": "Intentionally interrupted after the user narrowed started_at visibility; not counted as passing."
+    }
+  ],
+  "standalone": {
+    "coverage_complete": true,
+    "single_uninterrupted_run": true,
+    "scope": "development assets",
+    "passed_test_cases": 46,
+    "skipped_test_cases": 1,
+    "shared_suites": {
+      "test_browser_vm.py.log": {
+        "passed": 9,
+        "skipped": 1,
+        "duration_secs": 131.401,
+        "sha256": "9d315b48797839b18d78bd6fa1bb31050c8afc66119da5a739d87affdf757112"
+      },
+      "test_desktop_files_vm.py.log": {
+        "passed": 3,
+        "skipped": 0,
+        "duration_secs": 5.513,
+        "sha256": "cdb57119b82d9815cb25938e9d9b2ff45d52a14a070129015d37ed4958a971ae"
+      },
+      "test_browser_lifecycle_vm.py.log": {
+        "passed": 1,
+        "skipped": 0,
+        "duration_secs": 320.196,
+        "sha256": "f06b77906418ff73acd4a82eab01a587e758353b2c20f70c8c021812259c346f"
+      },
+      "test_media_vm.py.log": {
+        "passed": 10,
+        "skipped": 0,
+        "duration_secs": 102.174,
+        "sha256": "c3b2382daaa1ed72ea4606285ee0ab2010b7bf2a50dee7cc3e3dc1db4020019f"
+      },
+      "test_browser_profiles_vm.py.log": {
+        "passed": 1,
+        "skipped": 0,
+        "duration_secs": 333.103,
+        "sha256": "f1caa28632f34b5d0cf064cb98a968058d2fbce6cd55060f14634523b15265dc"
+      },
+      "test_browser_pages_vm.py.log": {
+        "passed": 4,
+        "skipped": 0,
+        "duration_secs": 67.434,
+        "sha256": "e288d584998b7ff95409f99e4eac9bd24c75334af655086a56e815de22b840ec"
+      },
+      "test_browser_structured_vm.py.log": {
+        "passed": 13,
+        "skipped": 0,
+        "duration_secs": 292.51,
+        "sha256": "3f7aa7e49df7ae95d108ecc9b7997f7b0a6a4be93463e58dce4ed944d26cbcb9"
+      }
+    },
+    "ui_passed": 5,
+    "all_owned_resources_cleaned": true,
+    "run": "runcove-qualify-92cd246405",
+    "report": "standalone.json"
+  },
+  "completed_at": "2026-10-20T12:58:26+00:00",
+  "shared_helpers_identical_between_targets": true,
+  "artifact_sha256": {
+    "browser-tools.json": "807336e0ead1ab88e5538688451e3f53fb8b8d1b02012007f4da71ce2f8d7943",
+    "compact-feedback.json": "5b913a1a2b760168d0bd363abf0e6989d151a9abf06d15e824e3b3ace23d91d6",
+    "review.json": "066f61b239cd5ef63fce8c5d7c77fa4642c308d8e186aca4915e92679d225213",
+    "server-shared-run.json": "7c9879bdf1c6cb1dfdd401ada96753bfe2603594f054f1bd2728a3466cc63f75",
+    "server-ui-restart.json": "b5ea7047fb5d68928cda90fb19cc087b58d98d0460050584deb7df46e9d28774",
+    "server-wait-timing.json": "fbffafbda0a9b6fca266f667b140f81f187d62170bc0c0ada45bb7ffa9a79d8c",
+    "source-equivalence.json": "80b6124d9b808ca2220c9c7f3bf0c44347829fc6800acf694e6fbdb4bf071e8c",
+    "standalone-wait-timing.json": "54542a81c129fee43c7cbe49fc4a45da799d80f27cd802fc92a9f7f1dba5336a",
+    "standalone.json": "0b032182a8d33bfd6fa69fca9bd5928e5357db97060c5ebe1e45bc824be41146"
+  },
+  "final_checks": {
+    "documents": 13,
+    "local_links": 213,
+    "issues": [],
+    "git_diff_check": true,
+    "evidence_hashes_valid": true,
+    "source_and_fixture_hashes_valid": true,
+    "qualification_resources_absent": true
+  }
+}

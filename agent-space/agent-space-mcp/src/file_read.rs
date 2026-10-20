@@ -57,26 +57,24 @@ mod tests {
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 pub(crate) struct ReadParams {
     #[schemars(
-        description = "Path of a regular file in the connected Runcove space. Absolute paths are recommended; /workspace is the persistent work directory."
+        description = "File path in the connected Runcove space. Prefer an absolute path; /workspace stores persistent files."
     )]
     pub(crate) path: String,
-    #[schemars(
-        description = "Optional first text line, counted from 1; positive integer, default 1."
-    )]
+    #[schemars(description = "First text line, starting at 1; default 1.")]
     #[serde(default)]
     #[schemars(range(min = 1))]
     pub(crate) offset: Option<u64>,
     #[schemars(
-        description = "Optional maximum number of text lines to return; positive integer, default 500. Output size limits can shorten the result."
+        description = "Maximum text lines; default 500. Output size limits may shorten the result."
     )]
     #[serde(default)]
     #[schemars(range(min = 1))]
     pub(crate) limit: Option<u64>,
     #[serde(default)]
     #[schemars(
-        description = "Optional; default false. Set true to return a JPEG, PNG, WebP, or GIF as an image with metadata. Omit offset and limit for images; animations return only the first frame. Images may be resized or compressed. Text reading is unchanged."
+        description = "Return JPEG, PNG, WebP or GIF content as an image; default false, including null. Animations return the first frame. Text line options are ignored for images."
     )]
-    pub(crate) multimodal: bool,
+    pub(crate) multimodal: Option<bool>,
 }
 
 pub(crate) async fn read_file(
@@ -85,9 +83,10 @@ pub(crate) async fn read_file(
     timeout: Duration,
     cancel: CancellationToken,
 ) -> Result<CallToolResult, McpError> {
+    let multimodal = params.multimodal.unwrap_or(false);
     let offset = params.offset.unwrap_or(1);
     let limit = params.limit.unwrap_or(500);
-    if offset == 0 || limit == 0 {
+    if !multimodal && (offset == 0 || limit == 0) {
         return Err(McpError::invalid_params(
             "offset and limit must be positive integers",
             None,
@@ -99,7 +98,7 @@ pub(crate) async fn read_file(
     let deadline = tokio::time::Instant::now() + timeout;
     let waiter_cancel = cancel.clone();
     let owner = tokio::spawn(async move {
-        let permit = if params.multimodal {
+        let permit = if multimodal {
             Some(tokio::select! {
                 permit = agent_engine::media::acquire() => permit.map_err(internal_error)?,
                 _ = cancel.cancelled() => return Ok(media_error("READ_CANCELLED", "File read cancelled before reading")),
@@ -110,7 +109,7 @@ pub(crate) async fn read_file(
         };
         let cmd = file_command(
             serde_json::json!({"operation":"read", "path":params.path, "offset":offset, "limit":limit,
-                "multimodal":params.multimodal,"line_range":params.offset.is_some() || params.limit.is_some()}),
+                "multimodal":multimodal}),
         );
         let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
         let result = session
@@ -119,7 +118,7 @@ pub(crate) async fn read_file(
                 remaining,
                 // Type markers and image errors must survive even an 8-byte
                 // text limit. Successful text is bounded again below.
-                Some(if params.multimodal {
+                Some(if multimodal {
                     agent_engine::media::REPORT_LIMIT
                 } else {
                     4096

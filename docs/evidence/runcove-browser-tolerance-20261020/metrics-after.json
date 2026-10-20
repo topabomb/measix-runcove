@@ -1,0 +1,87 @@
+{
+  "read": {
+    "bytes": 216,
+    "value": {
+      "page_id": "6A4F9741EDF1A2CBFD66404A8B50C0A1",
+      "url": "http://127.0.0.1:44417/login",
+      "matches": [
+        {
+          "ref": "eLUVarqQTay",
+          "role": "textbox",
+          "name": "Email",
+          "iframe": false,
+          "frame_path": [],
+          "truncated": false
+        }
+      ],
+      "truncated": false
+    }
+  },
+  "action": {
+    "bytes": 297,
+    "value": {
+      "completed": 1,
+      "of": 1,
+      "page_id": "6A4F9741EDF1A2CBFD66404A8B50C0A1",
+      "url": "http://127.0.0.1:44417/login",
+      "title": "Sign in",
+      "diff": {
+        "added": [],
+        "removed": [],
+        "changed": [
+          "eLUVarqQTay textbox \"Email\" =\"example@example.com\""
+        ],
+        "text_added": [
+          "example@example.com"
+        ],
+        "text_removed": [],
+        "truncated": false
+      }
+    }
+  },
+  "menu": {
+    "bytes": 892,
+    "value": {
+      "page_id": "6A4F9741EDF1A2CBFD66404A8B50C0A1",
+      "tabs": [
+        {
+          "page_id": "6A4F9741EDF1A2CBFD66404A8B50C0A1",
+          "url": "http://127.0.0.1:44417/panels",
+          "title": "Floating panels"
+        }
+      ],
+      "health": {
+        "browser": true,
+        "page": true,
+        "desktop": true,
+        "native_window": false
+      },
+      "url": "http://127.0.0.1:44417/panels",
+      "title": "Floating panels",
+      "elements": "eTIThYO9LkR heading \"Panels\" [level=1]\ne_FCK-Tx7AQ button \"Actions\"\netuLHlpU-El button \"Hover for help\"\ne5fOfm-CNBT button \"Open popover\"\ne5IqU3Bcq9t button \"Open nested modal\"\neyqhW2LeceN menu \"Actions menu\"\ne7eQ-itbU9K menuitem \"Choose item\"\ne5JXcJheB9M button \"Site menu\"",
+      "element_count": 8,
+      "truncated": false,
+      "layers": [
+        {
+          "role": "menu",
+          "name": "Actions menu",
+          "text": "Choose item",
+          "modal": false,
+          "position": "fixed",
+          "z_index": "10",
+          "coordinate_space": "frame_css",
+          "box": {
+            "x": 100,
+            "y": 100,
+            "width": 90.828125,
+            "height": 21
+          },
+          "refs": [
+            "eyqhW2LeceN",
+            "e7eQ-itbU9K"
+          ]
+        }
+      ]
+    }
+  }
+}

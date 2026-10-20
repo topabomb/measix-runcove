@@ -54,7 +54,7 @@ def main():
             time.sleep(.2)
         raise TimeoutError('service readiness')
 
-    def browser(c, code):
+    def legacy_browser(c, code):
         value = json.loads(c.tool('browser_run', code=code))
         while value.get('state') == 'running':
             value = json.loads(c.tool('browser_task', task_id=value['task_id']))
@@ -85,8 +85,8 @@ def main():
         assert status == 200, raw
         dav = json.loads(raw)['token']
         c = Client(port, user['token'], username='selected', authority='127.0.0.1:' + str(port))
-        c.tool('bash', command="mkdir -p /workspace/import-site /workspace/root-data; printf '<title>Imported profile</title>' >/workspace/import-site/index.html; printf root-owned >/workspace/root-data/record; chmod 755 /workspace/root-data; chmod 644 /workspace/root-data/record; ln -s root-data/record /workspace/preserved-link; nohup python3 -m http.server 8129 --bind 127.0.0.1 --directory /workspace/import-site >/tmp/import-site.log 2>&1 </dev/null &")
-        browser(c, "await page.goto('http://127.0.0.1:8129/');await page.evaluate(()=>localStorage.setItem('workspace-import','preserved'));return true;")
+        c.tool('bash', command="mkdir -p /workspace/import-site /workspace/root-data; printf '<title>Imported profile</title><p id=marker></p><script>marker.textContent=localStorage.getItem(\"workspace-import\")</script>' >/workspace/import-site/index.html; printf root-owned >/workspace/root-data/record; chmod 755 /workspace/root-data; chmod 644 /workspace/root-data/record; ln -s root-data/record /workspace/preserved-link; nohup python3 -m http.server 8129 --bind 127.0.0.1 --directory /workspace/import-site >/tmp/import-site.log 2>&1 </dev/null &")
+        legacy_browser(c, "await page.goto('http://127.0.0.1:8129/');await page.evaluate(()=>localStorage.setItem('workspace-import','preserved'));return true;")
         c.tool('write', path='/tmp/workspace-transfer.py', content=(ROOT / 'docker/workspace-transfer.py').read_text())
         # Stop the actual desktop writer, without restarting it before export.
         command = "import pathlib,os,signal,time\nfor p in pathlib.Path('/proc').iterdir():\n if p.name.isdigit():\n  try:\n   if pathlib.Path(p/'exe').resolve().name=='agent-space-desktop':\n    os.kill(int(p.name),signal.SIGTERM)\n    until=time.monotonic()+20\n    while p.exists() and p.joinpath('stat').read_text().split()[2]!='Z':\n     assert time.monotonic()<until;time.sleep(.05)\n  except FileNotFoundError:pass\n"
@@ -123,8 +123,14 @@ def main():
         client.tool('edit', path='/workspace/root-data/record', old_text='root-owned', new_text='payload-edit')
         assert '1001:1001' in client.tool('bash', cmd="stat -c '%u:%g' /workspace/root-data/record; test -L /workspace/preserved-link && echo link-preserved")
         client.tool('bash', cmd='nohup python3 -m http.server 8129 --bind 127.0.0.1 --directory /workspace/import-site >/tmp/import-site.log 2>&1 </dev/null &')
-        assert browser(client, "return {tabs:context.pages().map(p=>p.url()),marker:await page.evaluate(()=>localStorage.getItem('workspace-import'))};") == {'tabs': ['http://127.0.0.1:8129/'], 'marker': 'preserved'}
-        assert any(x['type'] == 'image' for x in client.tool_result('browser_observe', view='desktop')['content'])
+        def current(name, **args):
+            value=json.loads(client.tool(name,**args))
+            while value.get('state')=='running':value=json.loads(client.tool('browser_act',op='wait',task_id=value['task_id']))
+            assert value['state']=='succeeded',value
+            return value.get('value',value)
+        assert [t['url'] for t in current('browser_snapshot',view='tabs')['tabs']]==['http://127.0.0.1:8129/']
+        assert 'preserved' in current('browser_read')['text']
+        assert any(x['type']=='image' for x in client.tool_result('screen_observe', view='desktop')['content'])
         check('standalone_restores_tabs_profile_links_and_writable_user_data')
         report.update(passed=True, archive_sha256=export['archiveSha256'], entries=export['entries'], import_result=applied)
     except BaseException as error:

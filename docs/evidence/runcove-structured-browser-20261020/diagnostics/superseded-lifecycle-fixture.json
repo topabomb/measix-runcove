@@ -1,0 +1,118 @@
+{
+  "scope": "diagnostic of the superseded frozen-browser fixture, excluded from qualification",
+  "reason": "The old fixture treated null/preparing as asleep and sent SIGCONT during shutdown.",
+  "health_during_cleanup": [
+    {
+      "elapsed": 76.51339229699988,
+      "desktop": null,
+      "preparing": true,
+      "worker_contract": 1
+    },
+    {
+      "elapsed": 77.01616659000138,
+      "desktop": null,
+      "preparing": true,
+      "worker_contract": 1
+    },
+    {
+      "elapsed": 77.51916969300146,
+      "desktop": null,
+      "preparing": true,
+      "worker_contract": 1
+    },
+    {
+      "elapsed": 78.02288605300055,
+      "desktop": null,
+      "preparing": true,
+      "worker_contract": 1
+    },
+    {
+      "elapsed": 78.52617525400092,
+      "desktop": null,
+      "preparing": true,
+      "worker_contract": 1
+    },
+    {
+      "elapsed": 79.02920966700003,
+      "desktop": null,
+      "preparing": true,
+      "worker_contract": 1
+    },
+    {
+      "elapsed": 79.53232700599983,
+      "desktop": null,
+      "preparing": true,
+      "worker_contract": 1
+    },
+    {
+      "elapsed": 80.03549995300091,
+      "desktop": null,
+      "preparing": true,
+      "worker_contract": 1
+    },
+    {
+      "elapsed": 80.53966127300009,
+      "desktop": null,
+      "preparing": true,
+      "worker_contract": 1
+    },
+    {
+      "elapsed": 81.04334129900053,
+      "desktop": null,
+      "preparing": true,
+      "worker_contract": 1
+    },
+    {
+      "elapsed": 81.54634796500068,
+      "desktop": null,
+      "preparing": true,
+      "worker_contract": 1
+    },
+    {
+      "elapsed": 82.04923904300085,
+      "desktop": null,
+      "preparing": true,
+      "worker_contract": 1
+    },
+    {
+      "elapsed": 82.55227401900083,
+      "desktop": null,
+      "preparing": true,
+      "worker_contract": 1
+    },
+    {
+      "elapsed": 83.05708067300111,
+      "desktop": null,
+      "preparing": true,
+      "worker_contract": 1
+    },
+    {
+      "elapsed": 85.09787572500136,
+      "desktop": null,
+      "preparing": true,
+      "worker_contract": 1
+    },
+    {
+      "elapsed": 85.60070330100098,
+      "desktop": null,
+      "preparing": true,
+      "worker_contract": 1
+    }
+  ],
+  "premature_asleep_observation": {
+    "chrome": [
+      {
+        "pid": 3027,
+        "state": "S",
+        "start": "887740"
+      }
+    ],
+    "native_restore_marker": {
+      "restarted": false
+    }
+  },
+  "original_sha256": {
+    "health-diagnostic.json": "d8702e30b78bb7ea3c9d547bc84db19880025ccd0c59f6e09d54476980ccaaf4",
+    "lifecycle-state.json": "8c8f911a67b7eccc68239a8c81603a92d4c3eb4e17aff30ac3ea01896512959d"
+  }
+}

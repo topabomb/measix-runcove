@@ -1,0 +1,91 @@
+{
+  "scope": "Combined browser tool tolerance, model-visible contracts, and shared image pipeline review",
+  "findings": [
+    {
+      "id": "page-image-rounding",
+      "status": "fixed",
+      "before": "A single width-derived scale shifted vertical clicks near the bottom of tall resized pages.",
+      "after": "Full-page coordinate actions use independent width/content_width and height/content_height ratios.",
+      "regression": "A 40x2 CSS-pixel button near y=9950 on a 1440x10000 page, clicked using the actual 285x1980 preview."
+    },
+    {
+      "id": "observation-process-errors",
+      "status": "fixed",
+      "before": "Child process numeric exit code 1 leaked into the public tool error code on a CDP observation timeout.",
+      "after": "Observation timeouts map to PAGE_UNRESPONSIVE and other observation process failures to BROWSER_UNAVAILABLE. Numeric exit codes cannot bypass normal classification. No mutation retry added."
+    },
+    {
+      "id": "restart-test-profile-contamination",
+      "status": "fixed-test",
+      "before": "The restart test reused a Crashed profile from an intentional owner-loss test and selected Default instead of its dedicated fixture.",
+      "after": "Explicitly select a disposable fixture profile, assert its normal close, and compare every restored URL across a quota reduction from 4 to 1. Existing profile exit_type is untouched."
+    },
+    {
+      "id": "stale-image-protocol-expectation",
+      "status": "fixed-test",
+      "before": "The Rust MCP end-to-end test still expected PNG after the intended WebP contract change.",
+      "after": "Assert image/webp; the full workspace suite passed."
+    },
+    {
+      "id": "file-checksum-fixture-without-desktop",
+      "status": "fixed-test",
+      "before": "The file image regression used a browser fixture helper to hash a file in a custom Server workspace that intentionally has no Playwright.",
+      "after": "Compute SHA-256 through Python in the same workspace; retain the exact byte-integrity assertion and the desktop-disabled assertion."
+    },
+    {
+      "id": "transient-status-cancellation",
+      "status": "fixed-and-verified-in-both-targets",
+      "before": "A single failed read of task status actively cancelled the original task. Server VNC wake regression returned cancelled, but existing logs do not prove its precise cause.",
+      "after": "Continue bounded status reads for the same task; retain explicit cancellation, authorization checks and original deadline. No action replay.",
+      "regression": "Pause the disposable helper for five seconds during an action and assert completion plus exactly one click."
+    },
+    {
+      "id": "profile-readiness-old-health-field",
+      "status": "fixed-test",
+      "before": "Profile readiness waited for health.page=true, a normal-state field intentionally removed from agent output. The page was already open.",
+      "after": "Wait for public page_id outside profile_picker; retain profile state, idle recovery, selected-profile and page-count assertions.",
+      "failed_run": "runcove-desktop-0a7b72fe1e",
+      "failed_run_cleanup_passed": true
+    },
+    {
+      "id": "ui-wait-seconds-migration",
+      "status": "fixed-test",
+      "before": "Two workbench test calls retained wait.ms after the public API changed to seconds.",
+      "after": "Use secs=1 for a compositor settling step and secs=0 for the HUMAN_CONTROL refusal assertion; preserve UI, control and lifecycle assertions.",
+      "failed_run": "runcove-desktop-09d51cc205",
+      "failed_run_cleanup_passed": true
+    }
+  ],
+  "production_updated": false,
+  "public_contract": {
+    "time_unit": "integer seconds",
+    "fixed_wait": [
+      0,
+      60
+    ],
+    "condition_timeout_default": 60,
+    "condition_timeout_range": [
+      1,
+      60
+    ],
+    "action_timeout_default": 5,
+    "download_timeout_default": 30,
+    "capture_interval_default": 1,
+    "tabs": "browser_snapshot(view=tabs), explicit inventory only",
+    "timing": [
+      "started_at (UTC seconds)",
+      "duration_secs (one decimal, stable at completion)"
+    ],
+    "omit": [
+      "normal health",
+      "routine page inventory",
+      "empty optional layers/diff arrays",
+      "false truncation/iframe flags",
+      "worker logs",
+      "internal phase"
+    ],
+    "started_at_policy": "Actions, screenshot sequences, running or failed accepted tasks; omit for routine successful snapshot/read/list/single capture.",
+    "duration_secs": "All accepted browser tasks; monotonic elapsed seconds rounded to one decimal, fixed after completion."
+  },
+  "validation": "Complete shared functionality covered on both targets; Server evidence combines seven suites and UI/restart supplement using identical product sources and binaries."
+}

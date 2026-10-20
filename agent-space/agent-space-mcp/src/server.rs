@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::browser_params::{ActAction, ActParams, BrowserReadParams, SnapshotParams};
 use crate::file_read::ReadParams;
 use crate::publish_params::{self, WebPublishParams};
 use agent_engine::auth;
@@ -21,17 +22,15 @@ use tracing::{error, info, instrument, warn};
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 struct BashParams {
     #[schemars(
-        description = "Bash command or script. Put command arguments in this string; provide stdin with a pipe, here-document, or redirection."
+        description = "Complete Bash command or script, including arguments. Use pipes, here-documents or redirection for input. Keep reserved Runcove paths intact: /opt/agent-space, /tmp/agent-space, /workspace/.agent-space."
     )]
     cmd: String,
-    #[schemars(
-        description = "Optional command execution limit in seconds; positive integer. Omit or pass JSON null to use the configured default."
-    )]
+    #[schemars(description = "Execution limit in seconds; omit or null uses the space default.")]
     #[serde(default)]
     #[schemars(range(min = 1))]
     timeout_secs: Option<u64>,
     #[schemars(
-        description = "Optional working directory, used only for this call; defaults to /workspace. Absolute paths are recommended. An invalid directory prevents command execution."
+        description = "Working directory for this call; default /workspace, the persistent work directory. Prefer an absolute path."
     )]
     #[serde(default)]
     #[serde(deserialize_with = "publish_params::optional_string")]
@@ -41,60 +40,30 @@ struct BashParams {
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 struct WriteParams {
     #[schemars(
-        description = "Destination file path in the connected Runcove space. Absolute paths are recommended; /workspace is the persistent work directory."
+        description = "Destination file path in the connected Runcove space. Prefer an absolute path; /workspace stores persistent files."
     )]
     path: String,
     #[schemars(
-        description = "Complete new text, saved as UTF-8; an empty string writes an empty file."
+        description = "Complete nonempty replacement text. Empty content is rejected to prevent accidental file clearing."
     )]
+    #[schemars(length(min = 1))]
     content: String,
 }
 
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 struct EditParams {
     #[schemars(
-        description = "Path of the existing UTF-8 file in the connected Runcove space. Absolute paths are recommended."
+        description = "Existing UTF-8 file in the connected Runcove space. Prefer an absolute path."
     )]
     path: String,
     #[schemars(
-        description = "Exact text to match, including whitespace and line breaks. Exclude the line-number prefixes displayed by read."
+        description = "Exact text to match, including whitespace and line breaks. Exclude line-number prefixes from read."
     )]
     old_text: String,
-    #[schemars(
-        description = "Text to insert in place of old_text; an empty string deletes the match."
-    )]
+    #[schemars(description = "Replacement text; an empty string deletes the match.")]
     new_text: String,
 }
 
-#[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
-#[serde(rename_all = "snake_case")]
-enum BrowserView {
-    Dom,
-    Ax,
-    Page,
-    Desktop,
-}
-#[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
-struct ObserveParams {
-    #[serde(default)]
-    #[schemars(
-        description = "Optional tab ID from tabs[].page_id. Omit or pass JSON null to choose the focused tab, falling back to an available tab. Invalid IDs return PAGE_NOT_FOUND without choosing another tab. Ignored for compatibility view=\"desktop\"."
-    )]
-    #[serde(deserialize_with = "publish_params::optional_string")]
-    page_id: Option<String>,
-    #[serde(default)]
-    #[schemars(
-        description = "Optional content view: \"dom\" (default) returns visible text, controls, and current values; \"ax\" returns the accessibility tree. Use screen_observe for screenshots. Compatibility values \"page\" and \"desktop\" return that tool's screenshot-task result."
-    )]
-    #[serde(deserialize_with = "publish_params::optional_choice")]
-    view: Option<BrowserView>,
-    #[serde(default)]
-    #[schemars(
-        description = "Optional number of recent task summaries, newest first: 0-10, default 0 (no history)."
-    )]
-    #[schemars(range(min = 0, max = 10))]
-    recent_tasks_limit: Option<usize>,
-}
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 enum ScreenView {
@@ -104,101 +73,35 @@ enum ScreenView {
 #[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
 struct ScreenParams {
     #[schemars(
-        description = "Required target: \"desktop\" captures the desktop of the connected Runcove space, including native dialogs; \"page\" captures a tab's viewport in its browser."
+        description = "Required: \"page\" captures the selected page's complete currently rendered document, including iframe regions as displayed; \"desktop\" captures the entire Runcove desktop, including native dialogs. Independent scroll areas and iframes show their currently displayed contents. Does not load lazy content or expand virtual lists."
     )]
     view: ScreenView,
     #[serde(default, deserialize_with = "publish_params::optional_string")]
     #[schemars(
-        description = "Optional tab ID for view=\"page\", from browser_observe's tabs[].page_id. Omit or pass JSON null to choose the focused tab, falling back to an available tab. Selected once for the sequence; invalid or closed targets cause an error without switching tabs. Ignored for view=\"desktop\"."
+        description = "For view=\"page\": page ID from browser_snapshot(view='tabs'). Default: the focused tab, or an available tab. Selected once for the sequence; closing it ends capture with an error. Ignored for view=\"desktop\"."
     )]
     page_id: Option<String>,
     #[serde(default)]
-    #[schemars(
-        description = "Optional number of screenshots, from 1 to 8. Defaults to 1.",
-        range(min = 1, max = 8)
-    )]
+    #[schemars(range(min = 1, max = 8))]
+    #[schemars(description = "Number of images to capture: 1-8; default 1.")]
     count: Option<usize>,
     #[serde(default)]
+    #[schemars(range(min = 0))]
     #[schemars(
-        description = "Optional minimum time between capture starts, in milliseconds; default 1000. Used only when count exceeds 1. Zero captures back to back; actual gaps may be longer. The whole observation, including preparation and waiting, must fit within 600 seconds.",
-        range(min = 0)
+        description = "Minimum seconds between capture starts when count>1; default 1, zero captures back to back. Ignored for count=1. Actual intervals may be longer; the sequence must fit within 600 seconds."
     )]
-    interval_ms: Option<u64>,
+    interval_secs: Option<u64>,
     #[serde(default)]
     #[schemars(
-        description = "Optional: save original PNG files in addition to returned images; default false. Saved paths appear in files in capture order."
+        description = "Also save original captured PNGs before resizing or WebP encoding, and return their paths in files; default false."
     )]
-    save_original: bool,
+    save_original: Option<bool>,
     #[serde(default, deserialize_with = "publish_params::optional_string")]
     #[schemars(
-        description = "Optional absolute directory for original PNGs; requires save_original=true. Defaults to /workspace/agent-space/artifacts. Uses the same filesystem as this space's command and file tools. Creates missing directories if permitted and never overwrites files. Choose a path under /workspace for downloadable files."
+        description = "For save_original=true: absolute directory in the connected space; default /workspace/agent-space/artifacts. Creates missing directories without overwriting files. Otherwise ignored."
     )]
     save_dir: Option<String>,
 }
-#[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
-struct RunParams {
-    #[schemars(
-        description = r#"JavaScript async function body or async function, 1-65,536 UTF-8 bytes. Receives page (the selected Playwright tab), context (the shared browser context), desktop (desktop controls), output (explicit outputs), and artifacts (the output directory path, /workspace/agent-space/artifacts). Await async calls, import modules with await import(...), and return a JSON-serializable value. Variables do not persist between calls.
-
-Browser: reuse page; navigate with await page.goto(url). Use await context.newPage() when additional tabs are needed, and close temporary tabs you create. Do not launch another browser, create another context, or close the shared browser or context. Wait for elements, URLs, or events. Use await page.evaluate(...) for code that runs inside the web page. Before desktop input to a tab, bring it forward with await page.bringToFront(). If the task starts with a native dialog or an unresponsive tab, page/context are unavailable for that task; recover with desktop controls, then observe again.
-
-Files use absolute paths in this space, not paths on the caller's computer. Prefer await locator.setInputFiles(path) for uploads. For a file chooser, register before clicking:
-const chooser = page.waitForEvent('filechooser');
-await locator.click();
-await (await chooser).setFiles(path);
-If a native upload dialog is already open, observe it with screen_observe(view='desktop'), use await desktop.press('ctrl+l') and await desktop.type(absolutePath), then click Open using a fresh desktop capture. Verify the website received the file; a selected filename alone does not confirm an upload.
-For downloads, register before triggering:
-const pending = page.waitForEvent('download');
-await locator.click();
-const file = await output.download(await pending);
-output.download saves under artifacts and returns registered file metadata.
-
-Outputs: await output.file(path) registers an existing regular file under /workspace and returns metadata, not its contents. await output.image(bufferOrCapture) emits a PNG, JPEG, or WebP image from a Buffer or desktop Capture. await output.saveMhtml(page, path) saves and registers MHTML under /workspace. Use artifacts for generated files. Per task: 16 registered files and 4 images totaling 8 MiB of image data. JSON return values over 32 KiB are saved as files. Already emitted outputs survive a later error, timeout, or cancellation.
-
-Desktop: await desktop.screenshot() returns a Capture; await output.image(capture) emits its image. Pointer calls: await desktop.click({image_id,x,y,button?}), await desktop.drag({image_id,x,y,to_x,to_y}), await desktop.scroll({image_id,x,y,delta}). Use image_id from a screen_observe desktop frame or a desktop Capture, with coordinates in the returned image's pixels. The capture must be under 60 seconds old with the same foreground window; otherwise capture again. Page screenshots cannot supply desktop coordinates. Click buttons: 1=left (default), 2=middle, 3=right. Drag holds the left button. Scroll delta: integer -30..30 wheel steps, positive down, negative up.
-
-Other controls: await desktop.type(text), await desktop.press(key), await desktop.setWindowMode('normal'|'maximized'|'fullscreen'). Key examples: 'Enter', 'Escape', 'ctrl+a'. Window mode changes require page/context to be available."#
-    )]
-    code: String,
-    #[serde(default)]
-    #[schemars(
-        description = "Optional tab ID from browser_observe's tabs[].page_id. Omit or pass JSON null to choose the focused tab, falling back to an available tab. Creates a blank tab if automatic selection finds none and no native dialog is open. Invalid IDs return PAGE_NOT_FOUND without switching tabs. Selection does not bring the tab to the foreground."
-    )]
-    #[serde(deserialize_with = "publish_params::optional_string")]
-    page_id: Option<String>,
-    #[serde(default)]
-    #[schemars(
-        description = "Optional total task deadline in seconds, including preparation and execution: 1-600, default 60."
-    )]
-    #[schemars(range(min = 1, max = 600))]
-    timeout_secs: Option<u64>,
-}
-#[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
-#[serde(rename_all = "snake_case")]
-enum TaskAction {
-    Wait,
-    Cancel,
-}
-#[derive(Debug, Deserialize, rmcp::schemars::JsonSchema)]
-struct TaskParams {
-    #[schemars(
-        description = "ID of a task started by browser_run or screen_observe in the connected Runcove space."
-    )]
-    task_id: String,
-    #[serde(default)]
-    #[schemars(
-        description = "Optional action: \"wait\" (default) retrieves status or waits for completion; \"cancel\" requests cancellation. The call can return before cancellation finishes."
-    )]
-    #[serde(deserialize_with = "publish_params::optional_choice")]
-    action: Option<TaskAction>,
-    #[serde(default)]
-    #[schemars(
-        description = "Optional maximum wait in seconds for either action: 0-20, default 20. Zero returns current status immediately. Does not extend the task deadline."
-    )]
-    #[schemars(range(min = 0, max = 20))]
-    wait_secs: Option<u64>,
-}
-
 #[derive(Clone)]
 struct BoundIdentity {
     username: String,
@@ -423,6 +326,70 @@ impl AgentSpaceMcpServer {
         !(name.starts_with("browser_") || name == "screen_observe")
             || self.browser.load(std::sync::atomic::Ordering::SeqCst)
     }
+    fn disclosed_tool(&self, mut tool: Tool) -> Tool {
+        let mut schema = serde_json::Value::Object((*tool.input_schema).clone());
+        compact_base_schema(&mut schema);
+        match tool.name.as_ref() {
+            "bash" => {
+                let seconds = self.config.workspace.exec_timeout_secs;
+                schema["properties"]["timeout_secs"]["default"] = json!(seconds);
+                schema["properties"]["timeout_secs"]["description"] = json!(format!(
+                    "Execution limit in seconds; default {seconds}. Omit or null uses this default."
+                ));
+                schema["properties"]["workdir"]["default"] = json!("/workspace");
+            }
+            "read" => {
+                schema["properties"]["offset"]["default"] = json!(1);
+                schema["properties"]["limit"]["default"] = json!(500);
+                schema["properties"]["multimodal"]["default"] = json!(false);
+            }
+            "web_publish" => {
+                let seconds = u64::from(self.config.web_publish.default_keep_alive_minutes) * 60;
+                let maximum = u64::from(self.config.web_publish.max_keep_alive_minutes) * 60;
+                schema["properties"]["keep_alive_secs"]["default"] = json!(seconds);
+                schema["properties"]["keep_alive_secs"]["description"] = json!(format!(
+                    "Publish only: idle-shutdown protection in seconds, 60-{maximum}; default {seconds}. Omit or null uses this default. Re-publish to extend protection. Expiry ends idle protection; publication lifetime follows the space."
+                ));
+            }
+            "browser_snapshot" => {
+                for (key, value) in [
+                    ("view", json!("page")),
+                    ("diff", json!(false)),
+                    ("image", json!(false)),
+                    ("text", json!(false)),
+                    ("recent_tasks_limit", json!(0)),
+                ] {
+                    schema["properties"][key]["default"] = value;
+                }
+            }
+            "browser_read" => {
+                schema["properties"]["max_chars"]["default"] = json!(4000);
+            }
+            "browser_act" => {
+                for (key, value) in [
+                    ("op", json!("execute")),
+                    ("wait_secs", json!(30)),
+                    ("then", json!("diff")),
+                    ("action_timeout_secs", json!(5)),
+                    ("timeout_secs", json!(120)),
+                ] {
+                    schema["properties"][key]["default"] = value;
+                }
+            }
+            "screen_observe" => {
+                for (key, value) in [
+                    ("count", json!(1)),
+                    ("interval_secs", json!(1)),
+                    ("save_original", json!(false)),
+                ] {
+                    schema["properties"][key]["default"] = value;
+                }
+            }
+            _ => {}
+        }
+        tool.input_schema = Arc::new(schema.as_object().unwrap().clone());
+        tool
+    }
     async fn desktop(&self) -> Result<std::sync::Arc<agent_engine::desktop::DesktopHub>, McpError> {
         self.recheck_bound().await?;
         if !self.browser.load(std::sync::atomic::Ordering::SeqCst) {
@@ -456,82 +423,134 @@ impl AgentSpaceMcpServer {
 #[tool_router]
 impl AgentSpaceMcpServer {
     #[tool(
-        description = "Read content from a tab in the shared browser of the connected Runcove space. Returns content when available, tab details, open tabs, browser status, and control mode. Does not navigate, change focus, or take control; available during human control."
+        description = "Observe current-page elements and panels, including iframes. Use view=tabs only to find or manage pages. Use observed refs unchanged; query browser_read to find a known target. Add image=true only when visual context is needed."
     )]
-    async fn browser_observe(
+    async fn browser_snapshot(
         &self,
-        Parameters(params): Parameters<ObserveParams>,
+        Parameters(mut params): Parameters<SnapshotParams>,
     ) -> Result<CallToolResult, McpError> {
-        if params.recent_tasks_limit.is_some_and(|limit| limit > 10) {
+        if params.view == Some(crate::browser_params::SnapshotView::Tabs) {
+            params.page_id = None;
+            params.r#ref = None;
+            params.diff = None;
+            params.image = None;
+            params.text = None;
+        }
+        if params.recent_tasks_limit.is_some_and(|n| n > 10) {
             return Err(McpError::invalid_params(
-                "recent_tasks_limit must be 0..10",
+                "recent_tasks_limit must be 0-10",
                 None,
             ));
         }
-        let hub = self.desktop().await?;
-        let view = match params.view.unwrap_or(BrowserView::Dom) {
-            BrowserView::Dom => "dom",
-            BrowserView::Ax => "ax",
-            BrowserView::Page => "page",
-            BrowserView::Desktop => "desktop",
-        };
-        Ok(browser_result(
-            hub.observe(params.page_id, view, params.recent_tasks_limit.unwrap_or(0))
-                .await,
-        ))
-    }
-    #[tool(
-        description = "Run JavaScript to automate the browser and desktop of the connected Runcove space. Requires AI control; one browser_run task at a time. Returns the script's value and explicit outputs, without an automatic page observation or screenshot. If still running after up to 8 seconds, use the returned task_id with browser_task. After an error or lost response, inspect current state before repeating actions."
-    )]
-    async fn browser_run(
-        &self,
-        Parameters(params): Parameters<RunParams>,
-    ) -> Result<CallToolResult, McpError> {
-        if params.code.is_empty()
-            || params.code.len() > 65536
-            || params
-                .timeout_secs
-                .is_some_and(|timeout| !(1..=600).contains(&timeout))
+        if params.r#ref.is_some() && params.diff == Some(true) {
+            return Err(McpError::invalid_params(
+                "ref selects a subtree snapshot; omit diff or omit ref",
+                None,
+            ));
+        }
+        if params
+            .r#ref
+            .as_deref()
+            .is_some_and(|r| !crate::browser_params::is_ref(r))
         {
             return Err(McpError::invalid_params(
-                "code must be 1..65536 UTF-8 bytes and timeout_secs must be 1..600",
+                "ref must come from browser_snapshot or browser_read",
                 None,
             ));
         }
         let hub = self.desktop().await?;
         let session = self.ensure_session().await?;
+        let args = json!({"view":params.view,"diff":params.diff.unwrap_or(false),"ref":params.r#ref,"image":params.image.unwrap_or(false),"text":params.text.unwrap_or(false),"recent_tasks_limit":params.recent_tasks_limit.unwrap_or(0)});
         Ok(browser_result(
-            hub.run(
-                session,
-                params.code,
-                params.page_id,
-                params.timeout_secs.unwrap_or(60),
-            )
-            .await,
+            hub.browser(session, "snapshot", args, params.page_id, 60)
+                .await,
         ))
     }
     #[tool(
-        description = "Capture one or more screenshots without navigating, changing focus, scrolling, or taking control. Can run during human control or browser_run. Returns progress while state=\"running\", then captured images in order with timing and dimensions, including partial results after failure or cancellation. Images may be resized or compressed. If still running after up to 8 seconds, use the returned task_id with browser_task."
+        description = "Execute consecutive browser or desktop steps in order in one actions batch, with page feedback at the end. Use observed refs; end the batch when later targets need fresh refs. To pause, use actions:[{\"do\":\"wait\",\"secs\":5}]; for a page condition use text or gone. While state=running, use op=wait with the same task_id; op=cancel requests cancellation. Inspect page feedback to confirm website outcomes before submitting again."
+    )]
+    async fn browser_act(
+        &self,
+        Parameters(params): Parameters<ActParams>,
+    ) -> Result<CallToolResult, McpError> {
+        let params = params.normalize();
+        params
+            .validate()
+            .map_err(|e| McpError::invalid_params(e, None))?;
+        let hub = self.desktop().await?;
+        match params.op.unwrap_or(ActAction::Execute) {
+            ActAction::Wait | ActAction::Cancel => Ok(browser_result(
+                hub.task(
+                    params.task_id.as_deref().unwrap(),
+                    params.wait_secs.unwrap_or(30),
+                    matches!(params.op, Some(ActAction::Cancel)),
+                )
+                .await,
+            )),
+            ActAction::Execute => {
+                let session = self.ensure_session().await?;
+                let args = json!({"actions":params.actions.unwrap(),"then":params.then,"action_timeout_secs":params.action_timeout_secs});
+                Ok(browser_result(
+                    hub.browser(
+                        session,
+                        "act",
+                        args,
+                        params.page_id,
+                        params.timeout_secs.unwrap_or(120),
+                    )
+                    .await,
+                ))
+            }
+        }
+    }
+    #[tool(
+        description = "Read page text or extract tables, links and fields, including iframes. Use query to find a known target and obtain refs; use ref to scope a read. For page structure and panels, use browser_snapshot."
+    )]
+    async fn browser_read(
+        &self,
+        Parameters(params): Parameters<BrowserReadParams>,
+    ) -> Result<CallToolResult, McpError> {
+        let params = params.normalize();
+        params
+            .validate()
+            .map_err(|e| McpError::invalid_params(e, None))?;
+        let hub = self.desktop().await?;
+        let session = self.ensure_session().await?;
+        let args = json!({"ref":params.r#ref,"query":params.query,"extract":params.extract,"max_chars":params.max_chars});
+        Ok(browser_result(
+            hub.browser(session, "read", args, params.page_id, 60).await,
+        ))
+    }
+    #[tool(
+        description = "Capture unannotated page or desktop images, reduced proportionally to a maximum edge of 1980 pixels. Page captures cover the currently rendered full document; use browser_read for long text. For native browser UI use view=desktop. Supports timed sequences and saving original PNGs. Use returned image_id and image-pixel coordinates for actions. While state=running, retrieve the same task with browser_act(op=\"wait\")."
     )]
     async fn screen_observe(
         &self,
-        Parameters(params): Parameters<ScreenParams>,
+        Parameters(mut params): Parameters<ScreenParams>,
     ) -> Result<CallToolResult, McpError> {
         let count = params.count.unwrap_or(1);
-        let interval = params.interval_ms.unwrap_or(1000);
-        if !(1..=8).contains(&count) || (count as u64 - 1).saturating_mul(interval) >= 600000 {
+        let interval = if count == 1 {
+            0
+        } else {
+            params.interval_secs.unwrap_or(1)
+        };
+        if !(1..=8).contains(&count) || (count as u64 - 1).saturating_mul(interval) >= 600 {
             return Err(McpError::invalid_params(
                 "count must be 1..8 and the capture schedule must fit within 600 seconds",
                 None,
             ));
         }
+        let save_original = params.save_original.unwrap_or(false);
+        if !save_original {
+            params.save_dir = None;
+        }
+        if matches!(params.view, ScreenView::Desktop) {
+            params.page_id = None;
+        }
         if let Some(directory) = &params.save_dir {
-            if !params.save_original
-                || !std::path::Path::new(directory).is_absolute()
-                || directory.contains('\0')
-            {
+            if !std::path::Path::new(directory).is_absolute() || directory.contains('\0') {
                 return Err(McpError::invalid_params(
-                    "save_dir requires save_original=true and an absolute directory path",
+                    "save_dir must be an absolute directory path",
                     None,
                 ));
             }
@@ -548,8 +567,8 @@ impl AgentSpaceMcpServer {
                         ScreenView::Page => "page".into(),
                     },
                     count,
-                    interval_ms: interval,
-                    save_original: params.save_original,
+                    interval_ms: interval * 1000,
+                    save_original,
                     save_dir: params.save_dir,
                 },
             )
@@ -557,27 +576,7 @@ impl AgentSpaceMcpServer {
         ))
     }
     #[tool(
-        description = "Check, wait for, or request cancellation of an automation or screenshot task. state=\"running\" means work is ongoing; \"succeeded\", \"failed\", \"timed_out\", and \"cancelled\" are final states. Cancellation preserves available outputs and does not undo website actions. Results remain available for up to 30 minutes after completion and are lost on service restart. If a task is unavailable, inspect the page and files before repeating actions."
-    )]
-    async fn browser_task(
-        &self,
-        Parameters(params): Parameters<TaskParams>,
-    ) -> Result<CallToolResult, McpError> {
-        if params.wait_secs.is_some_and(|wait| wait > 20) {
-            return Err(McpError::invalid_params("wait_secs must be 0..20", None));
-        }
-        let hub = self.desktop().await?;
-        Ok(browser_result(
-            hub.task(
-                &params.task_id,
-                params.wait_secs.unwrap_or(20),
-                matches!(params.action, Some(TaskAction::Cancel)),
-            )
-            .await,
-        ))
-    }
-    #[tool(
-        description = "Publish and manage authenticated web access to files, directories, or running HTTP services in the connected Runcove space. Updating an existing name preserves the URL and credentials. Share the returned URL, HTTP Basic username, and password with the user. Publications end when the space stops or the Runcove service restarts."
+        description = "Publish a file, directory or running HTTP app in the connected Runcove space. Reusing a name preserves its URL and credentials. Give the user the URL and HTTP Basic username/password. Publications end when the space stops or Runcove restarts."
     )]
     async fn web_publish(
         &self,
@@ -637,7 +636,7 @@ impl AgentSpaceMcpServer {
                 file,
                 directory,
                 port,
-                keep_alive_minutes,
+                keep_alive_secs,
             } => {
                 publish_params::validate_name(&name)
                     .map_err(|e| McpError::invalid_params(e, None))?;
@@ -650,17 +649,17 @@ impl AgentSpaceMcpServer {
                         None,
                     ));
                 }
-                let minutes = keep_alive_minutes.unwrap_or(settings.default_keep_alive_minutes);
-                if minutes == 0 || minutes > settings.max_keep_alive_minutes {
+                let seconds = keep_alive_secs
+                    .map(u64::from)
+                    .unwrap_or(u64::from(settings.default_keep_alive_minutes) * 60);
+                let maximum = u64::from(settings.max_keep_alive_minutes) * 60;
+                if seconds < 60 || seconds > maximum {
                     return Err(McpError::invalid_params(
-                        format!(
-                            "keep_alive_minutes must be 1-{}",
-                            settings.max_keep_alive_minutes
-                        ),
+                        format!("keep_alive_secs must be 60-{}", maximum),
                         None,
                     ));
                 }
-                let duration = std::time::Duration::from_secs(u64::from(minutes) * 60);
+                let duration = std::time::Duration::from_secs(seconds);
                 let _gate = session.publication_gate().await;
                 self.recheck_bound().await?;
                 let previous = session.publication(&name);
@@ -788,7 +787,7 @@ impl AgentSpaceMcpServer {
 
     #[instrument(skip(self, params), fields(workspace), level = "info")]
     #[tool(
-        description = "Run Bash commands in the connected Runcove space. Each call uses a separate non-interactive shell; variables and directory changes do not carry over. Use /workspace for persistent files. Returns the exit code and size-limited, merged stdout/stderr; check the exit code to determine command success. For background services, redirect stdin and send stdout/stderr to a log file. After a timeout or lost response, inspect state before retrying. Keep reserved paths /opt/agent-space, /tmp/agent-space, and /workspace/.agent-space intact."
+        description = "Run Bash commands in the connected Runcove space. Each call has a separate non-interactive shell. Returns bounded, merged stdout/stderr and an exit code; check the exit code for success. Redirect background-service input from /dev/null and output to a log file. Returns started_at and duration_secs."
     )]
     async fn bash(
         &self,
@@ -816,6 +815,12 @@ impl AgentSpaceMcpServer {
                 None,
             ));
         }
+        let start = std::time::Instant::now();
+        let started_at = time::OffsetDateTime::now_utc()
+            .replace_nanosecond(0)
+            .unwrap()
+            .format(&time::format_description::well_known::Rfc3339)
+            .unwrap_or_default();
         let workdir = params.workdir.as_deref().unwrap_or("/workspace");
         self.recheck_bound().await?;
         let session = self.ensure_session().await?;
@@ -827,9 +832,7 @@ impl AgentSpaceMcpServer {
 
         tracing::Span::current().record("workspace", session.workspace_name.as_str());
         info!(workspace = %session.workspace_name, command_bytes = params.cmd.len(), timeout_secs, "bash exec");
-        let start = std::time::Instant::now();
-
-        match session.exec(&cmd, timeout).await {
+        let result: Result<CallToolResult, McpError> = match session.exec(&cmd, timeout).await {
             Ok(result) => {
                 info!(
                     workspace = %session.workspace_name,
@@ -891,12 +894,22 @@ impl AgentSpaceMcpServer {
                     &format!("bash exec failed: {error}"),
                 ))]))
             }
+        };
+        let mut result = result?;
+        let mut timing = json!({
+            "started_at": started_at,
+            "duration_secs": (start.elapsed().as_secs_f64() * 10.0).round() / 10.0
+        });
+        if result.is_error == Some(true) {
+            timing["hint"] = json!("Inspect command state and outputs before retrying; side effects may have occurred.");
         }
+        result.content.push(Content::text(timing.to_string()));
+        Ok(result)
     }
 
     #[instrument(skip(self, params, context), fields(workspace), level = "info")]
     #[tool(
-        description = "Read text lines or view a supported image from a file. Text is decoded as UTF-8 with line numbers; invalid bytes become replacement characters. Text output is bounded; request a smaller line range if truncated."
+        description = "Read numbered UTF-8 text from a file, or set multimodal=true to view an image. Use offset and limit for long text."
     )]
     async fn read(
         &self,
@@ -911,12 +924,18 @@ impl AgentSpaceMcpServer {
 
     #[instrument(skip(self, params), fields(workspace), level = "info")]
     #[tool(
-        description = "Create a UTF-8 text file or replace its full contents. Creates missing parent directories and returns the number of bytes written. After a timeout or lost response, read the file before retrying."
+        description = "Create a UTF-8 text file or replace its entire contents. Creates missing parent directories and returns the bytes written. Empty content is rejected."
     )]
     async fn write(
         &self,
         Parameters(params): Parameters<WriteParams>,
     ) -> Result<CallToolResult, McpError> {
+        if params.content.is_empty() {
+            return Err(McpError::invalid_params(
+                "write requires nonempty content; the file was not changed",
+                None,
+            ));
+        }
         self.recheck_bound().await?;
         let session = self.ensure_session().await?;
         tracing::Span::current().record("workspace", session.workspace_name.as_str());
@@ -941,7 +960,7 @@ impl AgentSpaceMcpServer {
 
     #[instrument(skip(self, params), fields(workspace), level = "info")]
     #[tool(
-        description = "Replace one exact text passage in an existing UTF-8 file. A missing or non-unique match returns an error without changing the file. Returns a replacement confirmation on success. After a timeout or lost response, read the file before retrying."
+        description = "Replace one exact, unique text passage in a UTF-8 file. A missing or non-unique match leaves the file unchanged."
     )]
     async fn edit(
         &self,
@@ -996,7 +1015,7 @@ impl ServerHandler for AgentSpaceMcpServer {
                 format!("Agent Space MCP — persistent workspace with command execution.\n\
                  Built-in tools: bash, read, write, edit, web_publish.\n\
                  Command and file tool execution defaults to workspace.exec_timeout_secs; bash.timeout_secs may override it per call. Web publication transfers use separate startup and I/O idle timeouts.\n\
-                 Host-managed services are documented in /opt/agent-space/README.md when installed; do not modify their reserved files or stop them manually. web_publish publishes selected files, directories or running HTTP services; it does not control DAV.{}",if self.browser.load(std::sync::atomic::Ordering::SeqCst) {"\nThis space also provides browser_observe, screen_observe, browser_run and browser_task for one shared visible browser. Browser task deadlines include preparation; polling does not extend them. Tool descriptions contain all required usage guidance."} else {""}),
+                 Host-managed services are documented in /opt/agent-space/README.md when installed; do not modify their reserved files or stop them manually. web_publish publishes selected files, directories or running HTTP services; it does not control DAV.{}",if self.browser.load(std::sync::atomic::Ordering::SeqCst) {"\nThis space also provides browser_snapshot, browser_act, browser_read and screen_observe for one shared visible browser. Use browser_act op=wait/cancel for all browser and screenshot tasks. Task deadlines include preparation; polling does not extend them. Tool descriptions contain all required usage guidance."} else {""}),
             )
     }
 
@@ -1030,6 +1049,7 @@ impl ServerHandler for AgentSpaceMcpServer {
                 .list_all()
                 .into_iter()
                 .filter(|t| self.tool_enabled(&t.name))
+                .map(|tool| self.disclosed_tool(tool))
                 .collect(),
             next_cursor: None,
             meta: None,
@@ -1213,15 +1233,17 @@ fn browser_result(
                 agent_engine::engine::EngineError::Other(message) => message.clone(),
                 _ => error.to_string(),
             };
-            let value = serde_json::from_str::<serde_json::Value>(&message).unwrap_or_else(
+            let mut value = serde_json::from_str::<serde_json::Value>(&message).unwrap_or_else(
                 |_| json!({"error":browser_error(&message),"side_effects":"unknown"}),
             );
+            compact_browser_feedback(&mut value);
             return CallToolResult::error(vec![Content::text(value.to_string())]);
         }
     };
     if let Some(error) = value.get("error").and_then(|v| v.as_str()) {
         value["error"] = browser_error(error);
     }
+    compact_browser_feedback(&mut value);
     let mut images = vec![];
     if let Some(items) = value
         .as_object_mut()
@@ -1240,16 +1262,8 @@ fn browser_result(
     }
     // Capture ownership stays in the host cache; callers need only the public
     // identity and dimensions used for pointer actions.
-    if let Some(captures) = value["captures"].as_array_mut() {
-        for capture in captures {
-            if let Some(object) = capture.as_object_mut() {
-                object.remove("window");
-                object.remove("at");
-            }
-        }
-    }
-    if value.get("frames").is_some() {
-        value.as_object_mut().unwrap().remove("captures");
+    if let Some(object) = value.as_object_mut() {
+        object.remove("captures");
     }
     let failed = value.get("error").is_some()
         || matches!(
@@ -1262,6 +1276,83 @@ fn browser_result(
         CallToolResult::error(content)
     } else {
         CallToolResult::success(content)
+    }
+}
+fn compact_base_schema(value: &mut serde_json::Value) {
+    match value {
+        serde_json::Value::Object(object) => {
+            object.remove("title");
+            object.remove("$schema");
+            if matches!(
+                object.get("format").and_then(|v| v.as_str()),
+                Some("uint" | "uint32" | "uint64" | "int32" | "int64" | "double" | "float")
+            ) {
+                object.remove("format");
+            }
+            if object
+                .get("default")
+                .is_some_and(serde_json::Value::is_null)
+            {
+                object.remove("default");
+            }
+            for child in object.values_mut() {
+                compact_base_schema(child);
+            }
+        }
+        serde_json::Value::Array(items) => {
+            for child in items {
+                compact_base_schema(child);
+            }
+        }
+        _ => {}
+    }
+}
+fn compact_browser_feedback(value: &mut serde_json::Value) {
+    if let Some(epoch) = value.get("started_at").and_then(|v| v.as_i64()) {
+        if let Ok(time) = time::OffsetDateTime::from_unix_timestamp(epoch) {
+            if let Ok(text) = time.format(&time::format_description::well_known::Rfc3339) {
+                value["started_at"] = json!(text);
+            }
+        }
+    }
+
+    if let Some(frames) = value.get_mut("frames").and_then(|v| v.as_array_mut()) {
+        for frame in frames {
+            if let Some(object) = frame.as_object_mut() {
+                if let Some(ms) = object.remove("elapsed_ms").and_then(|v| v.as_u64()) {
+                    object.insert(
+                        "elapsed_secs".into(),
+                        json!((ms as f64 / 100.0).round() / 10.0),
+                    );
+                }
+            }
+        }
+    }
+    if let Some(object) = value.as_object_mut() {
+        object.remove("phase");
+        object.remove("logs");
+    }
+    if value["state"] == "succeeded" {
+        value.as_object_mut().unwrap().remove("side_effects");
+    }
+    if value["error"]["code"] == "PAGE_LIMIT_REACHED" {
+        let reason = value["error"]["message"]
+            .as_str()
+            .unwrap_or("Page limit reached")
+            .split(". ")
+            .next()
+            .unwrap();
+        value["error"]["message"] = json!(format!(
+            "{reason}. Use browser_snapshot(view='tabs'), then reuse or close existing pages."
+        ));
+    }
+    if value["error"]["code"] == "PAGE_NOT_FOUND" {
+        value["error"]["message"] = json!("Page not found. Use browser_snapshot(view='tabs') to select an open page, or tab/new to open one.");
+    }
+    if value["error"]["code"] == "HUMAN_CONTROL" {
+        value["error"]["message"] = json!(
+            "The user controls the desktop. Observation remains available; resume actions after control is returned."
+        );
     }
 }
 fn browser_error(message: &str) -> serde_json::Value {
@@ -1343,6 +1434,27 @@ mod tests {
     }
 
     #[test]
+    fn browser_timing_and_success_metadata_are_compact_without_losing_failures() {
+        let mut value = json!({"state":"succeeded","started_at":1792495384u64,"duration_secs":2.1,"phase":"done","side_effects":"may_have_occurred","value":{"completed":1}});
+        compact_browser_feedback(&mut value);
+        let start = value["started_at"].as_str().unwrap();
+        assert_eq!(start.len(), 20);
+        assert!(start.ends_with('Z'));
+        assert_eq!(value["duration_secs"], 2.1);
+        assert!(value.get("phase").is_none());
+        assert!(value.get("side_effects").is_none());
+        let mut failed = json!({"state":"failed","side_effects":"may_have_occurred","cleanup_confirmed":false,"failed_step":{"index":1},"error":{"code":"PAGE_LIMIT_REACHED","message":"full"}});
+        compact_browser_feedback(&mut failed);
+        assert_eq!(failed["side_effects"], "may_have_occurred");
+        assert_eq!(failed["cleanup_confirmed"], false);
+        assert_eq!(failed["failed_step"]["index"], 1);
+        assert!(failed["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("view='tabs'"));
+    }
+
+    #[test]
     fn error_text_is_bounded_without_dropping_the_cause_or_tail() {
         assert_eq!(
             compact_error("\x1b[31mPermission denied\x1b[0m\r\n"),
@@ -1388,6 +1500,29 @@ mod tests {
     }
 
     #[test]
+    fn browser_feedback_keeps_actionable_errors_without_worker_logs() {
+        let mut value = json!({"error":{"code":"TIMEOUT","message":"not found"},
+            "logs":{"stderr":"TIMEOUT: not found\n","stdout":"useful"},
+            "value":{"completed":1,"failed_step":2},"side_effects":"may_have_occurred"});
+        compact_browser_feedback(&mut value);
+        assert!(value.get("logs").is_none());
+        assert_eq!(value["value"]["completed"], 1);
+        assert_eq!(value["side_effects"], "may_have_occurred");
+        value["logs"] = json!({"stderr":"additional cause"});
+        compact_browser_feedback(&mut value);
+        assert!(value.get("logs").is_none());
+        assert_eq!(value["error"]["message"], "not found");
+        let mut value = json!({"error":{"code":"HUMAN_CONTROL","message":"HUMAN_CONTROL"},
+            "logs":{"stderr":"HUMAN_CONTROL: HUMAN_CONTROL"}});
+        compact_browser_feedback(&mut value);
+        assert!(value.get("logs").is_none());
+        assert!(value["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("Observation remains available"));
+    }
+
+    #[test]
     fn publication_targets_report_the_actual_invalid_input() {
         assert!(publish_params::target(None, None, None)
             .unwrap_err()
@@ -1415,20 +1550,12 @@ mod tests {
         assert!(bash.workdir.is_none());
         assert!(bash.timeout_secs.is_none());
         assert_eq!(bash.cmd, " echo hi ");
-        let run: RunParams =
-            serde_json::from_value(json!({"code":" return ''; ","page_id":" ","script_path":null}))
+        let observe: SnapshotParams =
+            serde_json::from_value(json!({"page_id":"","image":null,"recent_tasks_limit":null}))
                 .unwrap();
-        assert!(run.page_id.is_none());
-        assert_eq!(run.code, " return ''; ");
-        let observe: ObserveParams = serde_json::from_value(
-            json!({"page_id":"","view":null,"recent_tasks_limit":null,"unused":false}),
-        )
-        .unwrap();
         assert!(observe.page_id.is_none());
-        assert!(observe.view.is_none());
-        let task: TaskParams =
-            serde_json::from_value(json!({"task_id":"id","action":null,"wait_secs":0,"unused":0}))
-                .unwrap();
+        let task: ActParams =
+            serde_json::from_value(json!({"task_id":"id","op":"wait","wait_secs":0})).unwrap();
         assert_eq!(task.wait_secs, Some(0));
         let write: WriteParams =
             serde_json::from_value(json!({"path":"/workspace/a","content":"","unused":null}))
@@ -1440,7 +1567,7 @@ mod tests {
         .unwrap();
         assert_eq!(edit.old_text, " x ");
         assert_eq!(edit.new_text, "");
-        assert!(serde_json::from_value::<RunParams>(json!({"code":null})).is_err());
+        assert!(serde_json::from_value::<ActParams>(json!({"code":null})).is_err());
         assert!(
             serde_json::from_value::<BashParams>(json!({"cmd":"x","timeout_secs":"bad"})).is_err()
         );
@@ -1450,22 +1577,11 @@ mod tests {
     #[test]
     fn optional_choices_default_on_blank_and_validate_nonempty_values() {
         for placeholder in [json!(null), json!(""), json!(" \n\t ")] {
-            let observe: ObserveParams = serde_json::from_value(
-                json!({"view":placeholder,"extra":{"anything":[1,null,false]}}),
-            )
-            .unwrap();
-            assert!(observe.view.is_none());
-            let task: TaskParams = serde_json::from_value(
-                json!({"task_id":"task","action":placeholder,"wait_secs":null}),
-            )
-            .unwrap();
-            assert!(task.action.is_none());
+            let p: ActParams = serde_json::from_value(json!({"op":placeholder})).unwrap();
+            assert!(p.op.is_none());
         }
-        let observe: ObserveParams = serde_json::from_value(json!({"view":" desktop "})).unwrap();
-        assert!(matches!(observe.view, Some(BrowserView::Desktop)));
-        let task: TaskParams =
-            serde_json::from_value(json!({"task_id":"task","action":" cancel "})).unwrap();
-        assert!(matches!(task.action, Some(TaskAction::Cancel)));
+        let p: ActParams = serde_json::from_value(json!({"op":" cancel ","task_id":"id"})).unwrap();
+        assert!(matches!(p.op, Some(ActAction::Cancel)));
         for invalid in [
             json!("unknown"),
             json!(false),
@@ -1473,11 +1589,13 @@ mod tests {
             json!({}),
             json!(1),
         ] {
-            assert!(serde_json::from_value::<ObserveParams>(json!({"view":invalid})).is_err());
-            assert!(serde_json::from_value::<TaskParams>(
-                json!({"task_id":"task","action":invalid})
-            )
-            .is_err());
+            assert!(serde_json::from_value::<ActParams>(json!({"op":invalid})).is_err());
+        }
+        for image in [json!(true), json!(false), json!(null)] {
+            assert!(serde_json::from_value::<SnapshotParams>(json!({"image":image})).is_ok());
+        }
+        for image in [json!(""), json!("marks"), json!(1), json!({})] {
+            assert!(serde_json::from_value::<SnapshotParams>(json!({"image":image})).is_err());
         }
         let read: ReadParams = serde_json::from_value(
             json!({"path":" file \n", "offset":null,"limit":null,"unexpected":[1,{}]}),

@@ -36,11 +36,12 @@ def read_file(path, spec):
     except FileNotFoundError:
         print("FILE_NOT_FOUND")
         return 1
+    meta = os.fstat(fd)
+    if not stat.S_ISREG(meta.st_mode):
+        os.close(fd)
+        print("NOT_A_FILE")
+        return 1
     with os.fdopen(fd, "rb", buffering=0) as stream:
-        meta = os.fstat(stream.fileno())
-        if not stat.S_ISREG(meta.st_mode):
-            print("NOT_A_FILE")
-            return 1
         if not meta.st_size:
             print("EMPTY")
             return 0
@@ -59,9 +60,7 @@ def read_file(path, spec):
             # reports must be parsed whole; they never become truncated text.
             print("RUNCOVE_READ_MEDIA", file=sys.stderr, flush=True)
             error = None
-            if spec.get("line_range"):
-                error = {"code": "INVALID_ARGUMENT", "message": "offset and limit apply only to text files; omit both for images"}
-            elif not supported:
+            if not supported:
                 error = {"code": "UNSUPPORTED_MEDIA", "message": "Supported images are JPEG, PNG, WebP, and GIF"}
             elif not spec.get("multimodal", False):
                 error = {"code": "MULTIMODAL_REQUIRED", "message": "Set multimodal=true to read image content"}
@@ -78,6 +77,9 @@ def read_file(path, spec):
             return 0
         print("RUNCOVE_READ_TEXT", file=sys.stderr, flush=True)
         start, count = spec["offset"], spec["limit"]
+        if start <= 0 or count <= 0:
+            print("offset and limit must be positive integers", file=sys.stderr)
+            return 1
         found = False
         with io.TextIOWrapper(stream, encoding="utf-8", errors="replace", newline="") as text:
             for number, line in enumerate(text, 1):
@@ -137,6 +139,8 @@ def run(spec):
         if mode == "read":
             return read_file(path, spec)
         elif mode == "write":
+            if not spec["content"]:
+                raise ValueError("write requires nonempty content; the file was not changed")
             os.makedirs(os.path.dirname(path), exist_ok=True)
             atomic_write(path, spec["content"])
             print(len(spec["content"].encode("utf-8")))

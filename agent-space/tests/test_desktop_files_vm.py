@@ -45,7 +45,7 @@ class DesktopFiles(unittest.TestCase):
   client=Client('desktop');client.initialize()
   until=time.monotonic()+15
   while True:
-   result=text(client.tool('browser_run',{'code':'return {ok:true};'}))
+   result,_=client.act([{'do':'wait','secs':1}])
    if result.get('state') in ['succeeded','running']:break
    self.assertLess(time.monotonic(),until);time.sleep(.1)
   connection=self.connect();connection.request('GET',path,headers=self.headers());response=connection.getresponse();self.assertEqual(response.status,404);response.read();connection.close()

@@ -1,0 +1,39 @@
+{
+  "scope": "guidance strings only after complete functional qualification",
+  "qualified_source_digest": "0ce59840fc600d3c789929d308af0c6b0e57c30757f019c2028f85affd117845",
+  "final_source_digest": "ad47aed46b81030474fb5e11d7a34cbab17e005172b9e11a0ddb80b87e84ccd8",
+  "changes": [
+    {
+      "path": "agent-space-mcp/src/browser_params.rs",
+      "old_string": "Execute only: per-action timeout 500-30000 ms, default 5000.",
+      "new_string": "Execute only: element interaction timeout 500-30000 ms, default 5000. Navigation, wait and download have separate limits.",
+      "before_sha256": "f88467f0daa7ef1b9db4c1748aa1db2ba44479555dbd2a9b7fa34949b10aa6c5",
+      "after_sha256": "fa828c78dfbe57c199e5c9e7371f226cfcb0ec643d82a92553cd2fba872e2c6c"
+    },
+    {
+      "path": "guest/desktop/browser-tools.cjs",
+      "old_string": "Drag endpoints must fit in one viewport; scroll to the target and use a fresh viewport image.",
+      "new_string": "Drag endpoints must fit in one viewport; use element refs for longer drags or split the movement into shorter steps.",
+      "before_sha256": "23669ea8d5012ed358484414170ca8670c5ffeb955fb8adb593fce7a5d234eb5",
+      "after_sha256": "dd99fc446f4f8f02aca867cc1ec98ac3dd54b436a368fe361991c8b0d1b5f6b2"
+    }
+  ],
+  "only_two_string_literals_changed": true,
+  "parameter_names_types_defaults_validation_and_execution_unchanged": true,
+  "validation_passed": true,
+  "temporary_probe_sha256": "b027ce44aef264798c7158aa4f4b9232678575b28b5f6791261920b441a19a48",
+  "node_syntax_checked": true,
+  "generated_catalog_only_action_timeout_description_changed": true,
+  "both_feature_catalogs_identical": true,
+  "contract_tests_passed": {
+    "server": 5,
+    "standalone": 5
+  },
+  "final_helper_unit_passed": 8,
+  "temporary_probe_removed": true,
+  "final_binaries_sha256": {
+    "agent-space-mcp": "64473a320eb82c3fb06da2189c58119a125bf549577c0f5a56cfb89828dc457b",
+    "runcove-standalone": "7f8609bbc349d907b6ecefbf2eb7d1dc54ba48b43bd7fc49b0ad58498d7e4dfc",
+    "agent-space-desktop": "a09cca90518ec166dcc364be9cdb98e9b374e4b6e8d10d2474b627011ed375ea"
+  }
+}

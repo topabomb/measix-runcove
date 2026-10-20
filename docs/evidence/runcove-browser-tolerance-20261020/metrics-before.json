@@ -1,0 +1,142 @@
+{
+  "read": {
+    "bytes": 402,
+    "value": {
+      "page_id": "7A6A1DC7889F53B067003C95D8E3B2BD",
+      "tabs": [
+        {
+          "page_id": "7A6A1DC7889F53B067003C95D8E3B2BD",
+          "url": "http://127.0.0.1:46133/login",
+          "title": "Sign in"
+        }
+      ],
+      "health": {
+        "browser": true,
+        "page": true,
+        "desktop": true,
+        "native_window": false
+      },
+      "url": "http://127.0.0.1:46133/login",
+      "matches": [
+        {
+          "ref": "eNq_2DM09o5",
+          "role": "textbox",
+          "name": "Email",
+          "iframe": false,
+          "frame_path": [],
+          "truncated": false
+        }
+      ],
+      "truncated": false
+    }
+  },
+  "action": {
+    "bytes": 520,
+    "value": {
+      "completed": 1,
+      "of": 1,
+      "page_id": "7A6A1DC7889F53B067003C95D8E3B2BD",
+      "tabs": [
+        {
+          "page_id": "7A6A1DC7889F53B067003C95D8E3B2BD",
+          "url": "http://127.0.0.1:46133/login",
+          "title": "Sign in"
+        }
+      ],
+      "health": {
+        "browser": true,
+        "page": true,
+        "desktop": true,
+        "native_window": false
+      },
+      "url": "http://127.0.0.1:46133/login",
+      "title": "Sign in",
+      "diff": {
+        "added": [],
+        "removed": [],
+        "changed": [
+          "eNq_2DM09o5 textbox \"Email\" =\"example@example.com\""
+        ],
+        "text_added": [
+          "example@example.com"
+        ],
+        "text_removed": [],
+        "truncated": false
+      },
+      "layers": [],
+      "layers_truncated": false
+    }
+  },
+  "menu": {
+    "bytes": 1329,
+    "value": {
+      "page_id": "7A6A1DC7889F53B067003C95D8E3B2BD",
+      "tabs": [
+        {
+          "page_id": "7A6A1DC7889F53B067003C95D8E3B2BD",
+          "url": "http://127.0.0.1:46133/panels",
+          "title": "Floating panels"
+        }
+      ],
+      "health": {
+        "browser": true,
+        "page": true,
+        "desktop": true,
+        "native_window": false
+      },
+      "url": "http://127.0.0.1:46133/panels",
+      "title": "Floating panels",
+      "elements": "e7TH3Ks50kn heading \"Panels\" [level=1]\neEoI8eS-z2_ button \"Actions\"\neB2IF6v7gO8 button \"Hover for help\"\neqbDKcYFvGw button \"Open popover\"\nercUGYwj3z0 button \"Open nested modal\"\neUTVoWQzXIa menu \"Actions menu\"\neY5VPDOPMr3 menuitem \"Choose item\"\neAOZuTfJyLW button \"Site menu\"",
+      "element_count": 8,
+      "truncated": false,
+      "layers": [
+        {
+          "role": "menu",
+          "name": "Actions menu",
+          "text": "Choose item",
+          "modal": false,
+          "position": "fixed",
+          "z_index": "10",
+          "coordinate_space": "frame_css",
+          "box": {
+            "x": 100,
+            "y": 100,
+            "width": 90.828125,
+            "height": 21
+          },
+          "refs": [
+            "eUTVoWQzXIa",
+            "eY5VPDOPMr3"
+          ],
+          "truncated": false,
+          "iframe": false,
+          "frame_url": "http://127.0.0.1:46133/panels",
+          "frame_truncated": false
+        },
+        {
+          "role": "panel",
+          "name": "",
+          "text": "Site menu",
+          "modal": false,
+          "position": "fixed",
+          "z_index": "auto",
+          "coordinate_space": "frame_css",
+          "box": {
+            "x": 1354.984375,
+            "y": 0,
+            "width": 76.015625,
+            "height": 21
+          },
+          "refs": [
+            "eAOZuTfJyLW"
+          ],
+          "truncated": false,
+          "iframe": false,
+          "frame_url": "http://127.0.0.1:46133/panels",
+          "frame_truncated": false
+        }
+      ],
+      "layers_truncated": false
+    }
+  }
+}

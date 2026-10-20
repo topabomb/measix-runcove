@@ -1,0 +1,52 @@
+{
+  "scope": "Failed strict frozen-browser regression before conditional crash-restore fix; excluded from final qualification",
+  "source_digest": "86a0b9ee453cf562f2419e611986cb73b201219d6df6eb3027b24b4b1245c232",
+  "state": {
+    "expected_urls": [
+      "http://127.0.0.1:8124/"
+    ],
+    "sleep_health": {
+      "desktop": false,
+      "worker_contract": 1
+    },
+    "preparing_polls": 2,
+    "stopped": {
+      "old_process_alive": false,
+      "was": {
+        "restarted": true
+      },
+      "last_active_profiles": [
+        "Default"
+      ]
+    },
+    "first_wake": {
+      "element_count": 19,
+      "elements": "eh-eoFofHSg iframe\nekNFr02QQrj link \"Gmail\" (iframe eh-eoFofHSg)\nekDuFGLRqOC link \"Search for Images\" (iframe eh-eoFofHSg)\nenvCSSI3YS4 button \"Google apps\" (iframe eh-eoFofHSg)\nem2Lv4JJbdw combobox \"Search Google or type a URL\"\neuQsD8TeYSk button \"Search by voice\"\neQSLsthfjAR button \"Search by image\"\nezCcGkfoqp2 button \"Ask AI Mode in Google Search\"\neIzWCkgkffK generic \"Automation fixture\"\neEZZDgomLBz link \"Automation fixture\"\neOwru79gkDF button \"More actions for Automation fixture shortcut\"\neM6CvZud1kR generic \"Other profile fixture\"\nexkwFvKaVer link \"Other profile fixture\"\ne6E5TwMbupl button \"More actions for Other profile fixture shortcut\"\ne8P6hoGpI6g generic \"Web Store\"\nerXVCe_onKX link \"Web Store\"\nevUP0WrZlPJ button \"More actions for Web Store shortcut\"\neErB1X9Z7V- button \"Add shortcut\"\neWA2ji3M1IY button \"Customize Chrome for Testing\"",
+      "health": {
+        "browser": true,
+        "desktop": true,
+        "native_window": false,
+        "page": true
+      },
+      "layers": [],
+      "layers_truncated": false,
+      "page_id": "B740900AC85BC3A3EB11E5EE7CD60A3C",
+      "tabs": [
+        {
+          "page_id": "B740900AC85BC3A3EB11E5EE7CD60A3C",
+          "title": "New Tab",
+          "url": "chrome://newtab/"
+        }
+      ],
+      "title": "New Tab",
+      "truncated": false,
+      "url": "chrome://new-tab-page/",
+      "control": {
+        "mode": "AI"
+      }
+    }
+  },
+  "cleanup_passed": true,
+  "original_log_sha256": "e2afea0b057c8a9f4c848b5d7f34ca320249bb7ea6b5b9142d62a4393fbc497b",
+  "chromium_startup_source": "https://github.com/chromium/chromium/blob/971a7443b0c9b0a9b2860529b33331b76077ec62/chrome/browser/ui/startup/startup_browser_creator.cc#L1422"
+}

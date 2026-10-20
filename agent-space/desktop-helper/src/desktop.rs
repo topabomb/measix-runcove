@@ -35,7 +35,10 @@ pub fn install_sources() -> anyhow::Result<()> {
             "observation.cjs",
             include_str!("../../guest/desktop/observation.cjs"),
         ),
-        ("script.cjs", include_str!("../../guest/desktop/script.cjs")),
+        (
+            "browser-tools.cjs",
+            include_str!("../../guest/desktop/browser-tools.cjs"),
+        ),
         (
             "artifacts.cjs",
             include_str!("../../guest/desktop/artifacts.cjs"),
@@ -393,6 +396,14 @@ impl Desktop {
             "--password-store=basic",
             "--restore-last-session",
         ];
+        // A forced idle stop leaves Chromium's exit type as Crashed, which
+        // otherwise suppresses --restore-last-session. Bypass that prompt only
+        // for the existing one-shot managed restart intent, not ordinary opens.
+        if node(serde_json::json!({"action":"restart_pending"})).await?["restart_pending"].as_bool()
+            == Some(true)
+        {
+            args.push("--hide-crash-restore-bubble");
+        }
         // Server's VM is the isolation boundary. Chromium refuses root without
         // this flag; Standalone retains its unprivileged Chromium sandbox.
         if process::workspace_uid() == 0 {
@@ -496,7 +507,8 @@ impl Desktop {
     }
 }
 pub async fn node(value: serde_json::Value) -> anyhow::Result<serde_json::Value> {
-    let spec = serde_json::json!({"program":"node","args":[format!("{NODE}/observe-worker.cjs"),value.to_string()],"timeout_secs":5,"max_bytes":agent_engine::media::REPORT_LIMIT,"max_lines":10000,"uid":process::workspace_uid()});
+    let timeout = if value["view"] == "page" { 15 } else { 5 };
+    let spec = serde_json::json!({"program":"node","args":[format!("{NODE}/observe-worker.cjs"),value.to_string()],"timeout_secs":timeout,"max_bytes":agent_engine::media::REPORT_LIMIT,"max_lines":10000,"uid":process::workspace_uid()});
     let mut command = Command::new("python3");
     process::workspace_env(&mut command);
     command

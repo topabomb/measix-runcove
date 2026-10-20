@@ -1,0 +1,61 @@
+{
+  "scope": "focused development-assets browser tool contract; not release qualification",
+  "production_updated": false,
+  "metrics": {
+    "unit": "UTF-8 bytes of compact JSON; not token counts",
+    "catalog": {
+      "before": 21972,
+      "after": 21151,
+      "baseline": "../runcove-image-webp-20261020/browser-tools.json"
+    },
+    "worker_examples": {
+      "read": {
+        "before": 402,
+        "after": 216,
+        "reduction_percent": 46.3
+      },
+      "action": {
+        "before": 520,
+        "after": 297,
+        "reduction_percent": 42.9
+      },
+      "menu": {
+        "before": 1329,
+        "after": 892,
+        "reduction_percent": 32.9
+      }
+    }
+  },
+  "tests": {
+    "mcp_default_features": {
+      "lib": 31,
+      "http": 5
+    },
+    "mcp_no_default_features": {
+      "lib": 31,
+      "http": 5
+    },
+    "chromium_worker": {
+      "passed": 25,
+      "skipped": 1,
+      "skip_reason": "DEVICE_SCALE=2-specific case; regular device scale was tested"
+    },
+    "clippy": "workspace all-targets -D warnings passed",
+    "integration": {
+      "standalone": "10 structured tests plus catalog and container checks; passed",
+      "server": "10 structured tests plus catalog through real MSB VM; passed"
+    }
+  },
+  "limitations": [
+    "No final release-image qualification",
+    "Profile/page-limit restart qualification was not rerun in this focused tool review",
+    "Flow anti-abuse behavior is not bypassed or classified by tool completion"
+  ],
+  "changed_code_sha256": {
+    "agent-space/agent-space-mcp/src/browser_params.rs": "1b9214d56bdd2a5e5e3a0d70f398ca9cf67c63deff361139472b644a02c71f2b",
+    "agent-space/agent-space-mcp/src/server.rs": "26adc18ce9142672724b05d35e41cbcc10d5c7dea30ce77c90d59af39c38fa18",
+    "agent-space/guest/desktop/browser-tools.cjs": "484491276441726e8ed13cb0e67ef300e1b22bbf2f75add716a18e5933d75ae8"
+  },
+  "test_environment": "Worker suite: real headed Chromium with Xvfb/openbox and 512 MiB /dev/shm. Containers and volumes are disposable. Initial default 64 MiB container crashed at a large-page capture; corrected runner passed.",
+  "baseline_worker_sha256": "e1227e7a24877e88b31b1803f67cce1a79d82afe3296083c20784be460768b98"
+}

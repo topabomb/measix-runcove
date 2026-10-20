@@ -1,0 +1,13 @@
+{
+  "rust_workspace_passed": 330,
+  "rust_standalone_lib_passed": 34,
+  "final_mcp_integration_passed": 10,
+  "node_passed": 35,
+  "node_inapplicable_dpr2_skip": 1,
+  "node_dpr2_passed": 2,
+  "python_passed": 22,
+  "workspace_clippy_all_targets": true,
+  "standalone_clippy_scope": "--no-default-features --lib --bins",
+  "release_builds": "workspace and no-default standalone",
+  "diff_check_passed": true
+}

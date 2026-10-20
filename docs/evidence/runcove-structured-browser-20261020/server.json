@@ -1,0 +1,46 @@
+{
+  "target": "server",
+  "image": "sha256:dc5d61e08fa29c02775089083efe31ae2968ad6246d317600d5a52e90cb4b861",
+  "image_id": "sha256:dc5d61e08fa29c02775089083efe31ae2968ad6246d317600d5a52e90cb4b861",
+  "scope": "development assets",
+  "full": false,
+  "shared_full": true,
+  "checks": [
+    "shared_test_browser_vm.py",
+    "shared_test_browser_structured_vm.py",
+    "shared_test_browser_pages_vm.py",
+    "shared_test_media_vm.py",
+    "shared_test_browser_profiles_vm.py",
+    "shared_test_desktop_files_vm.py",
+    "shared_test_browser_lifecycle_vm.py",
+    "shared_real_vnc_keyboard_clipboard_viewers_responsive_and_idle",
+    "reduced_page_limit_after_restart_preserves_profile_and_existing_pages"
+  ],
+  "passed": true,
+  "source_digest": "0ce59840fc600d3c789929d308af0c6b0e57c30757f019c2028f85affd117845",
+  "binaries_sha256": {
+    "agent-space-mcp": "14ed8e7f7119fd3f4641f3ea2606f175e84c75041a834f5e078f44340e212d3f",
+    "agent-space-static-http": "1f235e136586d0e7f607d151b5de4fe53c024e84f5704cd06580c1647819fdfc",
+    "agent-space-webdav": "6218fd2efcaacb1d935d9993ba8c1a4edb58e0d77eee42b739f873615cb9e651",
+    "agent-space-desktop": "25d2272575edf69fecc5eb957d147ee990de38b01deddff1ff0dabdb340c140c"
+  },
+  "suite_logs": {
+    "test_browser_lifecycle_vm.py.log": "7b09246ea355b812a937ecb22b61175ab5ec0487033d767e0a935afd039ec5ae",
+    "test_browser_pages_vm.py.log": "40eee97473c9e3c2cbca186d3ef33ecc728c02c9ddd73a7dd6d0a3b3c6cb52f9",
+    "test_browser_profiles_vm.py.log": "cd0764fd15a136b288f8831048966d93103d54705301f57cdae891f27ad71daf",
+    "test_browser_structured_vm.py.log": "5fb4f35cf341583e9838212c9a9fc0fbd39cf40e6c005ede5aad3270ea0b0538",
+    "test_browser_vm.py.log": "1ee39db010a53752ee7fa4b723cccb505beca6eaf0a1fb92b1ba2d1b6b7063f9",
+    "test_desktop_files_vm.py.log": "29ea4a2b52142a1ccb13ce36c147950df95b1051cd818202d02395cf89a988aa",
+    "test_media_vm.py.log": "09e73425328255c34f34eb626c1159290fb671365cbc53e9b5f668aac257c0fc",
+    "ui.log": "58629aa06bf5523b6eda5eb04f12117781eb96d72d021039c22a9c7dd1e097d5"
+  },
+  "page_limit_restart": {
+    "initial_limit": 4,
+    "restarted_limit": 1,
+    "restored_pages": 4,
+    "restored_after_profile_picker": true,
+    "new_page_error": "PAGE_LIMIT_REACHED",
+    "existing_page_navigation_and_close": true
+  },
+  "cleanup_passed": true
+}

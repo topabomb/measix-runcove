@@ -1,0 +1,85 @@
+{
+  "date": "2026-10-20",
+  "scope": "Local image-policy validation using frozen development binaries in a disposable Standalone container",
+  "image_checks_passed": true,
+  "full_qualification_passed": false,
+  "production_updated": false,
+  "validated_source_digest": "bdbc18573c5dfdc841b8ba88b5a32c1209f2e8be02178d2aee17a1e4480379c6",
+  "base_image_id": "sha256:faa012b38c50eb07a333a6caf9be6c4e9d1cd09c67489f2f1164e63715cddc96",
+  "binaries_sha256": {
+    "runcove-standalone": "e1d0430ea412f1963acba148e14460aa524f092813cfccc11a2e87d3704479a2",
+    "agent-space-static-http": "d0a008d3adb94ca7a5e102575ce2042e1ad3131e231ffbc17048aae8e4ba3287",
+    "agent-space-webdav": "cb9e3020827001a1e143a7a07a2cc7eee616f26e8b13faf31eaf3f38e8f240cf",
+    "agent-space-desktop": "67ebfd30c0ae95ddc3ab4478399dc78b645a8a2ea8f4e193461d278b266b4916"
+  },
+  "policy": {
+    "capture": "original PNG",
+    "max_edge": 1980,
+    "upscale": false,
+    "resize": "single Lanczos3 resize",
+    "output": "image/webp",
+    "quality": 90,
+    "method": 6,
+    "original_save": "unaltered captured PNG",
+    "image_bytes_per_result": 8388608
+  },
+  "checks": {
+    "media_unit_tests": 5,
+    "desktop_helper_tests": 9,
+    "mcp_unit_and_contract_tests": 37,
+    "chromium_default": {
+      "passed": 22,
+      "skipped_dpr2": 1
+    },
+    "chromium_native_dpr2": 2,
+    "final_real_mcp_image_and_coordinate_tests": 12,
+    "clippy_workspace_all_targets": true,
+    "format_python_syntax_diff_checks": true,
+    "container_and_volume_cleanup": true
+  },
+  "chinese_text_sample": {
+    "original_png": {
+      "width": 2200,
+      "height": 1450,
+      "bytes": 463547
+    },
+    "returned_webp": {
+      "width": 1980,
+      "height": 1305,
+      "bytes": 205990,
+      "sha256": "1643f33ffaccc1f6ece9b87ff77db3cb71a92aef034203af8a4a6a15f716dead"
+    },
+    "visual_review": "Chinese text, numbers and code readable; fixed fixture contains no user data"
+  },
+  "fixed_during_validation": [
+    "Expose page-frame scale alongside image_id and dimensions",
+    "Commit a captured frame and its saved original together before stopping subsequent captures on cancellation"
+  ],
+  "additional_failure": {
+    "check": "reduced_page_limit_after_restart_preserves_profile_and_existing_pages",
+    "expected_restored_pages": 4,
+    "observed_pages": 1,
+    "observed_url": "chrome://newtab/",
+    "status": "Recorded; outside this image change; not investigated or modified"
+  },
+  "limitations": [
+    "Not production or a full release qualification",
+    "No new Server VM runtime qualification",
+    "Concurrent browser-contract work continued after the frozen binaries were built; validation identifies those binaries, not subsequent workspace edits"
+  ],
+  "raw_log_sha256": {
+    "rust-media.log": "eaef99f7d1c9aa90ca46d3089781525ec0de1412df02f5d9a660de046a63a161",
+    "rust-tests.log": "921054818e2adf35283d771d5da8b3a2df721d9bb421ecef809f7e1428ce30cc",
+    "helper-tests-final.log": "fd9d145fc36c7393320cd350caaf73f310309f425b81c9bd4c960fb1242115bd",
+    "clippy-final.log": "b61f2af20367220e995f085b3245307298ca6854b2192efd300dddbaf27e3fa3",
+    "node.log": "9ca0af53c5fe5bd370f7b2706c2ea39497609eadb04f57f7e6b168f175f8ecb0",
+    "node-dpr2.log": "12a6a0a648825ce587efcc10f730b937f233aa5f5eea87e3a4640fbd8c76a991",
+    "test_browser_structured_vm.py.log": "ef43b980dead7daff449060c515d5d3ad0a11abebee417d843b87a1068041195",
+    "test_media_vm.py.log": "55b010dc1b82134eea36e0b4b8bbc9bec86357fad7902d9cd7e3e374d2ee36e2"
+  },
+  "test_source_sha256_at_report_time": {
+    "tests/test_browser_structured_vm.py": "fdab02cbaeb9094fe5f631fc114903d4d6fa9a19315f311a2b50dfa492f4dae8",
+    "tests/test_media_vm.py": "e4d0045df4faf21204f767ab2d8d114a4a87ab2e609e138e4b2063d25c5df404",
+    "tests/browser_tools.node.cjs": "adabd23eea9885eb609b82b147fb7de7bfeb64c05e5c06dd6e480a5e25fd04e5"
+  }
+}

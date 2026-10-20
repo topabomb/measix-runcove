@@ -79,9 +79,9 @@ Path('__ROOT__/release').touch()
         self.assertNotIn("<old",read)
         for i in range(20):self.assertIn("<new%d>"%i,read)
 
-    def test_03_browser_task_does_not_block_basic_tools(self):
+    def test_03_browser_work_does_not_block_basic_tools(self):
         browser=Client("desktop");browser.initialize()
-        started=text(browser.tool("browser_run",{"code":"await new Promise(r=>setTimeout(r,15000)); return {finished:true};","timeout_secs":30}))
+        started=text(browser.tool("browser_act",{"actions":[{"do":"wait","secs":10},{"do":"wait","secs":5}],"timeout_secs":30}))
         self.assertEqual(started["state"],"running",started)
         before=time.monotonic()
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
@@ -89,7 +89,7 @@ Path('__ROOT__/release').touch()
         good("bash",{"cmd":"echo bash-during-browser"})
         self.assertLess(time.monotonic()-before,6)
         while started["state"]=="running":
-            started=text(browser.tool("browser_task",{"task_id":started["task_id"]}))
+            started=text(browser.tool("browser_act",{"op":"wait","task_id":started["task_id"]}))
         self.assertEqual(started["state"],"succeeded",started)
 
     def test_04_lock_timeout_keeps_original_and_next_request_recovers(self):

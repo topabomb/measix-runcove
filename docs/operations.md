@@ -106,7 +106,7 @@ docker run --rm -v agent-space-data:/var/lib/microsandbox \
 
 1. 用新包和schema3数据启动，核对`/healthz`、Admin用户列表/资源、MCP原工具、DAV Range/上传及现有文件哈希。确认原 custom 空间仍显示五工具，根盘/卷ID保持。
 2. 可将部署默认image改为 `{preset="runcove-desktop"}`，或Admin创建时单独传 `image:{preset:"runcove-desktop"}`。两者只作用于**新空间**。桌面模板为2vCPU/3072MiB/8GiB工作盘/512MiB tmpfs，明确配置不会被预设暗改。
-3. 新空间调用browser_observe懒启动，访问 `/u/{username}/desktop/`，用该用户MCP Token登录。验证AI/人工互斥、无动作60秒归还、300秒休眠唤醒、文件交换及多人观看。
+3. 新空间调用browser_snapshot懒启动，访问 `/u/{username}/desktop/`，用该用户MCP Token登录。验证AI/人工互斥、无动作60秒归还、300秒休眠唤醒、文件交换及多人观看。
 4. 现有空间如需桌面，创建另一个明确预设的新空间，以DAV/既有文件工具迁移业务文件。不要给原根盘直接改kind或reference，不从实验空间复制登录profile/Token，不热换镜像。
 
 ## 将完整工作区备份恢复到新空间

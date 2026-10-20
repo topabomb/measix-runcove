@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-20",
+  "source_revision_base": "bdee824e762e913032d540733bc8f4c1472d04f2",
+  "source_sha256": "1d5d3632fa34cf691caba6d86b162f8df08748bba5dcfe9059abff0f63762594",
+  "base_image_id": "sha256:dc5d61e08fa29c02775089083efe31ae2968ad6246d317600d5a52e90cb4b861",
+  "binary_sha256": {
+    "agent-space-mcp": "62901687f07aec61d244010039e90edad715a18d89255d9a3c753e42c6e3d096",
+    "agent-space-desktop": "4729efb234a333a0f465c2d5be80cb87e23941e5edd57e61cdd432a7b9b0c322"
+  },
+  "backup": false,
+  "migration": false,
+  "image_rebuilt": false,
+  "checks": [
+    "matched_service_and_embedded_worker_helper_replaced_and_restarted",
+    "running_binary_helper_metadata_config_mounts_and_ports_verified",
+    "live_tools_list_exactly_matches_all_approved_schemas_and_30_second_default",
+    "real_browser_snapshot_ref_click_read_and_iframe_fill",
+    "full_page_and_desktop_images_returned",
+    "production_async_capture_default_wait_and_completed_frames",
+    "guest_running_with_matching_embedded_browser_tools",
+    "temporary_space_removed_original_accounts_preserved",
+    "production_and_peer_healthy"
+  ],
+  "original_user_count": 2,
+  "upload_staging_removed": true,
+  "intermediate_failure": "Initial mount-array order comparison failed; mount entries matched exactly after sorting by destination. Verification resumed without another deployment.",
+  "default_wait_observed_seconds": 24.81,
+  "passed": true,
+  "deployment_method": "Replace MCP and matching desktop helper in the existing container writable layer; synchronize release/runtime metadata and restart.",
+  "persistence_boundary": "Container recreation loses binary and metadata overrides; reapply them or rebuild the image.",
+  "account_verification_scope": "Original account count matched the pre-restart count; account records were unchanged across the post-restart smoke test. Temporary test account was deleted and confirmed absent.",
+  "qualification_scope": "Production smoke verification; earlier development-assets qualification is recorded separately. No final release image or offline package built."
+}

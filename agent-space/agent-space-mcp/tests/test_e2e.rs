@@ -461,7 +461,7 @@ async fn tiny_text_limits_preserve_file_protocol_and_image_results() -> anyhow::
     assert_ne!(image.is_error, Some(true));
     let image = serde_json::to_value(image)?;
     assert_eq!(image["content"][1]["type"], "image");
-    assert_eq!(image["content"][1]["mimeType"], "image/png");
+    assert_eq!(image["content"][1]["mimeType"], "image/webp");
     client.cancel().await?;
     server.cleanup().await
 }

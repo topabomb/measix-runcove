@@ -23,13 +23,16 @@ Use `/workspace` for large downloads, archives and build outputs.
   Passive observation remains available. Only accepted human input renews the
   60-second control lease; five minutes without work closes the desktop while
   keeping the profile and workspace. A later browser call wakes it.
-- Use `browser_run` with standard Playwright JavaScript for upload/download;
-  long runs return a task ID. Use `browser_task` to wait or cancel that task.
-  Scripts and screenshot saving use the same file permissions as bash and file tools.
-  A cancelled or failed website action can have side effects; inspect the page
-  before repeating it. Native dialogs and unresponsive pages require a desktop
-  screenshot and the injected `desktop` helpers. Use `browser_observe` for DOM or AX, and `screen_observe` for one screenshot or a timed sequence of up to eight images. Set `save_original=true` to save original PNG files; `save_dir` optionally selects an absolute directory (default `/workspace/agent-space/artifacts`). The result reports saved paths in `files`. Completed scripts return only explicit outputs; observe separately when needed.
-- `read` returns numbered text by default. Set `multimodal: true` to view JPEG, PNG, WebP or GIF; omit line-range parameters for images. Animations show the first frame.
+- Use `browser_snapshot` for interactive refs and floating panels, `browser_read`
+  for text or structured data, and `browser_act` for ordered browser/desktop actions.
+  `browser_act(op="wait"|"cancel", task_id=...)` controls all browser and screenshot tasks.
+- Every page image covers the full rendered document. `browser_snapshot(image=true)`
+  includes ref annotations; `screen_observe(view="page")` provides plain images,
+  timed sequences and optional saved PNG originals. `view="desktop"` captures native
+  windows too. Coordinates use pixels in the returned image.
+- Uploads and downloads use workspace paths. Saved downloads and screenshot files
+  survive later task failure or cancellation. No JavaScript tool is provided.
+- `read` returns numbered text by default. Set `multimodal: true` to view JPEG, PNG, WebP or GIF; line-range parameters are ignored for images. Animations show the first frame.
 - `/workspace/.agent-space/uploads` contains incomplete DAV uploads on the same
   disk as your files. Do not modify or manually clean it. It is hidden from DAV.
 - `web_publish` publishes a selected file, directory or running HTTP port. Use
@@ -49,7 +52,7 @@ Use `/workspace` for large downloads, archives and build outputs.
   the Host owner. Do not use `pkill`, edit credentials or try to repair ownership
   records. Host configuration and account state remain authoritative.
 
-On Standalone, commands, browser scripts, saved screenshots and file operations
+On Standalone, commands, browser actions, saved screenshots and file operations
 run as UID/GID1001. The Runcove service and helper controllers run as root and own
 private credentials and runtime records. Install application dependencies in
 project-local environments, such as a Python virtual environment or a local npm

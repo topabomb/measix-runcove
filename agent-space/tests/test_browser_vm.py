@@ -1,213 +1,163 @@
 #!/usr/bin/env python3
-"""Real MSB browser qualification; use only an independent test deployment.
-AGENT_SPACE_BROWSER_TEST_DIR contains users.json and port (untracked, mode 600).
-The test users are 'desktop' and 'custom', the latter uses a literal OCI reference.
-"""
-import base64,hashlib,json,time,unittest
+"""Structured browser contract through the real MCP/VM task owners."""
+import base64,hashlib,json,shlex,time,unittest
 from pathlib import Path
-from browser_client import Client,text,Q,TARGET,space_path
+from browser_client import Client,text,Q,TARGET,space_path,element,reset_tabs
 
 class BrowserQualification(unittest.TestCase):
  @classmethod
  def setUpClass(cls):
   cls.client=Client('desktop');cls.client.initialize()
-  def tool(name,args):
-   result=cls.client.tool(name,args);assert not result.get('isError'),text(result);return text(result)
-  fixture=(Path(__file__).parent/'fixtures/browser-site.cjs').read_text()
-  tool('write',{'path':'/workspace/qualification/server.cjs','content':fixture})
-  starter=(Path(__file__).parent/'fixtures/start-browser-site.py').read_text()
-  tool('write',{'path':'/workspace/qualification/start-site.py','content':starter})
-  started=tool('bash',{'cmd':"python3 /workspace/qualification/start-site.py && python3 -c \"from pathlib import Path;Path('/workspace/qualification/upload.bin').write_bytes(b'u'*1048576)\""})
-  assert 'Qualification fixture ready' in json.dumps(started),started
-  tool('bash',{'cmd':"python3 -c \"from pathlib import Path;p=Path('/workspace/qualification/private uploads');p.mkdir(exist_ok=True);p.chmod(0o700);f=p/'原生 reference.bin';f.write_bytes(b'u'*1048576);f.chmod(0o600)\""})
- @classmethod
- def browser(cls,code,timeout=60,success=True):
-  reply=cls.client.tool('browser_run',{'code':code,'timeout_secs':timeout});value=text(reply)
-  while value.get('state')=='running':
-   reply=cls.client.tool('browser_task',{'task_id':value['task_id']});value=text(reply)
-  if success: assert not reply.get('isError'),value
-  else:
-   assert reply.get('isError'),value
-   assert 'observation' not in value,value
-   assert len(value.get('error',{}).get('message',''))<=2048,value
-  assert 'recent_tasks' not in value and 'observation' not in value
+  root=Path(__file__).parent/'fixtures'
+  fixture=(root/'browser-site.cjs').read_text()+"\nrequire('./structured-site.cjs').start(8125);"
+  for name,content in [('server.cjs',fixture),('structured-site.cjs',(root/'structured-browser-site.cjs').read_text()),('start-site.py',(root/'start-browser-site.py').read_text())]:
+   cls.client.good('write',{'path':'/workspace/qualification/'+name,'content':content})
+  cls.client.good('bash',{'cmd':"python3 /workspace/qualification/start-site.py && python3 -c \"from pathlib import Path;p=Path('/workspace/qualification/private uploads');p.mkdir(exist_ok=True);p.chmod(0o700);f=p/'原生 reference.bin';f.write_bytes(b'u'*1048576);f.chmod(0o600);Path('/workspace/qualification/upload.bin').write_bytes(b'u'*1048576)\""})
+ def setUp(self):reset_tabs(self.client)
+ def act(self,steps,success=True,**args):
+  value,reply=self.client.act(steps,**args)
+  self.assertEqual(not bool(reply.get('isError')),success,value)
   return value,reply
- def test_01_catalogue_and_defaults(self):
+ def test_00_write_cannot_clear_files_and_bash_reports_timing(self):
+  path='/workspace/write-empty-guard.txt'
+  self.client.good('write',{'path':path,'content':'keep me'})
+  with self.assertRaisesRegex(RuntimeError,'nonempty'):
+   self.client.tool('write',{'path':path,'content':''})
+  self.assertIn('keep me',json.dumps(self.client.good('read',{'path':path})))
+  result=self.client.tool('bash',{'cmd':'sleep 1; printf measured'})
+  timing=json.loads(result['content'][-1]['text']);self.assertGreaterEqual(timing['duration_secs'],1)
+  self.assertRegex(timing['started_at'],r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
+  schema=next(t['inputSchema'] for t in self.client.call('tools/list')['tools'] if t['name']=='web_publish')
+  self.assertIn('keep_alive_secs',schema['properties']);self.assertNotIn('keep_alive_minutes',schema['properties'])
+  value=self.client.good('web_publish',{'action':'publish','name':'seconds-check','file':path,'keep_alive_secs':60})
+  self.assertTrue(value['url']);self.client.good('web_publish',{'action':'unpublish','name':'seconds-check'})
+ def test_01_exact_catalogue_and_validation(self):
   for name,count in ([('desktop',9)] if TARGET=='standalone' else [('custom',5),('desktop',9)]):
-   client=Client(name);client.initialize();tools=client.call('tools/list')['tools'];self.assertEqual(len(tools),count)
-   if name=='custom':
-    with self.assertRaisesRegex(RuntimeError,'not enabled'):client.tool('browser_observe',{})
-   for item in tools:self.assertNotIn('中文',item['description'])
-  reply=self.client.tool('browser_observe',{});observed=text(reply);self.assertFalse(reply.get('isError'),observed);self.assertTrue(observed['health']['browser']);self.assertTrue(observed['health']['page'])
-  observed=text(self.client.tool('browser_observe',{'recent_tasks_limit':10}));self.assertLessEqual(len(observed['recent_tasks']),10)
-  with self.assertRaisesRegex(RuntimeError,'recent_tasks_limit'):self.client.tool('browser_observe',{'recent_tasks_limit':11})
- def test_01b_concise_failures_and_string_arguments(self):
-  tools={item['name']:item for item in self.client.call('tools/list')['tools']}
-  for tool,field,choice in [('browser_observe','view','dom'),('browser_task','action','wait'),('web_publish','action','publish')]:
-   desc=tools[tool]['inputSchema']['properties'][field]['description']
-   self.assertIn(choice,desc)
-  value,_=self.browser("require('node:fs');",success=False)
-  self.assertIn('await import',value['error']['message']);self.assertNotIn('browser-worker.cjs:',value['error']['message'])
-  direct=text(self.client.tool('browser_run',{'code':'return 1;','page_id':'missing-page'}))
-  self.assertEqual(direct['state'],'failed');self.assertEqual(direct['side_effects'],'not_started')
-  self.assertNotIn('observation',direct);self.assertEqual('PAGE_NOT_FOUND',direct['error']['code'])
-  polled=text(self.client.tool('browser_task',{'task_id':direct['task_id'],'action':'wait','wait_secs':0}))
-  self.assertEqual(direct,polled)
-  value,_=self.browser("throw new Error('START '+ '中'.repeat(8000)+' END');",success=False)
-  self.assertLessEqual(len(value['error']['message']),2048);self.assertIn('[error truncated]',value['error']['message']);self.assertTrue(value['error']['message'].endswith('END'))
-  value,_=self.browser("await new Promise(r=>setTimeout(r,9000)); throw new Error('late failure');",success=False)
-  self.assertIn('late failure',value['error']['message'])
-  observed=text(self.client.tool('browser_observe',{'view':'dom'}));self.assertIn('dom',observed)
-
- def test_01c_optional_target_and_observation_identity(self):
-  def run(code,page_id=None):
-   reply=self.client.tool('browser_run',{'code':code,'page_id':page_id})
-   value=text(reply)
-   while value.get('state')=='running':
-    reply=self.client.tool('browser_task',{'task_id':value['task_id']});value=text(reply)
-   self.assertFalse(reply.get('isError'),value)
-   return value
-  original=text(self.client.tool('browser_observe',{}))['page_id']
-  self.assertTrue(original)
-  invalid=self.client.tool('browser_observe',{'page_id':'None'})
-  self.assertTrue(invalid.get('isError'))
-  self.assertEqual(text(invalid)['error']['code'],'PAGE_NOT_FOUND');self.assertIn('tabs',text(invalid))
-  self.assertTrue(text(self.client.tool('browser_observe',{'page_id':None}))['health']['page'])
-  capture=self.client.tool('browser_observe',{'view':'desktop','page_id':'None'})
-  self.assertFalse(capture.get('isError'),text(capture))
-  self.assertTrue(any(c['type']=='image' for c in capture['content']))
-  self.assertEqual(run('return 1;')['value'],1)
-  # Script results contain no automatic observation; explicit reads target the selected tab.
-  value=run("const tab=await context.newPage();await tab.goto('data:text/html,<title>Other tab</title>');await tab.bringToFront();return true;",original)
-  self.assertNotIn('observation',value)
-  observed=text(self.client.tool('browser_observe',{}))
-  other=next(t['page_id'] for t in observed['tabs'] if t['title']=='Other tab')
-  value=run("await page.goto('data:text/html,<title>Selected target</title>');return await page.title();",original)
-  self.assertEqual(value['value'],'Selected target');self.assertNotIn('observation',value)
-  observed=text(self.client.tool('browser_observe',{'page_id':original}))
-  self.assertEqual(observed['dom']['title'],'Selected target');self.assertNotIn('ax',observed)
-  value=run('await page.close();return true;',other)
-  self.assertNotIn('observation',value)
-  self.assertTrue(text(self.client.tool('browser_observe',{}))['health']['page'])
-
- def test_02_upload_and_download(self):
-  value,_=self.browser("await page.goto('http://127.0.0.1:8124');await page.locator('#file').setInputFiles('/workspace/qualification/upload.bin');await page.locator('#status').filter({hasText:'sha256'}).waitFor();return JSON.parse(await page.locator('#status').textContent());")
-  self.assertEqual(value['value'],{'bytes':1048576,'sha256':hashlib.sha256(b'u'*1048576).hexdigest()})
-  value,_=self.browser("const pending=page.waitForEvent('download');await page.getByRole('link',{name:'Download',exact:true}).click();return await output.download(await pending);")
-  file=value['value'];self.assertEqual(file['bytes'],65536);self.assertEqual(len(value['files']),1)
-  self.assertTrue(file['path'].startswith('/workspace/agent-space/artifacts/'),file)
-  value,_=self.browser("const fs=await import('node:fs');const crypto=await import('node:crypto');return crypto.createHash('sha256').update(fs.readFileSync("+json.dumps(file['path'])+")).digest('hex');")
-  self.assertEqual(value['value'],hashlib.sha256(bytes([123])*65536).hexdigest())
-  # The event-based chooser also transmits the contents of a private file.
-  value,_=self.browser("await page.reload();const pending=page.waitForEvent('filechooser');await page.locator('#file').click();await (await pending).setFiles('/workspace/qualification/private uploads/原生 reference.bin');await page.locator('#status').filter({hasText:'sha256'}).waitFor();return JSON.parse(await page.locator('#status').textContent());")
-  self.assertEqual(value['value'],{'bytes':1048576,'sha256':hashlib.sha256(b'u'*1048576).hexdigest()})
-
- def test_02b_browser_and_desktop_share_workspace_identity(self):
-  value,_=self.browser("const fs=await import('node:fs');const path=await import('node:path');const children=[];for(const pid of fs.readdirSync('/proc').filter(p=>/^\\d+$/.test(p))){try{const args=fs.readFileSync('/proc/'+pid+'/cmdline','utf8').split('\\0');const name=path.basename(args[0]);if(['chrome','Xtigervnc','lxqt-session','qterminal'].includes(name)){const uid=Number(fs.readFileSync('/proc/'+pid+'/status','utf8').match(/^Uid:\\s+(\\d+)/m)[1]);children.push({name,uid,noSandbox:args.includes('--no-sandbox')});}}catch{}}return {uid:process.getuid(),gid:process.getgid(),home:process.env.HOME,user:process.env.USER,children};")
+   client=Client(name);client.initialize();tools={t['name']:t for t in client.call('tools/list')['tools']};self.assertEqual(len(tools),count)
+   self.assertFalse({'browser_run','browser_observe','browser_task'}&tools.keys())
+   if name=='desktop':
+    self.assertTrue({'browser_snapshot','browser_act','browser_read','screen_observe'}<=tools.keys())
+    (Q/'browser-tools.json').write_text(json.dumps([tools[key] for key in ['browser_snapshot','browser_act','browser_read','screen_observe']],ensure_ascii=False,indent=2)+'\n')
+  observed=self.client.snapshot(recent_tasks_limit=10);self.assertTrue(observed.get('page_id'));self.assertNotIn('health',observed);self.assertLessEqual(len(observed['recent_tasks']),10)
+  for name,args in [('browser_act',{'code':'return 1'}),('browser_act',{'actions':[{'do':'wait','secs':1},{'do':'click','ref':'bad'}]}),('browser_snapshot',{'recent_tasks_limit':11}),('browser_read',{'query':'a','extract':'fields'}),('browser_act',{'op':'wait','task_id':'missing','actions':[{'do':'navigate','mode':'reload'}]})]:
+   with self.assertRaises(RuntimeError):self.client.tool(name,args)
+  began=time.monotonic();value,_=self.act([{'do':'wait','secs':1}],page_id='missing-page')
+  self.assertGreaterEqual(time.monotonic()-began,1);self.assertEqual(value['value']['completed'],1);self.assertNotIn('page_id',value['value']);self.assertNotIn('elements',value['value'])
+  self.assertEqual(text(self.client.tool('browser_act',{'op':'wait','task_id':value['task_id'],'wait_secs':0})),value)
+ def test_02_upload_download_and_private_paths(self):
+  view=self.client.snapshot();file_ref=element(view,'button','Upload fixture') if 'button "Upload fixture"' in view['elements'] else element(view,'textbox','Upload fixture')
+  self.act([{'do':'upload','ref':file_ref,'paths':['/workspace/qualification/private uploads/原生 reference.bin']},{'do':'wait','text':'sha256'}])
+  read=self.client.read_browser();self.assertIn(hashlib.sha256(b'u'*1048576).hexdigest(),read['text'])
+  view=self.client.snapshot();value,_=self.act([{'do':'download','ref':element(view,'link','Download')}])
+  file=value['files'][0];self.assertEqual(file['bytes'],65536)
+  readback=self.client.good('bash',{'cmd':'sha256sum '+shlex.quote(file['path'])})
+  self.assertIn(hashlib.sha256(bytes([123])*65536).hexdigest(),json.dumps(readback))
+ def test_03_deadline_cancellation_and_stable_late_failure(self):
+  value,_=self.act([{'do':'wait','secs':10}],timeout_secs=2,success=False);self.assertEqual(value['state'],'timed_out')
+  started=text(self.client.tool('browser_act',{'actions':[{'do':'wait','secs':10},{'do':'wait','secs':10}],'timeout_secs':60}))
+  self.assertEqual(started['state'],'running',started)
+  value,reply=self.client.finish(self.client.tool('browser_act',{'op':'cancel','task_id':started['task_id']}));self.assertEqual(value['state'],'cancelled');self.assertTrue(reply.get('isError'))
+  value,_=self.act([{'do':'wait','secs':9},{'do':'wait','text':'Never appears','timeout_secs':1}],success=False)
+  self.assertEqual(value['state'],'failed');self.assertEqual(value['failed_step']['index'],1);self.assertEqual(value['error']['code'],'TIMEOUT');self.assertEqual(value['side_effects'],'not_started')
+  self.assertEqual(text(self.client.tool('browser_act',{'op':'wait','task_id':value['task_id'],'wait_secs':0})),value)
+  # Browser/user text never controls the supervisor's cleanup decision.
+  value,_=self.act([{'do':'wait','text':'CLEANUP_UNCONFIRMED','timeout_secs':1}],success=False)
+  self.assertEqual(value['error']['code'],'TIMEOUT');self.assertNotEqual(value.get('cleanup_confirmed'),False)
+  self.act([{'do':'wait','secs':1}])
+ def test_04_target_selection_and_tabs(self):
+  original=self.client.snapshot()['page_id'];value,_=self.act([{'do':'tab','action':'new','url':'data:text/html,<title>Other tab</title><button>Other</button>'}]);other=value['value']['page_id']
+  self.assertNotEqual(other,original)
+  value,_=self.act([{'do':'navigate','url':'data:text/html,<title>Selected target</title><button>Selected</button>'}],page_id=original)
+  self.assertEqual(value['value']['title'],'Selected target')
+  self.act([{'do':'tab','action':'focus','page_id':other}]);self.assertEqual(self.client.snapshot()['page_id'],other)
+  self.act([{'do':'tab','action':'close','page_id':other}]);self.assertEqual(self.client.snapshot()['page_id'],original)
+ def test_05_identity_window_and_unicode(self):
   expected=1001 if TARGET=='standalone' else 0
-  self.assertEqual(value['value']['uid'],expected);self.assertEqual(value['value']['gid'],expected)
-  self.assertEqual(value['value']['home'],'/home/desktop' if TARGET=='standalone' else '/root')
-  self.assertEqual(value['value']['user'],'desktop' if TARGET=='standalone' else 'root')
-  children=value['value']['children'];self.assertTrue(any(p['name']=='chrome' for p in children));self.assertTrue(any(p['name']=='Xtigervnc' for p in children))
-  self.assertTrue(all(p['uid']==expected for p in children),children)
-  self.assertTrue(any(p['name']=='chrome' and p['noSandbox']==(expected==0) for p in children),children)
-
- def test_02c_download_from_desktop_without_playwright_listener(self):
-  for failed in [False,True]:
-   code="const fs=await import('node:fs');fs.rmSync('/workspace/agent-space/artifacts/fixture.bin',{force:true});await page.goto('http://127.0.0.1:8124');await page.bringToFront();await page.getByRole('link',{name:'Download',exact:true}).focus();"
-   self.browser(code+("throw Error('qualification failure before user download');" if failed else 'return true;'),success=not failed)
-   # A user keypress does not attach Playwright or install a temporary download directory.
-   reply=self.client.tool('bash',{'cmd':"DISPLAY=:1 xdotool key Return; python3 -c \"import time,hashlib;from pathlib import Path;p=Path('/workspace/agent-space/artifacts/fixture.bin');deadline=time.monotonic()+15\nwhile not p.exists() and time.monotonic()<deadline: time.sleep(.1)\nassert p.read_bytes()==bytes([123])*65536;print(hashlib.sha256(p.read_bytes()).hexdigest())\""})
-   self.assertFalse(reply.get('isError'),text(reply));self.assertIn(hashlib.sha256(bytes([123])*65536).hexdigest(),json.dumps(text(reply)))
- def test_03_deadline_and_cancellation(self):
-  value,_=self.browser('while(true){}',2,False);self.assertEqual(value['state'],'timed_out')
-  started=text(self.client.tool('browser_run',{'code':'await new Promise(r=>setTimeout(r,600000));','timeout_secs':30}))
-  self.assertEqual(started['state'],'running')
-  reply=self.client.tool('browser_task',{'task_id':started['task_id'],'action':'cancel','wait_secs':20});value=text(reply)
-  self.assertTrue(reply.get('isError'));self.assertEqual(value['state'],'cancelled')
-  value,_=self.browser('return {ok:true};');self.assertTrue(value['value']['ok'])
- def test_04_bounds_and_images(self):
-  value,_=self.browser("for(let i=0;i<15000;i++)console.log('flood '+i+' '+ 'x'.repeat(100));return {ok:true};")
-  logs=value['logs'];self.assertTrue(logs['truncated']);self.assertLessEqual(len(logs.get('stdout','').encode()),32768)
-  value,_=self.browser("return 'x'.repeat(50000);");self.assertIn('output_file',value['value']);self.assertEqual(len(value['files']),1)
-  observed=self.client.tool('browser_observe',{'view':'desktop'});data=text(observed)
-  self.assertEqual(data['frames'][0]['width'],1440);self.assertEqual(data['frames'][0]['height'],900)
-  self.assertEqual(len([c for c in observed['content'] if c['type']=='image']),1)
-  with self.assertRaisesRegex(RuntimeError,'65536'):self.client.tool('browser_run',{'code':'//'+ '中'*23000})
-  value,_=self.browser('//'+ '中'*21000+'\nreturn 7;');self.assertEqual(value['value'],7)
- def test_05_window_and_health(self):
-  for mode in ['fullscreen','maximized']:
-   value,_=self.browser("return await desktop.setWindowMode('"+mode+"');")
-   self.assertEqual(value['value']['bounds']['windowState'],mode)
-  value,_=self.browser("await page.goto('http://127.0.0.1:8124');await page.locator('#clipboard').fill('中文\\nhello 🙂');return await page.locator('#clipboard').inputValue();")
-  self.assertEqual(value['value'],'中文\nhello 🙂')
-
- def test_05b_invalid_worker_result_is_terminal_and_releases_control(self):
-  value,_=self.browser("const fs=await import('node:fs');fs.writeFileSync(process.env.AGENT_RESULT,'[]');await new Promise(resolve=>process.stdout.write('malformed result',resolve));process.exit(0);",success=False)
-  self.assertEqual(value['state'],'failed',value)
-  self.assertEqual('SCRIPT_ERROR',value['error']['code'])
-  value,_=self.browser('return {recovered:true};')
-  self.assertTrue(value['value']['recovered'])
-
+  readback=self.client.good('bash',{'cmd':"python3 -c \"import os;from pathlib import Path;rows=[]\nfor p in Path('/proc').glob('[0-9]*/cmdline'):\n try:\n  a=p.read_bytes().split(bytes([0]));name=Path(os.fsdecode(a[0])).name\n  if name in ['chrome','Xtigervnc','lxqt-session','qterminal']:rows.append((name,int(next(x for x in (p.parent/'status').read_text().splitlines() if x.startswith('Uid:')).split()[1]),b'--no-sandbox' in a))\n except OSError:pass\nassert rows and all(x[1]=="+str(expected)+" for x in rows),rows;assert any(x[0]=='chrome' and x[2]=="+str(expected==0)+" for x in rows);print('identity verified')\""})
+  self.assertIn('identity verified',json.dumps(readback))
+  for mode in ['fullscreen','maximized','normal']:self.act([{'do':'window','mode':mode}])
+  view=self.client.snapshot();self.act([{'do':'fill','ref':element(view,'textbox','Clipboard fixture'),'text':'中文\nhello 🙂'}])
+  fields=self.client.read_browser(extract='fields');self.assertIn('中文',json.dumps(fields,ensure_ascii=False))
+  self.client.navigate('http://127.0.0.1:8125/long')
+  frame=self.client.good('screen_observe',{'view':'desktop'})['frames'][0]
+  self.act([{'do':'scroll','target':'desktop','image_id':frame['image_id'],'x':500,'y':400,'delta':3}])
+  self.assertGreater(self.client.fixture_js('return await page.evaluate(()=>scrollY);'),0)
+  frame=self.client.good('screen_observe',{'view':'desktop'})['frames'][0]
+  self.act([{'do':'drag','image_id':frame['image_id'],'x':500,'y':400,'to_x':700,'to_y':500}])
+  mouse=self.client.good('bash',{'cmd':'DISPLAY=:1 xdotool getmouselocation --shell'})
+  self.assertIn('X=700',mouse['text']);self.assertIn('Y=500',mouse['text'])
  def test_06_native_chooser_and_stale_coordinates(self):
-  self.browser("await page.goto('http://127.0.0.1:8124');await page.bringToFront();await page.locator('#file').focus();await desktop.press('space');return true;")
-  self.assertTrue(text(self.client.tool('browser_observe',{}))['health']['native_window'])
-  self.browser("await desktop.press('ctrl+l');await desktop.type('/workspace/qualification/private uploads/原生 reference.bin');return true;")
-  # Fixed image's GTK chooser places Open at the lower right of its window.
-  # Read the actual window geometry; coordinates still require a fresh capture.
-  value,_=self.browser("const {execFileSync}=await import('node:child_process');const id=execFileSync('xdotool',['getactivewindow'],{encoding:'utf8'}).trim();return Object.fromEntries(execFileSync('xdotool',['getwindowgeometry','--shell',id],{encoding:'utf8'}).trim().split('\\n').map(s=>s.split('='))); ")
-  geometry={k:int(v) for k,v in value['value'].items()}
-  reply=self.client.tool('screen_observe',{'view':'desktop'});observed=text(reply);self.assertEqual(observed['captured_count'],1,observed)
+  self.client.fixture_js("await page.locator('#file').focus();return true;")
+  self.act([{'do':'press','target':'desktop','key':'Space'}]);self.assertTrue(self.client.snapshot()['health']['native_window'])
+  self.act([{'do':'press','target':'desktop','key':'Control+l'},{'do':'desktop_type','text':'/workspace/qualification/private uploads/原生 reference.bin'}])
+  geometry=self.client.good('bash',{'cmd':'DISPLAY=:1 xdotool getactivewindow getwindowgeometry --shell'})
+  geometry=dict(line.split('=',1) for line in geometry['text'].splitlines() if '=' in line)
+  value,reply=self.client.finish(self.client.tool('screen_observe',{'view':'desktop'}));frame=value['frames'][0]
   (Q/'native-upload.png').write_bytes(base64.b64decode(next(c['data'] for c in reply['content'] if c['type']=='image')))
-  capture=observed['frames'][0]
-  self.browser("await desktop.click("+json.dumps({'image_id':capture['image_id'],'x':geometry['X']+geometry['WIDTH']-55,'y':geometry['Y']+geometry['HEIGHT']-28})+");return true;")
-  value,_=self.browser("await page.locator('#status').filter({hasText:'sha256'}).waitFor();return JSON.parse(await page.locator('#status').textContent());")
-  self.assertEqual(value['value'],{'bytes':1048576,'sha256':hashlib.sha256(b'u'*1048576).hexdigest()})
-  value,_=self.browser("await desktop.click({image_id:'"+capture['image_id']+"',x:10,y:10});",success=False)
-  self.assertEqual('STALE_OBSERVATION',value['error']['code'])
-  self.assertFalse(text(self.client.tool('browser_observe',{}))['health']['native_window'])
- def test_07_unresponsive_page_can_be_recovered_without_a_fresh_attachment(self):
-  self.browser("const other=await context.newPage();await other.goto('http://127.0.0.1:8124');await other.bringToFront();return true;")
-  self.browser("await page.evaluate(()=>{while(true){}});",timeout=2,success=False)
-  observed=text(self.client.tool('browser_observe',{}));self.assertTrue(observed['health']['browser']);self.assertFalse(observed['health']['page'])
-  self.browser("await desktop.press('ctrl+w');return true;")
-  observed=text(self.client.tool('browser_observe',{}));self.assertTrue(observed['health']['page'],observed)
-
- def test_08_lost_http_waiter_never_replays_or_releases_the_running_task(self):
-  import http.client,urllib.parse,time,json
-  # The dedicated fixture page has persistent localStorage; reset only this test marker.
-  result=text(self.client.tool('browser_run',{'code':"await page.goto('http://127.0.0.1:8124/');await page.evaluate(()=>localStorage.setItem('lostreply-count','0'));"}))
-  while result['state']=='running':result=text(self.client.tool('browser_task',{'task_id':result['task_id']}))
-  self.assertEqual(result['state'],'succeeded')
+  self.act([{'do':'click','image_id':frame['image_id'],'x':int(geometry['X'])+int(geometry['WIDTH'])-55,'y':int(geometry['Y'])+int(geometry['HEIGHT'])-28}])
+  self.act([{'do':'wait','text':'sha256'}]);self.assertIn(hashlib.sha256(b'u'*1048576).hexdigest(),self.client.read_browser()['text'])
+  value,_=self.act([{'do':'click','image_id':frame['image_id'],'x':10,'y':10}],success=False);self.assertEqual(value['error']['code'],'STALE_OBSERVATION')
+ def test_07_unresponsive_tab_observation_and_explicit_close(self):
+  value,_=self.act([{'do':'tab','action':'new','url':'http://127.0.0.1:8124/'}]);target=value['value']['page_id']
+  # Inject a frozen renderer through CDP; the product has no arbitrary JS tool.
+  self.client.good('bash',{'cmd':"node -e "+shlex.quote("(async()=>{const t=(await(await fetch('http://127.0.0.1:9222/json/list')).json()).find(t=>t.id==="+json.dumps(target)+");const w=new WebSocket(t.webSocketDebuggerUrl);w.onopen=()=>{w.send(JSON.stringify({id:1,method:'Runtime.evaluate',params:{expression:'while(true){}'}}));setTimeout(()=>process.exit(),300)};})();")})
+  observed=self.client.snapshot(page_id=target);self.assertFalse(observed['health']['page']);self.assertEqual(observed['page_id'],target)
+  self.client.good('screen_observe',{'view':'desktop'})
+  self.act([{'do':'tab','action':'close','page_id':target}],page_id=target)
+  self.assertNotIn('health',self.client.snapshot())
+ def test_08_lost_http_waiter_does_not_replay_or_release_slot(self):
+  import http.client,urllib.parse
   from browser_client import BASE
+  self.client.fixture_js("await page.evaluate(()=>localStorage.setItem('lostreply-count','0'));return true;")
+  ref=element(self.client.snapshot(),'button','Count once')
   address=urllib.parse.urlsplit(BASE);connection=http.client.HTTPConnection(address.hostname,address.port,timeout=10)
   self.client.counter+=1
-  payload={'jsonrpc':'2.0','id':self.client.counter,'method':'tools/call','params':{'name':'browser_run','arguments':{'code':"await page.evaluate(()=>localStorage.setItem('lostreply-count',String(Number(localStorage.getItem('lostreply-count'))+1)));await new Promise(r=>setTimeout(r,12000));return {once:true};",'timeout_secs':20}}}
+  payload={'jsonrpc':'2.0','id':self.client.counter,'method':'tools/call','params':{'name':'browser_act','arguments':{'actions':[{'do':'click','ref':ref},{'do':'wait','secs':10},{'do':'wait','secs':2}],'timeout_secs':30}}}
   connection.request('POST',space_path('desktop','mcp'),json.dumps(payload),{'Authorization':'Bearer '+self.client.token,'Content-Type':'application/json','Accept':'application/json, text/event-stream','MCP-Protocol-Version':'2025-11-25','Mcp-Session-Id':self.client.session})
   time.sleep(1);connection.close()
-  busy=text(self.client.tool('browser_run',{'code':'return 99;'}));self.assertIn('BUSY',json.dumps(busy))
-  task=busy['active_task_id']
-  result=text(self.client.tool('browser_task',{'task_id':task}))
-  while result['state']=='running':result=text(self.client.tool('browser_task',{'task_id':task}))
-  self.assertEqual(result['state'],'succeeded',result);self.assertEqual(result['value'],{'once':True})
-  result=text(self.client.tool('browser_run',{'code':"return await page.evaluate(()=>localStorage.getItem('lostreply-count'));"}))
-  while result['state']=='running':result=text(self.client.tool('browser_task',{'task_id':result['task_id']}))
-  self.assertEqual(result['value'],'1')
-
+  busy=text(self.client.tool('browser_act',{'actions':[{'do':'wait','secs':1}]}));self.assertEqual(busy['error']['code'],'BUSY')
+  result,reply=self.client.finish(self.client.tool('browser_act',{'op':'wait','task_id':busy['active_task_id']}));self.assertFalse(reply.get('isError'),result)
+  self.assertEqual(self.client.fixture_js("return await page.evaluate(()=>localStorage.getItem('lostreply-count'));"),'1')
  def test_09_root_browser_reopens_uid1001_profile(self):
   if TARGET!='server':self.skipTest('Server upgrade from the previous UID1001 desktop')
-  value,_=self.browser("await page.goto('http://127.0.0.1:8124/');await page.evaluate(()=>localStorage.setItem('identity-restore','preserved'));await context.addCookies([{name:'identity-restore',value:'preserved',url:'http://127.0.0.1:8124',expires:Math.floor(Date.now()/1000)+3600}]);return context.pages().map(p=>p.url());")
-  before=value['value']
+  value=self.client.fixture_js("await page.goto('http://127.0.0.1:8124/');await page.evaluate(()=>localStorage.setItem('identity-restore','preserved'));await context.addCookies([{name:'identity-restore',value:'preserved',url:'http://127.0.0.1:8124',expires:Math.floor(Date.now()/1000)+3600}]);return context.pages().map(p=>p.url());")
+  before=value
   # Close only this disposable browser through its public CDP endpoint, then
   # reproduce the complete UID1001 profile left by the previous Server helper.
   close="const r=await fetch('http://127.0.0.1:9222/json/version');const ws=new WebSocket((await r.json()).webSocketDebuggerUrl);await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('close deadline')),10000);ws.onopen=()=>ws.send(JSON.stringify({id:1,method:'Browser.close'}));ws.onclose=()=>{clearTimeout(timer);resolve();};ws.onerror=reject;});"
   reply=self.client.tool('write',{'path':'/workspace/qualification/close-browser.mjs','content':close});self.assertFalse(reply.get('isError'),text(reply))
   reply=self.client.tool('bash',{'cmd':"node /workspace/qualification/close-browser.mjs && python3 -c \"import os,time;from pathlib import Path;time.sleep(1);p=Path('/workspace/.agent-space/desktop/profile');entries=[p,*p.rglob('*')];[(os.chown(f,1001,1001,follow_symlinks=False)) for f in entries];print('legacy profile entries:',len(entries))\""})
   self.assertFalse(reply.get('isError'),text(reply));self.assertIn('legacy profile entries:',json.dumps(text(reply)))
-  reply=self.client.tool('browser_observe',{});self.assertFalse(reply.get('isError'),text(reply))
-  value,_=self.browser("const fs=await import('node:fs');return {tabs:context.pages().map(p=>p.url()),marker:await page.evaluate(()=>localStorage.getItem('identity-restore')),cookie:(await context.cookies()).find(c=>c.name==='identity-restore')?.value,profileOwner:fs.statSync('/workspace/.agent-space/desktop/profile').uid,uid:process.getuid()};")
+  self.client.snapshot()
+  value=self.client.fixture_js("const fs=await import('node:fs');return {tabs:context.pages().map(p=>p.url()),marker:await page.evaluate(()=>localStorage.getItem('identity-restore')),cookie:(await context.cookies()).find(c=>c.name==='identity-restore')?.value,profileOwner:fs.statSync('/workspace/.agent-space/desktop/profile').uid,uid:process.getuid()};")
   # The display is still running: reopening Chromium can use the existing
   # UID1001 directory directly, without rewriting profile ownership or data.
-  self.assertEqual(value['value'],{'tabs':before,'marker':'preserved','cookie':'preserved','profileOwner':1001,'uid':0})
+  self.assertEqual(value,{'tabs':before,'marker':'preserved','cookie':'preserved','profileOwner':1001,'uid':0})
+
+ def test_transient_status_read_failure_does_not_cancel_the_task(self):
+  reset_tabs(self.client)
+  self.client.fixture_js("await page.evaluate(()=>{window.statusClicks=0;document.body.innerHTML='<button onclick=window.statusClicks++>Count once</button>'});return true;")
+  button=element(self.client.snapshot(),'button','Count once')
+  response=self.client.tool('browser_act',{'actions':[{'do':'click','ref':button},{'do':'wait','secs':20}],'then':'none','timeout_secs':40})
+  initial=text(response);self.assertEqual(initial['state'],'running',initial)
+  code="""import os,signal,time,json
+from pathlib import Path
+found=[]
+for p in Path('/proc').glob('[0-9]*/exe'):
+ try:
+  if p.resolve().name=='agent-space-desktop':found.append(int(p.parent.name))
+ except OSError:pass
+assert len(found)==1,found
+pid=found[0]
+try:
+ os.kill(pid,signal.SIGSTOP);time.sleep(5)
+finally:os.kill(pid,signal.SIGCONT)
+print(json.dumps({'paused_seconds':5}))"""
+  self.client.good('bash',{'cmd':'python3 -c '+shlex.quote(code)})
+  value,reply=self.client.finish(response)
+  self.assertFalse(reply.get('isError'),value);self.assertEqual(value['state'],'succeeded',value)
+  self.assertGreaterEqual(value['duration_secs'],20)
+  self.assertEqual(self.client.fixture_js('return await page.evaluate(()=>window.statusClicks);'),1)
+  (Q/'transient-status-read.json').write_text(json.dumps(value,indent=2)+'\n')
 
 if __name__=='__main__':unittest.main(verbosity=2)

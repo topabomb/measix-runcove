@@ -102,6 +102,68 @@ fn check(job: &Job) -> anyhow::Result<()> {
     );
     Ok(())
 }
+
+fn picture_geometry(capture: &mut Value, picture: &agent_engine::media::Picture) {
+    capture["original_width"] = json!(picture.original_width);
+    capture["original_height"] = json!(picture.original_height);
+    capture["width"] = json!(picture.width);
+    capture["height"] = json!(picture.height);
+    capture["resized"] = json!(picture.resized);
+    if let Some(width) = capture["content_width"].as_f64() {
+        capture["scale"] = json!(picture.width as f64 / width);
+    }
+}
+
+/// Consume the private PNG checkpoint before exposing any result to the Host.
+/// Snapshot images and screen sequences share the same codec and geometry.
+pub(crate) async fn encode_snapshot(job: &Job, result: &mut Value) -> anyhow::Result<()> {
+    let Some(images) = result.as_object_mut().and_then(|r| r.remove("images")) else {
+        return Ok(());
+    };
+    let captures = result.as_object_mut().unwrap().remove("captures");
+    if let Some(value) = result["value"].as_object_mut() {
+        value.remove("image");
+    }
+    check(job)?;
+    let images = images
+        .as_array()
+        .filter(|images| images.len() == 1)
+        .ok_or_else(|| anyhow::anyhow!("INVALID_CAPTURE: expected one snapshot image"))?;
+    let mut captures = captures
+        .filter(|v| v.as_array().is_some_and(|v| v.len() == 1))
+        .ok_or_else(|| anyhow::anyhow!("INVALID_CAPTURE: missing snapshot geometry"))?;
+    let permit = tokio::select! {
+        permit = agent_engine::media::acquire() => permit?,
+        _ = job.cancel.cancelled() => { check(job)?; unreachable!() },
+        _ = tokio::time::sleep_until(job.deadline.into()) => { check(job)?; unreachable!() },
+    };
+    let raw = base64::engine::general_purpose::STANDARD.decode(
+        images[0]["data"]
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("INVALID_CAPTURE: missing snapshot bytes"))?,
+    )?;
+    let picture = tokio::task::spawn_blocking(move || {
+        let _permit = permit;
+        agent_engine::media::process(raw, None)
+    })
+    .await??;
+    check(job)?;
+    let capture = &mut captures[0];
+    picture_geometry(capture, &picture);
+    if result["value"].is_object() {
+        result["value"]["image"] = json!({
+            "image_id":capture["image_id"],"width":picture.width,"height":picture.height,
+            "original_width":picture.original_width,"original_height":picture.original_height,
+            "resized":picture.resized,"scale":capture["scale"],"full_page":true,
+            "document_width":capture["content_width"],"document_height":capture["content_height"]
+        });
+    }
+    result["captures"] = captures;
+    result["images"] = json!([{"mimeType":picture.mime_type,
+        "data":base64::engine::general_purpose::STANDARD.encode(&picture.bytes)}]);
+    Ok(())
+}
+
 async fn capture_sequence(
     app: &App,
     job: &Job,
@@ -121,6 +183,7 @@ async fn capture_sequence(
     }
     let mut page_id = params.page_id.clone();
     let mut next = Instant::now();
+    let mut image_bytes = 0;
     for index in 0..params.count {
         tokio::select! {
             _ = tokio::time::sleep_until(next.into()) => {},
@@ -145,6 +208,9 @@ async fn capture_sequence(
             for key in ["page_id", "url", "title"] {
                 result[key] = value[key].clone();
             }
+            if value["truncated"] == true {
+                result["truncated"] = json!(true);
+            }
         }
         let raw = base64::engine::general_purpose::STANDARD.decode(
             value["images"][0]["data"]
@@ -160,7 +226,7 @@ async fn capture_sequence(
         } else {
             None
         };
-        let budget = agent_engine::media::SCREEN_LIMIT / params.count;
+        let budget = agent_engine::media::OUTPUT_LIMIT - image_bytes;
         let processed = tokio::task::spawn_blocking(move || {
             let _permit = permit;
             agent_engine::media::process(raw, Some(budget))
@@ -175,18 +241,26 @@ async fn capture_sequence(
                 return Err(error);
             }
         };
+        // Commit the captured frame and its already-saved original together.
+        // Cancellation stops subsequent captures at the check below.
+        image_bytes += picture.bytes.len();
         let mut capture = value["capture"].clone();
-        capture["original_width"] = json!(picture.original_width);
-        capture["original_height"] = json!(picture.original_height);
-        capture["width"] = json!(picture.width);
-        capture["height"] = json!(picture.height);
+        picture_geometry(&mut capture, &picture);
         let now_ms = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis() as u64;
         let age = now_ms.saturating_sub(capture["at"].as_u64().unwrap_or(now_ms));
         let elapsed = (accepted.elapsed().as_millis() as u64).saturating_sub(age);
         result["frames"].as_array_mut().unwrap().push(
             json!({"index":index+1,"image_id":capture["image_id"],"elapsed_ms":elapsed,
-            "width":picture.width,"height":picture.height,"resized":picture.resized}),
+            "width":picture.width,"height":picture.height,"resized":picture.resized,
+            "original_width":picture.original_width,"original_height":picture.original_height}),
         );
+        if params.view == "page" {
+            let frame = result["frames"].as_array_mut().unwrap().last_mut().unwrap();
+            frame["full_page"] = json!(true);
+            frame["scale"] = capture["scale"].clone();
+            frame["document_width"] = capture["content_width"].clone();
+            frame["document_height"] = capture["content_height"].clone();
+        }
         result["captures"].as_array_mut().unwrap().push(capture);
         result["images"].as_array_mut().unwrap().push(json!({"mimeType":picture.mime_type,"data":base64::engine::general_purpose::STANDARD.encode(&picture.bytes)}));
         result["captured_count"] = json!(index + 1);
@@ -326,5 +400,39 @@ mod tests {
         assert_eq!(std::fs::read_dir(&directory).unwrap().count(), 2);
         assert!(store_capture(std::path::Path::new("relative"), bytes).is_err());
         std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[cfg(test)]
+mod image_tests {
+    use super::*;
+    use tokio::sync::{Mutex, Notify};
+    use tokio_util::sync::CancellationToken;
+
+    #[tokio::test]
+    async fn snapshot_failure_never_publishes_private_png_or_geometry() {
+        let job = Job {
+            id: "image-test".into(),
+            finished: Mutex::new(None),
+            deadline: Instant::now() + Duration::from_secs(30),
+            status: Mutex::new(json!({})),
+            cancel: CancellationToken::new(),
+            done: Notify::new(),
+            directory: String::new(),
+            result: Mutex::new(None),
+            modifies: false,
+        };
+        for cancelled in [false, true] {
+            if cancelled {
+                job.cancel.cancel();
+            }
+            let mut result = json!({"value":{"image":{"image_id":"raw"},"elements":"preserved"},
+                "images":[{"data":"aW52YWxpZA=="}],"captures":[{"image_id":"raw"}]});
+            assert!(encode_snapshot(&job, &mut result).await.is_err());
+            assert!(result.get("images").is_none());
+            assert!(result.get("captures").is_none());
+            assert!(result["value"].get("image").is_none());
+            assert_eq!(result["value"]["elements"], "preserved");
+        }
     }
 }

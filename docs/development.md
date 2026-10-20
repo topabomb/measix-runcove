@@ -16,7 +16,7 @@
 
 共享能力直接复用现有所有者，目标差异留在装配与运行适配。Standalone 不引入 VM、用户登记或第二套任务服务。新增/修改 helper、worker 或 Agent 说明前核对[受管进程规范](architecture.md#受管进程)。SDK/CLI 升级或补丁变更先核对 [MSB 补丁撤销条件](runtime.md)。
 
-执行身份遵循[权限合同](architecture.md#执行身份与环境管理)：Standalone 的 Agent 任务使用 UID/GID1001，系统依赖由镜像提供；Server 的工具、Chromium 和桌面统一使用 VM 内 root。新增文件访问复用同一空间身份，并验证 bash 创建的私有目录在文件工具、browser_run、截图保存和原生上传间可互通，下载同时核对自动化与普通桌面路径；保留 Standalone 对 root 控制文件与进程的保护。
+执行身份遵循[权限合同](architecture.md#执行身份与环境管理)：Standalone 的 Agent 任务使用 UID/GID1001，系统依赖由镜像提供；Server 的工具、Chromium 和桌面统一使用 VM 内 root。新增文件访问复用同一空间身份，并验证 bash 创建的私有目录在文件工具、browser_act、截图保存和原生上传间可互通，下载同时核对自动化与普通桌面路径；保留 Standalone 对 root 控制文件与进程的保护。
 
 ## 源码检查
 
@@ -40,7 +40,9 @@ python3 docker/test_package.py
 
 先构建当前三个 helper，再串行运行真实 VM 测试；只使用独立资格 Host、容器和新建卷，不指向日常或生产服务。Standalone 的 normal/build 依赖图应排除 microsandbox/libkrun。工作区导入的所有者与权限测试需要隔离 root 环境；普通用户运行的跳过项不能记为通过。
 
-仅修改工具时，可在独立容器运行 `python3 docker/verify-standalone.py --image <base-image> --development-assets --tools-only`，绑定当前 debug 二进制和 UI，执行浏览器及媒体套件并验证容器基础行为。Server 使用 `python3 docker/verify-desktop.py --image <server-base-image> --development-assets --tools-only`，在新建独立卷的真实 VM 中运行同一套件，无需长流程生命周期报告。先构建对应 MCP、Standalone 和 helper；该模式包含个人资料的真实300秒休眠恢复，以及降低额度后经选择器恢复旧页面；报告 full=false，跳过文件流、独立生命周期和真实 UI 套件，不满足完整镜像发布资格。去掉 `--development-assets` 可对最终镜像执行同一范围的检查。
+仅修改工具时，可在独立容器运行 `python3 docker/verify-standalone.py --image <base-image> --development-assets --tools-only`，绑定当前 debug 二进制和 UI，执行浏览器及媒体套件并验证容器基础行为。Server 使用 `python3 docker/verify-desktop.py --image <server-base-image> --development-assets --tools-only`，在新建独立卷的真实 VM 中运行同一套件，无需长流程生命周期报告。先构建对应 MCP、Standalone 和 helper；该模式包含个人资料的真实300秒休眠恢复，以及降低额度后经选择器恢复旧页面；报告 full=false，跳过文件流、独立生命周期和真实 UI 套件，不满足完整镜像发布资格。去掉 `--tools-only` 可在开发资产模式下运行全部共享文件流、真实 UI 和闲置套件，仍不计作镜像发布资格。去掉 `--development-assets` 可对最终镜像执行同一范围的检查；Server 完整发布资格仍先要求匹配镜像的生命周期报告。
+
+浏览器 worker 的子进程错误边界由 `tests/browser_worker_errors.node.cjs` 单独覆盖：在 Workspace 镜像中将 `guest/desktop` 挂到 `/opt/agent-space/desktop`、`tests` 挂到 `/tests`，执行 `node --test /tests/browser_worker_errors.node.cjs`。该测试注入观察子进程故障，不启动 Chromium；真实浏览器、坐标和 DPR 回归见 `tests/browser_tools.node.cjs` 及两目标共享资格套件。
 
 资源紧张时使用 `CARGO_BUILD_JOBS=2 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_INCREMENTAL=0`，不要并行运行完整构建或 VM 生命周期套件。UI 在 `desktop-ui/` 使用 `npm ci`、`npm run build` 和 Playwright；运行真实 UI 套件前准备匹配浏览器、系统运行库和字体。源码检查不替代真实 HTTP、文件、桌面和迁移验证。
 
@@ -50,7 +52,7 @@ python3 docker/test_package.py
 |---|---|
 | 配置/状态 | 合法最小配置、未知/跨目标字段、旧新冲突、默认值与转换不漂移、坏状态/锁/提交故障、原凭据和资源身份 |
 | 执行/清理 | 输出洪泛、非 UTF-8、超时部分输出、取消/丢失等待者、提前 EOF、owner 与前台后代收敛，正常后台服务保留 |
-| 桌面/控制 | DOM/AX 独立、显式输出、1..8帧与间隔、可选原始PNG保存/命名/路径/真实下载、bash创建私有目录后脚本读写及截图保存权限一致、Page配置默认/覆盖、并发新增与弹窗/新窗口上限、关闭确认后释放、取消保留页面、浏览器关闭后从显示控制重开、个人资料选择器/跨资料上限/最后选择及全部页面休眠恢复、CDP失去响应时仍能闲置回收、页面绑定/关闭、CDP卡死时桌面截图、原生窗口、硬期限、部分输出、不重放、交接取消、清理失败 BLOCKED |
+| 桌面/控制 | 新四工具唯一目录、整批校验、ref 身份/替换失效、嵌套及跨域 iframe、浮层/弹出页、整页原始PNG、统一1980/WebP返回、DPR与缩放坐标换算、保存原图再读取的字节一致性、失败任务稳定轮询、1..8帧与间隔、可选原始PNG保存/命名/路径/真实下载、bash创建私有目录后的上传及截图保存权限一致、Page配置默认/覆盖、并发新增与弹窗/新窗口上限、关闭确认后释放、取消保留页面、浏览器关闭后从显示控制重开、个人资料选择器/跨资料上限/最后选择及全部页面休眠恢复、CDP失去响应时仍能闲置回收、页面绑定/关闭、CDP卡死时桌面截图、原生窗口、硬期限、部分输出、不重放、交接取消、清理失败 BLOCKED |
 | 工作台/代理 | 真实 RFB 键鼠和中英文剪贴板、双观看者单控制、320/390/宽屏、HTTPS/改写 Host/嵌套前缀、Origin/Cookie/nonce、重启登录失效 |
 | 文件/发布 | 文本兼容、read 默认关闭图片、四格式/方向/透明度/首帧、错误扩展名、损坏/超限、超过50 KiB完整图片、12 MiB工具结果、并发/取消/回收；原子提交、无覆盖、权限、ENOSPC 保留原文件、1 GiB 文件流、4 GiB DAV/Range/截短/取消、发布认证与撤销 |
 | Server | 凭据/空间隔离、轮换/禁用/删除/同名重建、VM 容量/暂停/异常退出恢复、原盘保留及 MSB 补丁回归 |

@@ -6,6 +6,90 @@
 
 公开 Git 历史从整理后的首次提交开始，未保留此前的私有开发历史。下列旧报告及其证据中的 Git SHA 是当时输入的标识，不能在公开仓库中检出，也不能据此复现旧构建；源码摘要和镜像 ID 继续标识原始验证对象。首次提交包含之后的修复和文档整理，不能直接沿用旧镜像的资格结论；发布前仍须按当前源码重新构建并验证。
 
+## 浏览器最终 Git 审查与图片合同核对（2026-10-20）
+
+审查本轮全部待提交源码、测试、资格脚本、文档及图片证据。修正升级/导入验证仍使用旧 action=wait、导入调用参数形状、DAV容量回归读取旧返回结构的问题；弹出页 URL 和截图 URL/标题截短时补回 truncated 标记；文档统一16动作、顶层op和精简快照语义，没有增加旧协议入口。
+
+图片读取与截图均使用共享管线：仅当长边超过1980时进行一次等比例缩小，小图不放大；所有图片仍编码为 WebP Q90（method=6），保留透明度。因此1024×1536 PNG不需要缩小，但不能原样透传PNG；原文件和截图原始PNG下载保持原字节。旧生产读图PNG及截图JPEG不代表本轮候选已部署。
+
+最终源码摘要 `a23c9bf33af9305b7696a2c3cc0bacaa447bd438ad90d09c528b29fbb8496310`。本次针对性验证：helper9项、MCP HTTP10项、协议8项通过；真实桌面Node35项通过、1项DPR2专属场景跳过；Clippy workspace/all-targets、格式、验证器调用回归通过。生产二进制以锁定Docker构建链构建，SQLite实际链接3.51.3，在Server基础镜像及Workspace中核对依赖。下方330项Rust和两入口完整共享回归属于其各自冻结输入，不改写为此次最终修补后的整轮资格。当前生产切换记录将在提交后单独追加。
+
+[审查与验证](evidence/runcove-browser-final-review-20261020/verification.json) · [生产二进制及运行库核对](evidence/runcove-browser-final-review-20261020/build-verification.json)。未重建最终镜像或离线包，未重新执行完整发布资格。
+
+## 浏览器工具统一接口与完整验证（2026-10-20）
+
+本轮完成四个浏览器工具的最终接口与 Agent 披露调整，同时完成下方五个基础工具首次快改的后续验证。browser_act 说明连续多步执行和通用固定等待，顶层统一 op=execute/wait/cancel；动作由22种合并为16种，旧动作名和旧顶层 action 入口已删除。click/drag 统一 ref 或图片坐标；press/scroll 使用 page/desktop 目标；navigate 使用 open/back/forward/reload。已知但无关的步骤字段先归一化再验证，真实意图冲突仍报错。
+
+固定等待采用0..60整数秒，条件等待默认60秒。纯延时使用原任务、控制权、取消及期限，不访问页面，也不唤醒休眠桌面；两入口均实际验证成功。页面截图明确为当前顶层文档完整布局，独立滚动区域和 iframe 仅显示当前区域，不扩展懒加载或虚拟列表。清除 schema 自动标题、数值实现格式、内部 ref 格式及无意义 null 默认；四工具实际 MCP 目录由21427字符缩为18681字符（约12.8%，字符统计，不冒充模型 token 数）。普通结果不附页面列表，保留必要计时、失败原因和产物；URL/标题限长并标记截断，下载文件内容不截断。
+
+write 在 MCP 与执行入口拒绝空 content；图片读取忽略文本行范围；发布工具使用 keep_alive_secs，旧分钟解释路径已移除；bash 返回开始时间与秒数。文件回归另修复目录读取在 fdopen 前校验同一 fd 类型，恢复 NOT_A_FILE 合同。
+
+验证：Rust 全工作区330项通过；Standalone 无默认特性库34项通过，最终 MCP 集成10项通过；Clippy 工作区 all-targets 与 Standalone 无默认特性 lib/bins 通过；Node 浏览器/worker35项通过，普通运行有1项DPR2场景不适用跳过，另以DPR2专项2项通过；Python22项通过。所有发布二进制构建完成，动态依赖可解析。Server 共享回归48项通过；Standalone47项通过、1项Server升级专属场景跳过，另有独立入口、权限、控制进程异常和重启检查通过。两入口均覆盖真实60秒等待、真实300秒资料恢复、冻结浏览器清理、被动VNC休眠、1GiB文件流，以及页面上限4→1重启后的已有页保留、拒绝新增、复用与关闭。各入口整轮单次通过、资源清理确认；实际披露的四工具目录完全一致，共享helper摘要一致。
+
+冻结源码摘要：`6f4beb28654039b4cfb17a2ac7e7b21dc1a2ecba20335ecd031607856d3487e7`。真实回归使用独立基础镜像及冻结开发资产；Standalone 实际使用 --no-default-features 构建输入。此结果是当前源码与二进制的回归证据，不等于最终发布镜像资格，也不等于外部 Google Flow 登录、风控或付费生成成功；未部署生产。
+
+[完整验证](evidence/runcove-browser-disclosure-20261020/verification.json) · [最终四工具定义](evidence/runcove-browser-disclosure-20261020/browser-tools.json) · [审查明细与边界](evidence/runcove-browser-disclosure-20261020/review.md) · [源码与发布二进制摘要](evidence/runcove-browser-disclosure-20261020/source-and-binaries.json)。各入口原始通过报告与日志在同目录 server/、standalone/ 中；该目录不包含凭据、用户数据库或浏览器个人资料。
+
+## 五个基础工具披露与容错调整（2026-10-20，首次快改、当时未验证）
+
+此为首次快改时的历史状态；最终调整、兼容路径删除和后续验证已由上方完整回归记录覆盖。
+
+按用户要求快速修改 bash/read/write/edit/web_publish：精简说明和类型元数据，在目录中披露配置的实际超时和保活默认值；图片读取忽略文本分页参数，multimodal 的 null 按 false 处理；发布使用 keep_alive_secs，当时保留旧分钟调用兼容（后续已移除）；bash 附秒级开始时间及耗时。write 在 MCP 及文件执行入口均拒绝空 content，保留非空文本的原始空白；edit 的空替换仍表示删除。四个浏览器工具的描述和参数定义未改动。
+
+本次遵照明确指令，没有编译、运行测试或执行验证。上述改动不继承下节固定输入的资格结论。
+
+## 浏览器与图片联合复审、秒级等待和精简反馈（2026-10-20，本地）
+
+复审合并后的浏览器和图片改动，修正长页缩放取整后的纵向点击偏移、观察子进程数字退出码泄露，以及任务状态读取短暂失败就取消原动作的问题。状态读取失败只继续查询同一任务，仍受原期限和取消约束，不重放动作。另修复降低页面上限的测试夹具混用崩溃资料、文件校验依赖桌面及旧协议字段断言。详见[复审记录](evidence/runcove-browser-combined-20261020/review.json)。
+
+面向 Agent 的可配置时间改为整数秒：固定等待0..60秒，条件等待默认最多60秒；元素操作默认5秒、下载默认30秒、连续截图间隔默认1秒。整批任务仍默认120秒，最多600秒；首次调用8秒未完成返回任务ID，后续查询不会续期或重放。默认快照和动作反馈不重复标签页清单，显式 `browser_snapshot(view="tabs")` 查询；常规成功结果省略健康检查、内部阶段和原始日志，保留真实字段值、截断、失败位置、控制权与必要副作用。已接纳任务有 duration_secs；仅动作、连续截图和运行中/异常任务附 started_at，普通成功观察/读取/单图省略，查询沿用原任务计时。现行合同见[浏览器工具](browser-desktop.md#浏览器与截图工具)。
+
+最终产品代码对应源码输入 `5a201196b227f00b7b4d0ed5305ab375037a71c66b03d33b2071d34058b64689`；收尾仅把工作台测试中的两个 wait.ms 调用改成 wait.secs，输入摘要为 `655fa29ea8493690085bf78029641a030525e597dd73176fdbb3601202005022`，产品源码和二进制未变，逆向替换后的摘要核对一致。完整 Rust workspace 329项通过；最后计时可见性和任务监督调整后，受影响模块77项、两种feature的Clippy及入口构建通过。真实Chromium组件和故障回归32项、专用DPR=2两项通过；常规套件中1项DPR=2用例不适用而跳过。Python常规40项通过、5项环境专属跳过，另在root容器中9项通过覆盖这些分支；UI构建和release程序构建、动态依赖解析通过。详见[验证摘要](evidence/runcove-browser-combined-20261020/verification.json)。
+
+Server共享功能47项覆盖通过（七组套件42项，加独立工作台补验5项）；Standalone完整共享功能46项通过、1项Server旧身份升级专属用例跳过。两目标均经历真实300秒的多资料恢复、冻结浏览器回收恢复和被动VNC休眠，验证原页面、所选资料和localStorage；1 GiB文件流、真实键盘/剪贴板、控制权、代理边界与重启降额4→1均通过。降低上限后四个旧页全部保留，新增拒绝，原页可导航和关闭。Standalone另通过执行身份、控制进程丢失、SSE关闭及重启持久化检查。两目标工具目录与共享helper摘要一致，所有验收容器和卷清理通过。
+
+实际固定60秒等待在Server/Standalone约61.1/60.9秒，默认条件等待超时约61.4/60.9秒，均含调用和处理开销。真实MCP断言覆盖普通成功观察不返回开始时间、动作和连续截图返回开始时间、重复查询终态耗时不增长，以及快照不夹带页面清单。目录紧凑JSON为21427 UTF-8字节，不是模型token计数。当前页、显式页列表及查询样例见[实际返回](evidence/runcove-browser-combined-20261020/compact-feedback.json)。
+
+中途失败均保留原始结论：配置档测试仍等待已省略的正常health.page、工作台仍携带旧ms参数，分别修正为公开page_id就绪判断和秒级调用；不恢复冗余字段，不放宽恢复/权限断言。此前VNC唤醒取消的历史原因未能确定；本轮修正已证实的“单次状态读取失败就取消任务”逻辑，并在两个入口真实暂停helper五秒，确认动作完成且点击仅一次。Server失败报告仍为passed=false，补验独立记录；不把它改写成单次完整通过。
+
+本轮使用独立容器中的当前开发资产。Server 由七组共享套件及另一次工作台/重启补验组成，产品源码和二进制一致；源码摘要的唯一变化是工作台测试的两个等待参数，补验报告 `shared_full=false`。Standalone 独立运行完整共享套件。所有开发资产报告均为 `full=false`，不等同于最终发布镜像资格。没有更新生产、提交或推送代码。
+
+## 浏览器参数容错、等待语义与文本精简（2026-10-20，本地）
+
+按生产失败类型补齐参数归一化：execute 忽略 wait_secs，wait/cancel 忽略执行上下文与空 actions，query/extract 忽略 max_chars；保留新动作与任务控制等真实意图冲突。query 支持 ref 子树；条件等待覆盖可见文本与可访问名称；精简常规元数据、浮层重复内容和重复 stderr，保留控制权、失败现场、完成步数与副作用。字段名和四工具入口保持一致，具体规则见[浏览器合同](browser-desktop.md#有序动作与任务控制)。
+
+两种 feature 各通过 MCP 单元31项、HTTP合同5项；workspace/all-targets Clippy（-D warnings）及两入口构建通过。真实 Chromium worker 25项通过，1项专用 DPR=2 用例本轮跳过；完整 worker 运行使用 HEADED=1、Xvfb/openbox 和512 MiB共享内存，初次64 MiB容器在大页面截图时崩溃不计入通过结果。独立 Standalone 与 Server真实MSB VM 各通过工具目录校验和结构化浏览器10项，包含新增容错/名称等待及并行图片改动的整页底部、缩放坐标回归；控制器、工作区及协议检查按各自报告列出。两目标均使用 helper `43c58f9e6454d8259bdcdb934016e934cb7431b9ca0c13103d36a26ef6b0f019`，隔离容器和数据卷已清理。
+
+固定样例的 query、填写后反馈、菜单快照文本 JSON 分别从402/520/1329字节降到216/297/892字节（减少46.3%/42.9%/32.9%）；四工具目录紧凑JSON从21972降到21151字节（减少3.7%）。这是UTF-8字节测量，不是模型token计数或全站平均。源输入、二进制摘要、最终目录、专项运行器及测量样例见[验证摘要](evidence/runcove-browser-tolerance-20261020/verification.json)。
+
+本轮是本地开发资产的工具合同专项，不是完整发布镜像资格；未重跑300秒资料恢复、Page上限重启恢复或完整UI/文件压力。截至该次专项，下节图片任务记录的重启恢复失败尚未解决；本轮不以专项通过覆盖它。后续排查与完整功能覆盖见[后续联合复审](evidence/runcove-browser-combined-20261020/verification.json)。未更新生产，也不通过工具完成状态判断Flow等网站的业务提交成功。
+
+## 图片统一编码与原始 PNG（2026-10-20，本地）
+
+截图先取得原始 PNG；快照、页面/桌面截图与文件图片读取统一走 `media.rs`，一次 Lanczos3 等比例缩小到长边≤1980，返回 WebP Q90（method=6）。保存原图保留 PNG；任务查询不二次编码；连续截图按实际累计字节计算预算。补齐公开帧的 scale，并修复取消时已保存原图与返回帧数不一致的边界。现行规则见[截图合同](browser-desktop.md#截图与连续观察)。
+
+固定验证输入 SHA-256 为 `bdbc18573c5dfdc841b8ba88b5a32c1209f2e8be02178d2aee17a1e4480379c6`。图片单元5项、helper9项、MCP单元与合同37项、Chromium常规22项和原生DPR=2两项通过；最终独立Standalone容器中的图片、文件和坐标专项12项通过，Clippy、格式和Python语法检查通过。中文密集页面原始PNG为2200×1450、463547字节，返回WebP为1980×1305、205990字节，已目视检查。见[示例图](evidence/runcove-image-webp-20261020/chinese-text.webp)与[验证摘要](evidence/runcove-image-webp-20261020/verification.json)。
+
+附带的降低Page上限后重启恢复检查失败：预期4页，实际1个新标签页；本轮未修改或调查该功能，因此不标记整套发布资格通过。该历史失败的后续排查与修复验收见[后续联合复审](evidence/runcove-browser-combined-20261020/verification.json)。测试容器与数据卷已清理；本轮未部署生产、未构建新发布镜像或进行新的Server VM资格验证。报告对应固定二进制；随后并行推进的浏览器合同改动需另行验证。
+
+## 结构化浏览器四工具替换（2026-10-20）
+
+旧工具集最后版本已独立提交并推送为 `bdee824e762e913032d540733bc8f4c1472d04f2`；本轮在 `codex/structured-browser-tools` 上，以 browser_snapshot、browser_act、browser_read、screen_observe 完整替换旧入口。观察、读取和动作使用短生命周期 worker，任务、控制权、Page 准入与生命周期继续由既有 Rust owner 负责。快照默认只返回语义，显式 image=true 附带 ref 标注整页图；页面截图默认完整已渲染文档，复用同一坐标映射。合同见[浏览器与云桌面](browser-desktop.md#浏览器与截图工具)。
+
+完整功能验收固定输入 SHA-256 为 `0ce59840fc600d3c789929d308af0c6b0e57c30757f019c2028f85affd117845`，两种运行模式绑定同一新版 desktop helper，SHA-256 为 `25d2272575edf69fecc5eb957d147ee990de38b01deddff1ff0dabdb340c140c`。完整 Rust workspace 串行323项、最终helper8项、真实 Chromium 组件23项（含原生DPR=2）、两种构建方式的 Clippy 和无MSB Standalone入口构建通过；未改动输入的Python26项和UI类型/i18n/DOM/构建检查沿用本轮先前通过结果。程序、UI、测试输入和日志摘要见[验证摘要](evidence/runcove-structured-browser-20261020/verification.json)。
+
+独立 Server、Standalone 均完成整套共享功能验收：Server40项通过；Standalone39项通过、1项Server旧UID1001资料重开专属测试跳过。覆盖同源/嵌套/跨域OOPIF、动态iframe、窗口及命名弹窗、JS菜单/tooltip/popover/模态框、shadow DOM、已打开的原生JS对话框、ref替换失效、字段真实值及Unicode边界、整页底部像素与坐标、整批校验、稳定失败状态、超时/取消/断连不重放、上传下载和1GiB文件流。两目标均通过实际VNC键盘/剪贴板/控制权/第二观看者/窄屏界面，以及分别经历真实300秒的多资料恢复、冻结浏览器回收恢复和被动VNC休眠；重启降低Page上限4→1后，原四页保留，新增拒绝，原页仍可导航与关闭。Standalone执行身份、秘密与文件权限、控制进程丢失及重启边界通过。两套工具目录一致，隔离容器和命名数据卷清理成功。
+
+复验修正了弹窗压力夹具的一次手势批量调用；四页冷恢复实测首次附着约7.9秒，将单次附着上限5秒调为15秒，仍受原任务期限和取消控制，没有重试或常驻连接。旧冻结夹具误把 desktop=null/preparing=true 当作休眠，并过早解除SIGSTOP；现只接受 desktop=false，确认旧进程结束及原生恢复标记后才唤醒。严格用例随后暴露 Chromium 的 Crashed 启动会阻断原生恢复；仅在受管休眠恢复标记存在时增加原生启动开关，未另存页面或重建资料。另修正最后窗口先断开CDP造成关闭误报：只发送一次关闭命令，以目标消失或浏览器端口退出确认完成，并连续三次验收。最终两套完整功能验收均使用修正后的helper和严格夹具；此前资源阻塞、失败、部分运行及旧夹具结果均不算最终通过。
+
+功能验收后仅修正两处引导文字：action_timeout_ms明确为元素交互等待，超出视口的拖动提示改为使用ref或分步移动，不再建议获取不存在的视口截图。逐字节核对确认仅两个字符串改变，参数、默认值、校验及执行逻辑均未变；两种feature的真实MCP目录各5项合同检查、最终helper8项及构建通过。说明收尾源码SHA-256为 `ad47aed46b81030474fb5e11d7a34cbab17e005172b9e11a0ddb80b87e84ccd8`；最终目录和程序摘要见[说明收尾核对](evidence/runcove-structured-browser-20261020/wording-review.json)。上述完整计时报告及输入保留原值，没有将其改写为另一份程序的报告。
+
+随后按用户确认的模型可见文本落实四个工具、22个动作分支及全部字段描述；真实HTTP MCP `tools/list` 中103条描述与确认稿逐项匹配，Server与Standalone目录一致。`browser_act.actions.items` 引用 `$defs.ActStep`，动作与字段说明完整包含在22个 `oneOf` 分支中。`wait_secs` 的运行时默认值、schema default和上限统一为30秒，范围0..30；参数校验及任务owner同步调整。两种feature各30项MCP单元、5项真实协议合同检查通过；任务owner经过真实30秒等待验证，覆盖等待结束保留运行任务、21秒后完成及取消通知。全workspace/all-targets Clippy、Standalone库/独立入口/合同测试Clippy及无MSB独立入口构建通过。初次Standalone all-targets检查误包含依赖MSB的VM测试，改用独立入口适用范围后通过，未修改VM测试。除说明/schema和等待默认值、上限、范围错误文字外，执行逻辑不变；该针对性验证阶段未重跑完整浏览器VM资格，也未更新生产或发布镜像。见[确认后的实际工具目录](evidence/runcove-structured-browser-20261020/browser-tools-approved.json)及[针对性验证](evidence/runcove-structured-browser-20261020/approved-contract-verification.json)。
+
+上述完整功能资格使用固定开发资产，两份运行报告均为 development assets、shared_full=true、full=false；不代替Server完整发布生命周期、外部Agent/模型/网关及第三方网站联调。本轮未构建最终发布镜像或离线包，新改动尚未提交或推送。
+
+随后按用户要求快速更新生产，未备份、未迁移。以源码摘要 `1d5d3632fa34cf691caba6d86b162f8df08748bba5dcfe9059abff0f63762594` 构建静态链接SQLite 3.51.3的release程序，在原容器内同时替换MCP及内嵌浏览器worker的desktop helper，同步release/runtime元数据并重启；运行进程、程序、helper及元数据摘要一致，原容器、基础镜像、配置、挂载和端口核对通过。真实HTTP工具目录与确认稿完全一致，临时空间通过bash/文件写入、快照/ref点击/读取、iframe填写、整页及桌面图片验证；32秒间隔截图任务在省略wait_secs后等待24.81秒成功返回，验证30秒默认等待路径。临时空间和上传暂存已清理，原账号数量与重启前一致，功能验收前后原账号记录未变；生产及相邻服务健康。首次核对因Docker挂载数组顺序变化中断，按挂载目标排序后内容一致，续跑验收通过，没有再次部署。此更新仅在容器可写层生效，重建容器需重新应用或构建新镜像。具体程序摘要与现场范围见[生产更新验证](evidence/runcove-structured-browser-20261020/production-update.json)。
+
 ## bash 参数与生产二进制更新（2026-10-19）
 
 共享 MCP 的 bash 命令字符串参数从 `command` 改为必填 `cmd`，同步现行调用、参数合同和接入文档；固定旧镜像的验证仍使用其原参数。

@@ -2,7 +2,7 @@
 """Full shared desktop qualification for an exact Server release image.
 Run docker/verify.py first for the same image; all resources here are disposable.
 """
-import argparse,hashlib,http.client,json,os,secrets,time,uuid
+import argparse,hashlib,http.client,json,os,secrets,shutil,time,uuid
 from pathlib import Path
 from verify import docker
 from qualification import run_shared,verify_page_limit_restart
@@ -15,13 +15,13 @@ def main():
  p.add_argument('--max-pages',type=int,help='Override the shared browser Page limit for this independent qualification')
  a=p.parse_args()
  image_id=docker('image','inspect',a.image,'--format','{{.Id}}').strip()
- if not a.tools_only:
+ if not a.tools_only and not a.development_assets:
   assert a.lifecycle,'matching complete lifecycle qualification required'
   lifecycle=json.loads(a.lifecycle.read_text())
   assert lifecycle.get('passed') and lifecycle.get('cleanup_passed') and lifecycle.get('image_id')==image_id and lifecycle.get('idle_seconds',0)>300,'matching complete lifecycle qualification required'
  name='runcove-desktop-'+uuid.uuid4().hex[:10];output=ROOT/'target/server-desktop-verification'/name;output.mkdir(parents=True,mode=0o700)
- report={'target':'server','image':a.image,'image_id':image_id,'scope':'development assets' if a.development_assets else 'final image','full':not a.tools_only,'checks':[],'passed':False}
- if not a.tools_only:report.update(idle_seconds=lifecycle['idle_seconds'],lifecycle_report_sha256=hashlib.sha256(a.lifecycle.read_bytes()).hexdigest())
+ report={'target':'server','image':a.image,'image_id':image_id,'scope':'development assets' if a.development_assets else 'final image','full':not a.tools_only and not a.development_assets,'shared_full':not a.tools_only,'checks':[],'passed':False}
+ if not a.tools_only and not a.development_assets:report.update(idle_seconds=lifecycle['idle_seconds'],lifecycle_report_sha256=hashlib.sha256(a.lifecycle.read_bytes()).hexdigest())
  a.image=image_id
  previous_token=os.environ.get('AGENT_SPACE_ADMIN_TOKEN')
  token=secrets.token_urlsafe(40);os.environ['AGENT_SPACE_ADMIN_TOKEN']=token;volume=None;container=None;users={}
@@ -38,9 +38,14 @@ def main():
   common=['-e','AGENT_SPACE_ADMIN_TOKEN','-v',volume+':/var/lib/microsandbox','-v',str(config)+':/etc/agent-space/config.toml:ro']
   if a.development_assets:
    report['source_digest']=source_digest()
+   frozen=output/'inputs';frozen.mkdir()
+   report['binaries_sha256']={}
    for binary in ['agent-space-mcp','agent-space-static-http','agent-space-webdav','agent-space-desktop']:
-    common+=['--mount',f'type=bind,src={ROOT}/target/debug/{binary},dst=/usr/local/bin/{binary},readonly']
-   common+=['--mount',f'type=bind,src={ROOT}/desktop-ui/dist,dst=/opt/agent-space/desktop-ui,readonly']
+    shutil.copy2(ROOT/'target/debug'/binary,frozen/binary)
+    report['binaries_sha256'][binary]=hashlib.file_digest((frozen/binary).open('rb'),'sha256').hexdigest()
+    common+=['--mount',f'type=bind,src={frozen}/{binary},dst=/usr/local/bin/{binary},readonly']
+   shutil.copytree(ROOT/'desktop-ui/dist',frozen/'ui')
+   common+=['--mount',f'type=bind,src={frozen}/ui,dst=/opt/agent-space/desktop-ui,readonly']
   docker('run','--rm',*common,a.image,'init-state')
   container=name;docker('run','-d','--name',container,'--device','/dev/kvm','--stop-timeout','60','-p','127.0.0.1::8932',*common,a.image)
   until=time.monotonic()+180

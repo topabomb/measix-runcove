@@ -28,6 +28,20 @@ async function tool(name:string,args:unknown){
  if(result?.content){const raw=result.content.find((item:any)=>item.type==='text').text;try{return JSON.parse(raw);}catch{return {text:raw,isError:!!result.isError};}}
  initialized=true;return tool(name,args);
 }
+async function finish(name:string,args:unknown){
+ let result=await tool(name,args);
+ while(result.state==='running')result=await tool('browser_act',{op:'wait',task_id:result.task_id});
+ return result;
+}
+async function snapshot(view?:'tabs'){const result=await finish('browser_snapshot',{view});expect(result.state,JSON.stringify(result)).toBe('succeeded');return result.value;}
+async function act(actions:unknown[],args:Record<string,unknown>={}){const result=await finish('browser_act',{actions,...args});expect(result.state,JSON.stringify(result)).toBe('succeeded');return result.value;}
+async function resetBrowser(){const v=await snapshot('tabs'),keep=v.tabs[0].page_id;return act([...v.tabs.slice(1).map((p:any)=>({do:'tab',action:'close',page_id:p.page_id})),{do:'tab',action:'focus',page_id:keep},{do:'navigate',url:'http://127.0.0.1:8124/'}],{page_id:keep});}
+// Test fixture setup/readback is deliberately outside the public browser API.
+async function fixture(code:string){
+ const script="const {chromium}=require('/opt/agent-tools/node_modules/playwright');(async()=>{const browser=await chromium.connectOverCDP('http://127.0.0.1:9222',{noDefaults:true});const context=browser.contexts()[0],page=context.pages()[0];const value=await(async()=>{"+code+"})();console.log('QUALIFICATION_JSON='+JSON.stringify(value??null));process.exit();})().catch(e=>{console.error(e);process.exit(1)});";
+ const result=await tool('bash',{cmd:'node -e '+"'"+script.replaceAll("'","'\\''")+"'"});
+ const match=result.text?.match(/QUALIFICATION_JSON=(.*)/);if(!match)throw Error('Missing fixture response: '+JSON.stringify(result));return JSON.parse(match[1]);
+}
 async function login(page:any,target=url){
  await page.goto(target);await page.getByRole('textbox',{name:'访问 Token',exact:true}).fill(credentials.desktop.token);
  await page.getByRole('button',{name:'连接桌面',exact:true}).click();await expect(page.getByText('AI 控制 · 仅观看',{exact:true})).toBeVisible({timeout:45000});
@@ -38,9 +52,7 @@ test('human can reopen a closed browser without replacing the desktop or control
  test.setTimeout(90000);
  const context=await browser.newContext({locale:'zh-CN',viewport:{width:1440,height:1000}}),page=await context.newPage();
  await login(page);
- let prepared=await tool('browser_run',{code:"for(const p of context.pages())if(p!==page)await p.close();await page.goto('http://127.0.0.1:8124/');await page.bringToFront();return true;"});
- while(prepared.state==='running')prepared=await tool('browser_task',{task_id:prepared.task_id});
- expect(prepared.state).toBe('succeeded');
+ await resetBrowser();
  await page.getByRole('button',{name:'接管操作',exact:true}).click();await expect(page.getByText('你正在操作',{exact:true})).toBeVisible();
  await page.locator('canvas').click({position:{x:300,y:200}});
  await page.keyboard.press('Alt+F4');
@@ -51,12 +63,12 @@ test('human can reopen a closed browser without replacing the desktop or control
  await page.getByRole('button',{name:'打开浏览器',exact:true}).click();
  await expect.poll(desktopAlive,{timeout:30000}).toBe(true);
  await expect(page.getByText('你正在操作',{exact:true})).toBeVisible();
- const first=(await tool('browser_observe',{})).tabs.map((p:any)=>p.page_id);
+ const first=(await snapshot('tabs')).tabs.map((p:any)=>p.page_id);
  expect(first.length).toBeGreaterThan(0);
  await expect(page.getByRole('button',{name:'打开浏览器',exact:true})).toBeEnabled();
  await page.getByRole('button',{name:'打开浏览器',exact:true}).click();
  await expect(page.getByRole('button',{name:'打开浏览器',exact:true})).toBeEnabled();
- expect((await tool('browser_observe',{})).tabs.map((p:any)=>p.page_id)).toEqual(first);
+ expect((await snapshot('tabs')).tabs.map((p:any)=>p.page_id)).toEqual(first);
  await page.getByRole('combobox',{name:'语言'}).selectOption('en');
  await expect(page.getByRole('button',{name:'Open browser',exact:true})).toBeVisible();
  await context.close();
@@ -68,19 +80,18 @@ test('real VNC keyboard, clipboard, English UI and a second viewer',async({brows
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
 
  await login(page);await login(viewer);
- let prepared=await tool('browser_run',{code:"await desktop.setWindowMode('fullscreen');await page.goto('http://127.0.0.1:8124/');await page.waitForFunction(()=>innerHeight===900);return await page.locator('#clipboard').boundingBox();"});
- while(prepared.state==='running')prepared=await tool('browser_task',{task_id:prepared.task_id});
- expect(prepared.state).toBe('succeeded');
+ await act([{do:'window',mode:'fullscreen'},{do:'navigate',url:'http://127.0.0.1:8124/'},{do:'wait',secs:1}]);
+ const remote=await fixture("return await page.locator('#clipboard').boundingBox();");
  await page.getByRole('button',{name:'接管操作',exact:true}).click();await expect(page.getByText('你正在操作',{exact:true})).toBeVisible();
  await expect(viewer.getByText('他人在操作 · 仅观看',{exact:true})).toBeVisible();
- const remote=prepared.value,canvas=await page.locator('canvas').boundingBox();
+ const canvas=await page.locator('canvas').boundingBox();
  if(!canvas||!remote)throw Error('Missing screen/fixture bounds');
  await expect(page.getByRole('button',{name:'交还 AI',exact:true})).toBeEnabled();
  await page.mouse.click(canvas.x+(remote.x+remote.width/2)*canvas.width/1440,canvas.y+(remote.y+remote.height/2)*canvas.height/900);
  // Allow the remote compositor to apply the delivered pointer focus change.
  await page.waitForTimeout(200);
  await page.keyboard.type('vnc keyboard123',{delay:30});
- const clipboardValue=async()=> (await tool('browser_observe',{})).dom.controls.find((control:any)=>control.name==='Clipboard fixture')?.value;
+ const clipboardValue=async()=>{const result=await finish('browser_read',{extract:'fields'});return result.value?.fields.find((f:any)=>f.name==='Clipboard fixture')?.value;};
  await expect.poll(clipboardValue).toBe('vnc keyboard123');
  await page.getByRole('button',{name:'剪贴板',exact:true}).click();
  await page.getByRole('textbox',{name:'本机 → 远程桌面',exact:true}).fill('中文 hello 🙂');
@@ -114,9 +125,8 @@ test('real VNC keyboard, clipboard, English UI and a second viewer',async({brows
 
 test('a connected passive VNC viewer sleeps after 300 seconds and restores its tabs',async({browser})=>{
  test.setTimeout(360000);
- let prepared=await tool('browser_run',{code:"for(const p of context.pages())if(p!==page)await p.close();await page.goto('http://127.0.0.1:8124/');await page.evaluate(()=>localStorage.setItem('vnc-idle-marker','persistent'));return context.pages().map(p=>p.url());"});
- while(prepared.state==='running')prepared=await tool('browser_task',{task_id:prepared.task_id});
- expect(prepared.state).toBe('succeeded');
+ await resetBrowser();await fixture("await page.evaluate(()=>localStorage.setItem('vnc-idle-marker','persistent'));return true;");
+ const before=(await snapshot('tabs')).tabs.map((p:any)=>p.url).sort();
  const context=await browser.newContext({locale:'zh-CN',viewport:{width:1440,height:1000}}),page=await context.newPage();
  await login(page);
  const started=Date.now();
@@ -126,16 +136,8 @@ test('a connected passive VNC viewer sleeps after 300 seconds and restores its t
  await page.screenshot({path:directory+'/workbench-idle.png'});
  await page.getByRole('button',{name:'唤醒桌面',exact:true}).click();
  await expect(page.getByText('AI 控制 · 仅观看',{exact:true})).toBeVisible({timeout:45000});
- let restored=await tool('browser_run',{code:"return {tabs:context.pages().map(p=>p.url()),marker:await page.evaluate(()=>localStorage.getItem('vnc-idle-marker'))};"});
- while(restored.state==='running')restored=await tool('browser_task',{task_id:restored.task_id});
- if(JSON.stringify(restored.value?.tabs)!==JSON.stringify(prepared.value)){
-  console.log('Wake result at readiness:',JSON.stringify(restored));
-  await page.waitForTimeout(10000);
-  let later=await tool('browser_run',{code:"return {tabs:context.pages().map(p=>p.url()),marker:await page.evaluate(()=>localStorage.getItem('vnc-idle-marker'))};"});
-  while(later.state==='running')later=await tool('browser_task',{task_id:later.task_id});
-  console.log('Wake result ten seconds later:',JSON.stringify(later));
- }
- expect(restored.state).toBe('succeeded');expect(restored.value.tabs).toEqual(prepared.value);expect(restored.value.marker).toBe('persistent');
+ const restored=await snapshot('tabs');expect(restored.tabs.map((p:any)=>p.url).sort()).toEqual(before);
+ expect(await fixture("return await page.evaluate(()=>localStorage.getItem('vnc-idle-marker'));" )).toBe('persistent');
  await context.close();
 });
 
@@ -149,8 +151,8 @@ test('human takeover allows basic tools and workspace uploads',async({browser})=
  expect(JSON.stringify(await tool('write',{path,content:'old-value'}))).toContain('Wrote');
  expect(JSON.stringify(await tool('edit',{path,old_text:'old-value',new_text:'new-value'}))).toContain('Replaced');
  expect(JSON.stringify(await tool('read',{path}))).toContain('new-value');
- expect(JSON.stringify(await tool('bash',{command:'echo basic-tools-remain-available'}))).toContain('basic-tools-remain-available');
- expect(JSON.stringify(await tool('browser_run',{code:'return 7;'}))).toContain('HUMAN_CONTROL');
+ expect(JSON.stringify(await tool('bash',{cmd:'echo basic-tools-remain-available'}))).toContain('basic-tools-remain-available');
+ expect(JSON.stringify(await tool('browser_act',{actions:[{do:'wait',secs:0}]}))).toContain('HUMAN_CONTROL');
  await page.locator('#filesToggle').click();
  await expect(page.locator('#upload')).toBeEnabled();
  await page.locator('#file').setInputFiles({name:'human-upload-'+Date.now()+'.txt',mimeType:'text/plain',buffer:Buffer.from('human upload succeeds')});

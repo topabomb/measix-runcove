@@ -1,0 +1,5 @@
+{
+  "build_features": "--no-default-features",
+  "binary_sha256": "f9920b0896175c929acfe6f5365ca33f485828e810032c0ccb395bd8cae7c6ca",
+  "copied_into_live_qualification": true
+}

@@ -22,7 +22,7 @@ Server 是单节点、可独立部署的托管空间服务。它为每个本地�
 |---|---|---|
 | Runcove 核心服务 | 位于用户 VM 外的 Host 服务 | 本容器内的 root 服务 |
 | 受管 helper 控制进程 | VM 内 root | 容器内 root |
-| bash、文件工具、browser_run 用户脚本、原图保存及产物枚举 | VM 内 root | UID/GID1001 |
+| bash、文件工具、固定浏览器操作、原图保存及产物枚举 | VM 内 root | UID/GID1001 |
 | Chromium、桌面应用和内部观察进程 | VM 内 root | 容器内 UID/GID1001 |
 
 Standalone 保持一个使用者、一个空间、一个容器。Agent 可以管理工作文件、用户应用和项目依赖；Python 虚拟环境、项目内 npm 依赖等使用可写目录。系统依赖由部署维护者在镜像构建时提供，Agent 没有运行时 root 或任意 sudo 权限。root 控制进程负责服务入口、凭据和运行记录，UID 隔离用于防止普通用户权限下的任务直接读写控制文件或终止控制进程；资源耗尽和程序故障仍由资源限额、任务期限及进程清理处理。
@@ -128,7 +128,7 @@ Server 激活在同一捕获 identity 和 60 秒总预算内显式调用 SDK `st
 
 VM 状态与传输连接健康分别检查。准入、执行或受管 helper 操作确认底层 Agent 连接已关闭时，运行所有者标记 reconnect；下次准入重新查询状态，Running 则重新附着同一 VM 并核验原 helper，状态未知则保留资源并报错。旧执行句柄的迟到错误不能使新句柄失效；端口拒绝、业务错误和普通超时不触发连接替换。恢复沿用此门闩，不另起回收器，也不自动重放已经提交的命令或 HTTP 写入。DAV 的具体错误和 TCP 合同见 [WebDAV 生命周期](webdav.md#5-session准入与取消)。
 
-只有浏览器自动化参与桌面控制门禁；bash/read/write/edit与工作台文件传输不受人工接管限制。browser_run 任务由空间 DesktopHub 与 guest helper 监督，HTTP等待者不拥有任务生命周期；控制权、硬期限、300秒桌面空闲与原VM回收规则见[浏览器合同](browser-desktop.md)。bash输出在guest前台owner中有界消费，超时/取消保留部分输出并确认后代清理，正常退出不结束Agent显式启动的后台应用。
+只有浏览器自动化参与桌面控制门禁；bash/read/write/edit与工作台文件传输不受人工接管限制。browser_act 任务由空间 DesktopHub 与 guest helper 监督，HTTP等待者不拥有任务生命周期；控制权、硬期限、300秒桌面空闲与原VM回收规则见[浏览器合同](browser-desktop.md)。bash输出在guest前台owner中有界消费，超时/取消保留部分输出并确认后代清理，正常退出不结束Agent显式启动的后台应用。
 
 ### 基础工具并发
 
@@ -206,7 +206,10 @@ Server 中以上为 **guest 路径**；Standalone 复用同名容器路径，用
 
 目录默认 `0755`、二进制 `0755`、说明 `0644`；配置、运行记录及内部日志仅授予启动器/helper 所需权限。当前 guest 可运行 root 命令，这些规则用于防误操作，不能构成对抗 guest root 的安全隔离。
 
-桌面profile持久保存在 `/workspace/.agent-space/desktop/profile`；用户产物位于公开目录 `/workspace/agent-space/artifacts`。helper与worker仍在opt；任务JSON和日志仅在tmp实例目录，不作为跨重启任务恢复。Chromium、桌面应用、内部观察worker、用户脚本、截图保存和产物枚举复用空间文件身份，Server为VM内root，Standalone为UID1001。桌面准备仅调整固定受管目录的归属，不递归修改工作区；既有profile继续使用。任务目录和结果校验使用同一身份，实例目录仅给遍历权限0711，身份/日志保持root权限。
+桌面profile持久保存在 `/workspace/.agent-space/desktop/profile`；用户产物位于公开目录 `/workspace/agent-space/artifacts`。helper与worker仍在opt；任务JSON和日志仅在tmp实例目录，不作为跨重启任务恢复。Chromium、桌面应用、内部观察worker、浏览器动作、截图保存和产物枚举复用空间文件身份，Server为VM内root，Standalone为UID1001。桌面准备仅调整固定受管目录的归属，不递归修改工作区；既有profile继续使用。任务目录和结果校验使用同一身份，实例目录仅给遍历权限0711，身份/日志保持root权限。
+
+截图 worker 只捕获原始 PNG；desktop helper 在任务结果公开前调用共享 `media.rs` 处理快照图片和连续截图，并同步返回尺寸及坐标映射。文件 `read` 复用同一处理函数；任务查询只转交已编码结果，不重复处理。原始 PNG 保存位于该处理之前，图片策略与预算见[截图合同](browser-desktop.md#截图与连续观察)。
+
 
 ### 配置与运行状态
 

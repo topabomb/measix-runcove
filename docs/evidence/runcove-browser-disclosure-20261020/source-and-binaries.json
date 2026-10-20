@@ -1,0 +1,30 @@
+{
+  "source_digest": "6f4beb28654039b4cfb17a2ac7e7b21dc1a2ecba20335ecd031607856d3487e7",
+  "scope": "current source and frozen development binaries; release images not rebuilt",
+  "release_binaries": {
+    "agent-space-mcp": {
+      "sha256": "f222b4cc5bdf3b0fab1cc06e9541229902633c24be9349fa9e8b6fcd11321330",
+      "dynamic_dependencies_resolved": true,
+      "help_exit": 0
+    },
+    "runcove-standalone": {
+      "sha256": "63b74734ccaf4ee145a8821fcfd6aebe715040d24d9ac04da7aaf0e7909b6dae",
+      "dynamic_dependencies_resolved": true,
+      "help_exit": 0,
+      "no_msb_library_dependency": true
+    },
+    "agent-space-static-http": {
+      "sha256": "1945f05db73f86961f51117b2cbb8a1a1bc6ac33828b10aa756c2662b7a041d0",
+      "dynamic_dependencies_resolved": true
+    },
+    "agent-space-webdav": {
+      "sha256": "fa49448b52e0315e92d1ac11c4e512ade5f848da8df70e07da8c977b8f8c987f",
+      "dynamic_dependencies_resolved": true
+    },
+    "agent-space-desktop": {
+      "sha256": "08a2d37c43e2f7433f753576dc339097eb82685320615ba70fa7f12ee76e0f28",
+      "dynamic_dependencies_resolved": true
+    }
+  },
+  "qualification_status": "passed"
+}

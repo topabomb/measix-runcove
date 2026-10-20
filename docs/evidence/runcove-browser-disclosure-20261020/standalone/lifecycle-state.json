@@ -1,0 +1,48 @@
+{
+  "expected_urls": [
+    "http://127.0.0.1:8124/"
+  ],
+  "sleep_health": {
+    "desktop": false,
+    "worker_contract": 1
+  },
+  "preparing_polls": 1,
+  "stopped": {
+    "old_process_alive": false,
+    "was": {
+      "restarted": true
+    },
+    "last_active_profiles": [
+      "Default"
+    ]
+  },
+  "pure_wait_while_asleep": {
+    "result": {
+      "control": {
+        "mode": "AI"
+      },
+      "duration_secs": 1.0,
+      "started_at": "2026-10-20T15:03:29Z",
+      "state": "succeeded",
+      "task_id": "3ae99aa9-abfe-4124-aec5-fe0159108f62",
+      "value": {
+        "completed": 1,
+        "of": 1
+      }
+    },
+    "health": {
+      "desktop": false,
+      "worker_contract": 1
+    }
+  },
+  "first_wake": {
+    "element_count": 6,
+    "elements": "eo-jsSjgz_j heading \"Upload/download\" [level=1]\ne8KkoMtOUXS button \"Upload fixture\"\neOgw3oXGxy- button \"Count once\"\neZjRStyPcv7 textbox \"Clipboard fixture\"\ne30Yanm4H7Y button \"Generate\"\neeGZaSqZ3Sb link \"Download\"",
+    "page_id": "E6229C45E099F3C17DA3AC2CB1826ED5",
+    "title": "Automation fixture",
+    "url": "http://127.0.0.1:8124/",
+    "control": {
+      "mode": "AI"
+    }
+  }
+}

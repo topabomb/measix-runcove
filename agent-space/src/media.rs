@@ -1,6 +1,6 @@
 //! Bounded image decoding shared by file reads and desktop observations.
 use image_codec::{
-    codecs::{gif::GifDecoder, jpeg::JpegEncoder, png::PngDecoder, webp::WebPDecoder},
+    codecs::{gif::GifDecoder, png::PngDecoder, webp::WebPDecoder},
     imageops::FilterType,
     metadata::Orientation,
     AnimationDecoder, DynamicImage, ImageDecoder, ImageFormat, ImageReader, Limits,
@@ -16,8 +16,8 @@ pub const SOURCE_LIMIT: usize = 10 * 1024 * 1024;
 /// Internal Base64 report, including bounded JSON/path metadata. Independent of
 /// the final MCP result budget and of text output limits.
 pub const REPORT_LIMIT: usize = SOURCE_LIMIT.div_ceil(3) * 4 + 64 * 1024;
-pub const OUTPUT_LIMIT: usize = 4_500_000;
-pub const SCREEN_LIMIT: usize = 2 * 1024 * 1024;
+pub const OUTPUT_LIMIT: usize = 8 * 1024 * 1024;
+pub const MAX_EDGE: u32 = 1980;
 const PIXEL_LIMIT: u64 = 16_000_000;
 
 /// Acquire before reading binary input. Move the permit into the actual codec
@@ -72,7 +72,7 @@ fn first<'a>(decoder: impl AnimationDecoder<'a>) -> anyhow::Result<DynamicImage>
     ))
 }
 
-pub fn process(bytes: Vec<u8>, screen_budget: Option<usize>) -> anyhow::Result<Picture> {
+pub fn process(bytes: Vec<u8>, output_budget: Option<usize>) -> anyhow::Result<Picture> {
     anyhow::ensure!(
         bytes.len() <= SOURCE_LIMIT,
         "IMAGE_TOO_LARGE: source exceeds 10 MiB"
@@ -136,7 +136,7 @@ pub fn process(bytes: Vec<u8>, screen_budget: Option<usize>) -> anyhow::Result<P
     let oriented = (image.width(), image.height());
     let mut picture = Picture {
         bytes: vec![],
-        mime_type: "image/png",
+        mime_type: "image/webp",
         original_width,
         original_height,
         width: oriented.0,
@@ -145,50 +145,28 @@ pub fn process(bytes: Vec<u8>, screen_budget: Option<usize>) -> anyhow::Result<P
         orientation_corrected,
         first_frame_only,
     };
-    if screen_budget.is_none()
-        && !orientation_corrected
-        && !first_frame_only
-        && oriented.0.max(oriented.1) <= 2000
-        && bytes.len() <= OUTPUT_LIMIT
-    {
-        picture.mime_type = match format {
-            ImageFormat::Jpeg => "image/jpeg",
-            ImageFormat::WebP => "image/webp",
-            _ => "image/png",
-        };
-        picture.bytes = bytes;
-        return Ok(picture);
+    // Every image entry point uses one resize and one encoding policy.
+    // Do not shrink again or lower quality when the remaining budget is small.
+    if oriented.0.max(oriented.1) > MAX_EDGE {
+        image = image.resize(MAX_EDGE, MAX_EDGE, FilterType::Lanczos3);
     }
-    let budget = screen_budget.unwrap_or(OUTPUT_LIMIT);
-    let alpha = image.color().has_alpha() && screen_budget.is_none();
-    for (edge, quality) in [(2000, 80), (2000, 70), (1600, 70), (1280, 70)] {
-        if alpha && edge == 2000 && quality == 70 {
-            continue;
-        }
-        let candidate = if image.width().max(image.height()) > edge {
-            image.resize(edge, edge, FilterType::Triangle)
-        } else {
-            image.clone()
-        };
-        let mut encoded = vec![];
-        if alpha {
-            candidate.write_to(&mut Cursor::new(&mut encoded), ImageFormat::Png)?;
-        } else {
-            JpegEncoder::new_with_quality(&mut encoded, quality)
-                .encode_image(&candidate.to_rgb8())?;
-        }
-        if encoded.len() <= budget {
-            picture.width = candidate.width();
-            picture.height = candidate.height();
-            picture.resized = oriented != (picture.width, picture.height);
-            picture.mime_type = if alpha { "image/png" } else { "image/jpeg" };
-            picture.bytes = encoded;
-            return Ok(picture);
-        }
-    }
-    anyhow::bail!(
-        "IMAGE_BUDGET_EXCEEDED: image cannot fit the output budget after bounded compression"
-    )
+    picture.width = image.width();
+    picture.height = image.height();
+    picture.resized = oriented != (picture.width, picture.height);
+    let rgba = image.to_rgba8();
+    let mut config = webp::WebPConfig::new()
+        .map_err(|_| anyhow::anyhow!("IMAGE_ENCODING_FAILED: WebP configuration unavailable"))?;
+    config.quality = 90.0;
+    config.method = 6;
+    picture.bytes = webp::Encoder::from_rgba(&rgba, picture.width, picture.height)
+        .encode_advanced(&config)
+        .map_err(|e| anyhow::anyhow!("IMAGE_ENCODING_FAILED: {e:?}"))?
+        .to_vec();
+    anyhow::ensure!(
+        picture.bytes.len() <= output_budget.unwrap_or(OUTPUT_LIMIT).min(OUTPUT_LIMIT),
+        "IMAGE_BUDGET_EXCEEDED: WebP Q90 output exceeds the remaining image budget"
+    );
+    Ok(picture)
 }
 
 #[cfg(test)]
@@ -210,16 +188,19 @@ mod tests {
             let source = encode(DynamicImage::new_rgb8(40, 20), format);
             let output = process(source.clone(), None).unwrap();
             assert_eq!((output.width, output.height), (40, 20));
-            if format != ImageFormat::Gif {
-                assert_eq!(output.bytes, source);
-            }
+            assert_eq!(output.mime_type, "image/webp");
+            assert_eq!(
+                image_codec::guess_format(&output.bytes).unwrap(),
+                ImageFormat::WebP
+            );
+            assert!(!output.resized);
         }
         let output = process(
             encode(DynamicImage::new_rgba8(2100, 10), ImageFormat::Png),
             None,
         )
         .unwrap();
-        assert_eq!(output.width, 2000);
+        assert_eq!(output.width, MAX_EDGE);
         assert!(image_codec::load_from_memory(&output.bytes)
             .unwrap()
             .color()
@@ -231,6 +212,26 @@ mod tests {
                 .get_pixel(0, 0)[3],
             0
         );
+    }
+    #[test]
+    fn one_resize_same_quality_for_files_and_sequences() {
+        let source = encode(DynamicImage::new_rgb8(1440, 6000), ImageFormat::Png);
+        let file = process(source.clone(), None).unwrap();
+        assert_eq!((file.width, file.height), (475, 1980));
+        assert_eq!((file.original_width, file.original_height), (1440, 6000));
+        assert!(file.resized);
+        let sequence = process(source.clone(), Some(file.bytes.len())).unwrap();
+        assert_eq!(file.bytes, sequence.bytes);
+        assert!(process(source, Some(file.bytes.len() - 1))
+            .unwrap_err()
+            .to_string()
+            .contains("IMAGE_BUDGET_EXCEEDED"));
+        let portrait = process(
+            encode(DynamicImage::new_rgb8(5, 2100), ImageFormat::Png),
+            None,
+        )
+        .unwrap();
+        assert_eq!((portrait.width, portrait.height), (5, MAX_EDGE));
     }
     #[test]
     fn rejects_invalid_and_oversized_images() {
@@ -275,14 +276,11 @@ mod tests {
         }
         let output = process(gif, None).unwrap();
         assert!(output.first_frame_only);
-        assert_eq!(
-            image_codec::load_from_memory(&output.bytes)
-                .unwrap()
-                .to_rgba8()
-                .get_pixel(0, 0)
-                .0,
-            [255, 0, 0, 255]
-        );
+        let pixel = image_codec::load_from_memory(&output.bytes)
+            .unwrap()
+            .to_rgba8();
+        assert!(pixel.get_pixel(0, 0)[0] > 240);
+        assert!(pixel.get_pixel(0, 0)[2] < 20);
     }
     #[tokio::test]
     async fn abandoned_codec_waiter_does_not_release_the_workers_permit() {

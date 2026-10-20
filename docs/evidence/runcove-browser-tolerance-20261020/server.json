@@ -1,0 +1,28 @@
+{
+  "target": "server",
+  "image": "runcove-server:runcove-61a1d41f93a18d9b",
+  "image_id": "sha256:dc5d61e08fa29c02775089083efe31ae2968ad6246d317600d5a52e90cb4b861",
+  "scope": "focused browser tool contract using development assets",
+  "full": false,
+  "shared_full": false,
+  "checks": [
+    "tool_review_catalog_and_fixture_setup",
+    "tool_review_test_browser_structured_vm.py"
+  ],
+  "passed": true,
+  "source_digest": "42f24c0e5c7185e8330b9e482a3c9d356569bc991ccb5c3701a7f18daff24f1c",
+  "binaries_sha256": {
+    "agent-space-mcp": "b7fc13af6b3ba67a27c9a8311eb731d15d3116e3587ef511666d220a99ee37b1",
+    "agent-space-static-http": "7d2efa41aa855b1b9bc525400c7bcf38654d0b30c64b06d845f10c3b8383d541",
+    "agent-space-webdav": "7cd4f5d0344cc759553b08aee6f31248f3addfca391caf371a62ea103bb569d4",
+    "agent-space-desktop": "43c58f9e6454d8259bdcdb934016e934cb7431b9ca0c13103d36a26ef6b0f019"
+  },
+  "suite_logs": {
+    "test_browser_structured_vm.py.log": "0be2af4ef9cb465feb7e3b2d41a1247bbdc47765afd04731466946488f380422"
+  },
+  "page_limit_restart": {
+    "skipped": true,
+    "reason": "outside focused browser tool review"
+  },
+  "cleanup_passed": true
+}

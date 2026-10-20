@@ -9,7 +9,7 @@ use serde_json::{json, Value};
 use std::{
     collections::HashMap,
     sync::Arc,
-    time::{Duration, Instant},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -27,6 +27,9 @@ pub struct DesktopHub {
 struct Job {
     id: String,
     accepted: Instant,
+    started_at: u64,
+    report_started_at: bool,
+    recent_limit: usize,
     status: Mutex<Value>,
     done: Notify,
     cancel: tokio_util::sync::CancellationToken,
@@ -164,68 +167,28 @@ impl DesktopHub {
         }
         Ok(())
     }
-    pub async fn observe(
-        self: &Arc<Self>,
-        page_id: Option<String>,
-        view: &str,
-        recent: usize,
-    ) -> Result<Value, EngineError> {
-        if !["dom", "ax", "page", "desktop"].contains(&view) || recent > 10 {
-            return Err(EngineError::Other("INVALID_ARGUMENT".into()));
-        }
-        if ["page", "desktop"].contains(&view) {
-            let mut value = self
-                .screen(
-                    self.session.clone(),
-                    ScreenOptions {
-                        view: view.into(),
-                        page_id,
-                        count: 1,
-                        interval_ms: 0,
-                        save_original: false,
-                        save_dir: None,
-                    },
-                )
-                .await?;
-            if recent > 0 {
-                value["recent_tasks"] = json!(self.recent_jobs(recent).await);
-            }
-            return Ok(value);
-        }
-        let _lease = self.session.activity_lease()?;
-        let port = self.ensure().await?;
-        let mut value = request(
-            &self.session,
-            port,
-            "POST",
-            "/observe",
-            Some(json!({"page_id":page_id,"view":view})),
-            Duration::from_secs(35),
-        )
-        .await?;
-        if recent > 0 {
-            value["recent_tasks"] = json!(self.recent_jobs(recent).await);
-        }
-        value["control"] = json!({"mode":self.control.view("").control});
-        Ok(value)
-    }
-    pub async fn run(
+    /// Structured browser work shares the existing deadline, cancellation and activity owner.
+    pub async fn browser(
         self: &Arc<Self>,
         admitted: Session,
-        code: String,
+        operation: &str,
+        args: Value,
         page_id: Option<String>,
         timeout: u64,
     ) -> Result<Value, EngineError> {
-        if code.is_empty() || code.len() > 65536 || !(1..=600).contains(&timeout) {
+        if !matches!(operation, "snapshot" | "act" | "read")
+            || !(1..=600).contains(&timeout)
+            || args.to_string().len() > 65536
+        {
             return Err(EngineError::Other(
-                "INVALID_ARGUMENT: code is 1..65536 UTF-8 bytes; timeout_secs is 1..600".into(),
+                "INVALID_ARGUMENT: invalid browser operation, deadline or request size".into(),
             ));
         }
         self.submit(
             admitted,
-            json!({"code":code,"page_id":page_id}),
+            json!({"operation":operation,"args":args,"page_id":page_id}),
             timeout,
-            true,
+            operation == "act",
         )
         .await
     }
@@ -287,6 +250,12 @@ impl DesktopHub {
                 .map(|operation| operation.id.clone())
                 .unwrap_or_else(|| uuid::Uuid::new_v4().to_string()),
             accepted: Instant::now(),
+            started_at: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs(),
+            report_started_at: modifies || body["count"].as_u64().unwrap_or(1) > 1,
+            recent_limit: body["args"]["recent_tasks_limit"].as_u64().unwrap_or(0) as usize,
             status: Mutex::new(json!({"state":"running","phase":"preparing","terminal":false})),
             done: Notify::new(),
             cancel: cancellation.clone(),
@@ -327,7 +296,11 @@ impl DesktopHub {
                     &hub.session,
                     port,
                     "POST",
-                    if modifies { "/run" } else { "/screen" },
+                    if body.get("operation").is_some() {
+                        "/run"
+                    } else {
+                        "/screen"
+                    },
                     Some(body),
                     Duration::from_secs(3),
                 )
@@ -451,19 +424,12 @@ impl DesktopHub {
                                     break Ok(value);
                                 }
                             }
-                            Err(_) => {
-                                // The guest still owns its hard deadline. Request
-                                // cancellation and retry observation within the
-                                // same bounded supervision window.
-                                let _ = request(
-                                    &hub.session,
-                                    port,
-                                    "POST",
-                                    &format!("/task/{}/cancel", running.id),
-                                    Some(json!({})),
-                                    Duration::from_secs(2),
-                                )
-                                .await;
+                            Err(error) => {
+                                // A failed status read does not prove the task failed.
+                                // Keep observing this same task; explicit cancellation,
+                                // authorization and the original deadline remain above.
+                                tracing::warn!(task_id = %running.id, %error,
+                                    "browser task status unavailable; retaining original deadline");
                             }
                         }
                         if tokio::time::Instant::now() >= poll_deadline {
@@ -496,14 +462,18 @@ impl DesktopHub {
                 *running.status.lock().await = status;
             }
             operation.take();
-            *running.finished.lock().await = Some(Instant::now());
+            running
+                .finished
+                .lock()
+                .await
+                .get_or_insert_with(Instant::now);
             running.done.notify_waiters();
         });
         self.task(&job.id, 8, false).await
     }
     pub async fn task(&self, id: &str, wait: u64, cancel: bool) -> Result<Value, EngineError> {
-        if wait > 20 {
-            return Err(EngineError::Other("wait_secs must be 0..20".into()));
+        if wait > 30 {
+            return Err(EngineError::Other("wait_secs must be 0..30".into()));
         }
         self.prune_jobs().await;
         let job = self.jobs.lock().await.get(id).cloned().ok_or_else(|| {
@@ -534,7 +504,12 @@ impl DesktopHub {
             if let Some(result) = value.as_object_mut().and_then(|o| o.remove("result")) {
                 if let Some(result) = result.as_object() {
                     for (key, item) in result {
-                        value[key] = item.clone();
+                        // The guest owner publishes terminal errors and effect
+                        // state. A partial worker checkpoint cannot replace a
+                        // later cancellation/deadline/cleanup decision.
+                        if !matches!(key.as_str(), "error" | "failed_step" | "side_effects") {
+                            value[key] = item.clone();
+                        }
                     }
                 }
             }
@@ -547,11 +522,29 @@ impl DesktopHub {
                 }
             }
         }
+        if job.report_started_at || value["state"] != "succeeded" {
+            value["started_at"] = json!(job.started_at);
+        }
+        let finished = {
+            let mut end = job.finished.lock().await;
+            if value["state"] != "running" {
+                end.get_or_insert_with(Instant::now);
+            }
+            *end
+        };
+        let duration = finished
+            .unwrap_or_else(Instant::now)
+            .saturating_duration_since(job.accepted);
+        value["duration_secs"] = json!((duration.as_secs_f64() * 10.0).round() / 10.0);
+        value["control"] = json!({"mode":self.control.view("").control});
+        if job.recent_limit > 0 {
+            value["recent_tasks"] = json!(self.recent_jobs(job.recent_limit).await);
+        }
         value.as_object_mut().map(|o| o.remove("terminal"));
         Ok(value)
     }
     async fn record_capture(&self, capture: &Value) {
-        if capture["source"] != "desktop" {
+        if capture["source"] != "desktop" && capture["source"] != "page" {
             return;
         }
         let mut captures = self.captures.lock().await;
@@ -659,4 +652,109 @@ async fn request(
                 "browser helper communication deadline; do not replay an uncertain script".into(),
             )
         })?
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        engine::{mock::MockEngine, WorkspaceOpts},
+        session::SessionManager,
+    };
+
+    #[tokio::test]
+    async fn task_wait_accepts_thirty_seconds_and_preserves_running_tasks() {
+        let manager = SessionManager::new(
+            Arc::new(MockEngine::new()),
+            1,
+            WorkspaceOpts {
+                image: "mock".into(),
+                cpus: 1,
+                memory_mib: 256,
+                shell: "/bin/bash".into(),
+                volumes: vec![],
+                network_access: Default::default(),
+                outbound_proxy: None,
+                max_tcp_connections: None,
+                max_udp_connections: None,
+            },
+        );
+        let session = manager.get_or_create("task-wait-contract").await.unwrap();
+        let hub = Arc::new(DesktopHub::new(session, Default::default()));
+        let make_job = |id: &str| {
+            Arc::new(Job {
+                id: id.into(),
+                accepted: Instant::now(),
+                started_at: SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs(),
+                report_started_at: id != "observation",
+                recent_limit: 0,
+                status: Mutex::new(json!({"state":"running","terminal":false})),
+                done: Notify::new(),
+                cancel: tokio_util::sync::CancellationToken::new(),
+                finished: Mutex::new(None),
+            })
+        };
+        let observation = make_job("observation");
+        *observation.status.lock().await = json!({"state":"succeeded","terminal":true});
+        hub.jobs
+            .lock()
+            .await
+            .insert(observation.id.clone(), observation.clone());
+        let observed = hub.task("observation", 0, false).await.unwrap();
+        assert!(observed.get("started_at").is_none());
+        assert!(observed.get("duration_secs").is_some());
+        *observation.status.lock().await = json!({"state":"failed","terminal":true});
+        assert!(hub
+            .task("observation", 0, false)
+            .await
+            .unwrap()
+            .get("started_at")
+            .is_some());
+        let running = make_job("running");
+        let completing = make_job("completing");
+        let cancelling = make_job("cancelling");
+        for job in [&running, &completing, &cancelling] {
+            hub.jobs.lock().await.insert(job.id.clone(), job.clone());
+        }
+        assert!(hub.task("running", 31, false).await.is_err());
+        assert_eq!(
+            hub.task("running", 0, false).await.unwrap()["state"],
+            "running"
+        );
+        let finish = tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_secs(21)).await;
+            *completing.status.lock().await = json!({"state":"succeeded","terminal":true});
+            completing.done.notify_waiters();
+        });
+        let cancelled = cancelling.clone();
+        let cancel_finish = tokio::spawn(async move {
+            cancelled.cancel.cancelled().await;
+            *cancelled.status.lock().await = json!({"state":"cancelled","terminal":true});
+            cancelled.done.notify_waiters();
+        });
+        let start = Instant::now();
+        let (poll, completed, cancelled) = tokio::join!(
+            hub.task("running", 30, false),
+            hub.task("completing", 30, false),
+            hub.task("cancelling", 30, true),
+        );
+        assert!(start.elapsed() >= Duration::from_secs(30));
+        assert_eq!(poll.unwrap()["state"], "running");
+        assert_eq!(completed.unwrap()["state"], "succeeded");
+        assert_eq!(cancelled.unwrap()["state"], "cancelled");
+        assert!(!running.cancel.is_cancelled());
+        assert!(running.finished.lock().await.is_none());
+        assert!(cancelling.cancel.is_cancelled());
+        let first = hub.task("completing", 0, false).await.unwrap();
+        tokio::time::sleep(Duration::from_millis(150)).await;
+        let second = hub.task("completing", 0, false).await.unwrap();
+        assert_eq!(first["started_at"], second["started_at"]);
+        assert_eq!(first["duration_secs"], second["duration_secs"]);
+        assert!(first["started_at"].as_u64().unwrap() > 0);
+        finish.await.unwrap();
+        cancel_finish.await.unwrap();
+    }
 }

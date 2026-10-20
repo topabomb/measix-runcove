@@ -1,0 +1,1029 @@
+[
+  {
+    "name": "browser_act",
+    "description": "Operate the browser and desktop in the connected Runcove space using structured steps. Returns action results, progress and outputs. Also retrieves or cancels tasks returned by the browser and screenshot tools.",
+    "inputSchema": {
+      "$defs": {
+        "ActAction": {
+          "enum": [
+            "execute",
+            "wait",
+            "cancel"
+          ],
+          "type": "string"
+        },
+        "ActStep": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "button": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/MouseButton"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Mouse button; default left."
+                },
+                "do": {
+                  "const": "click",
+                  "type": "string"
+                },
+                "double": {
+                  "default": null,
+                  "description": "Double-click; default false.",
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "ref": {
+                  "description": "Element ref from browser_snapshot or browser_read; copy unchanged.",
+                  "pattern": "^e[A-Za-z0-9_-]{10}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "do",
+                "ref"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "do": {
+                  "const": "fill",
+                  "type": "string"
+                },
+                "ref": {
+                  "description": "Element ref from browser_snapshot or browser_read; copy unchanged.",
+                  "pattern": "^e[A-Za-z0-9_-]{10}$",
+                  "type": "string"
+                },
+                "submit": {
+                  "default": null,
+                  "description": "Press Enter after filling; default false.",
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "do",
+                "ref",
+                "text"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "do": {
+                  "const": "select",
+                  "type": "string"
+                },
+                "ref": {
+                  "description": "Element ref from browser_snapshot or browser_read; copy unchanged.",
+                  "pattern": "^e[A-Za-z0-9_-]{10}$",
+                  "type": "string"
+                },
+                "value": {
+                  "description": "Exact option value or visible label. An exact value match takes precedence.",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "do",
+                "ref",
+                "value"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "checked": {
+                  "default": null,
+                  "description": "Desired checked state; default true.",
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "do": {
+                  "const": "check",
+                  "type": "string"
+                },
+                "ref": {
+                  "description": "Element ref from browser_snapshot or browser_read; copy unchanged.",
+                  "pattern": "^e[A-Za-z0-9_-]{10}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "do",
+                "ref"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "do": {
+                  "const": "press",
+                  "type": "string"
+                },
+                "key": {
+                  "description": "Browser key or chord, such as Enter or Control+a.",
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "ref": {
+                  "default": null,
+                  "description": "Element ref from browser_snapshot or browser_read; copy unchanged. Default the page's focused element.",
+                  "pattern": "^e[A-Za-z0-9_-]{10}$",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "do",
+                "key"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "do": {
+                  "const": "hover",
+                  "type": "string"
+                },
+                "ref": {
+                  "description": "Element ref from browser_snapshot or browser_read; copy unchanged.",
+                  "pattern": "^e[A-Za-z0-9_-]{10}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "do",
+                "ref"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "do": {
+                  "const": "drag",
+                  "type": "string"
+                },
+                "ref": {
+                  "description": "Element ref from browser_snapshot or browser_read; copy unchanged.",
+                  "pattern": "^e[A-Za-z0-9_-]{10}$",
+                  "type": "string"
+                },
+                "to_ref": {
+                  "description": "Destination element ref from browser_snapshot or browser_read; copy unchanged.",
+                  "pattern": "^e[A-Za-z0-9_-]{10}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "do",
+                "ref",
+                "to_ref"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "do": {
+                  "const": "upload",
+                  "type": "string"
+                },
+                "paths": {
+                  "description": "1-20 absolute paths to readable regular files in the connected Runcove space, using the same filesystem as bash/read/write.",
+                  "items": {
+                    "type": "string"
+                  },
+                  "maxItems": 20,
+                  "minItems": 1,
+                  "type": "array"
+                },
+                "ref": {
+                  "description": "Element ref from browser_snapshot or browser_read; copy unchanged.",
+                  "pattern": "^e[A-Za-z0-9_-]{10}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "do",
+                "ref",
+                "paths"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "do": {
+                  "const": "download",
+                  "type": "string"
+                },
+                "ref": {
+                  "description": "Element ref from browser_snapshot or browser_read; copy unchanged.",
+                  "pattern": "^e[A-Za-z0-9_-]{10}$",
+                  "type": "string"
+                },
+                "timeout_ms": {
+                  "default": null,
+                  "description": "Download wait/save limit: 1000-60000 ms; default 30000.",
+                  "format": "uint64",
+                  "maximum": 60000,
+                  "minimum": 1000,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "do",
+                "ref"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "description": "Click the point in a browser_snapshot or screen_observe image. The image identifies the page or desktop.",
+              "properties": {
+                "button": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/MouseButton"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Mouse button; default left."
+                },
+                "do": {
+                  "const": "click_at",
+                  "type": "string"
+                },
+                "double": {
+                  "default": null,
+                  "description": "Double-click; default false.",
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "image_id": {
+                  "description": "Image ID from browser_snapshot or screen_observe; copy unchanged. Identifies the page or desktop and its coordinate space.",
+                  "type": "string"
+                },
+                "x": {
+                  "description": "Horizontal coordinate in returned image pixels, measured from the left edge.",
+                  "format": "double",
+                  "minimum": 0,
+                  "type": "number"
+                },
+                "y": {
+                  "description": "Vertical coordinate in returned image pixels, measured from the top edge.",
+                  "format": "double",
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "do",
+                "image_id",
+                "x",
+                "y"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "description": "Drag using returned image pixels; page endpoints must fit one viewport.",
+              "properties": {
+                "do": {
+                  "const": "drag_at",
+                  "type": "string"
+                },
+                "image_id": {
+                  "description": "Image ID from browser_snapshot or screen_observe; copy unchanged. Identifies the page or desktop and its coordinate space.",
+                  "type": "string"
+                },
+                "to_x": {
+                  "description": "Destination horizontal coordinate in the same returned image pixels.",
+                  "format": "double",
+                  "minimum": 0,
+                  "type": "number"
+                },
+                "to_y": {
+                  "description": "Destination vertical coordinate in the same returned image pixels.",
+                  "format": "double",
+                  "minimum": 0,
+                  "type": "number"
+                },
+                "x": {
+                  "description": "Horizontal coordinate in returned image pixels, measured from the left edge.",
+                  "format": "double",
+                  "minimum": 0,
+                  "type": "number"
+                },
+                "y": {
+                  "description": "Vertical coordinate in returned image pixels, measured from the top edge.",
+                  "format": "double",
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "do",
+                "image_id",
+                "x",
+                "y",
+                "to_x",
+                "to_y"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "description": "Scroll an element into view, find text by scrolling, or scroll by dy CSS pixels.",
+              "properties": {
+                "do": {
+                  "const": "scroll",
+                  "type": "string"
+                },
+                "dy": {
+                  "default": null,
+                  "description": "CSS pixels per scroll: -20000..20000; default 800, positive down.",
+                  "format": "int32",
+                  "maximum": 20000,
+                  "minimum": -20000,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "exact": {
+                  "default": null,
+                  "description": "until_text only: exact text match; default false.",
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "max": {
+                  "default": null,
+                  "description": "until_text only: at most 1-30 scrolls; default 15.",
+                  "format": "uint32",
+                  "maximum": 30,
+                  "minimum": 1,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "ref": {
+                  "default": null,
+                  "description": "Element ref from browser_snapshot or browser_read; copy unchanged to scroll it into view. Excludes other scroll fields.",
+                  "pattern": "^e[A-Za-z0-9_-]{10}$",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "until_text": {
+                  "default": null,
+                  "description": "Visible text to find by scrolling; uses substring matching unless exact=true.",
+                  "minLength": 1,
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "do"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "description": "Exactly one condition: visible text, text gone, or a fixed ms delay.",
+              "properties": {
+                "do": {
+                  "const": "wait",
+                  "type": "string"
+                },
+                "gone": {
+                  "default": null,
+                  "description": "Text to wait until no longer visible across frames.",
+                  "minLength": 1,
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "ms": {
+                  "default": null,
+                  "description": "Fixed delay: 0-10000 ms; excludes timeout_ms.",
+                  "format": "uint64",
+                  "maximum": 10000,
+                  "minimum": 0,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "text": {
+                  "default": null,
+                  "description": "Visible text to wait for across frames.",
+                  "minLength": 1,
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "timeout_ms": {
+                  "default": null,
+                  "description": "Text condition limit: 100-30000 ms; default 10000. Checks all frames.",
+                  "format": "uint64",
+                  "maximum": 30000,
+                  "minimum": 100,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "do"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "do": {
+                  "const": "navigate",
+                  "type": "string"
+                },
+                "url": {
+                  "description": "Absolute URL to open in the Runcove browser; schemes: http, https, file, about or data. File URLs refer to files in the Runcove space.",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "do",
+                "url"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "direction": {
+                  "$ref": "#/$defs/HistoryDirection"
+                },
+                "do": {
+                  "const": "history",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "do",
+                "direction"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "do": {
+                  "const": "reload",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "do"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "description": "New optionally accepts url; close/focus optionally accept page_id (otherwise the selected tab).",
+              "properties": {
+                "action": {
+                  "$ref": "#/$defs/TabAction"
+                },
+                "do": {
+                  "const": "tab",
+                  "type": "string"
+                },
+                "page_id": {
+                  "default": null,
+                  "description": "close/focus only: tab ID from browser_snapshot tabs[].page_id; default the selected tab.",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "url": {
+                  "default": null,
+                  "description": "new only: absolute URL (http, https, file, about or data); default a blank tab. File URLs refer to files in the Runcove space.",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "do",
+                "action"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "description": "Policy for JS dialogs opened by later page steps in this batch; otherwise dismissed and reported. For an already-open dialog, observe the desktop and use desktop actions.",
+              "properties": {
+                "accept": {
+                  "description": "true accepts subsequent JS dialogs; false dismisses them.",
+                  "type": "boolean"
+                },
+                "do": {
+                  "const": "dialog",
+                  "type": "string"
+                },
+                "text": {
+                  "default": null,
+                  "description": "Text supplied when accepting a prompt dialog.",
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "do",
+                "accept"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "description": "Type into the focused desktop control, including native dialogs.",
+              "properties": {
+                "do": {
+                  "const": "desktop_type",
+                  "type": "string"
+                },
+                "text": {
+                  "description": "Text to enter; at most 65536 UTF-8 bytes.",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "do",
+                "text"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "do": {
+                  "const": "desktop_press",
+                  "type": "string"
+                },
+                "key": {
+                  "description": "Desktop key or chord, such as Return, Escape or ctrl+l; 1-80 ASCII letters, digits, spaces or _ + - characters.",
+                  "maxLength": 80,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9_+ -]+$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "do",
+                "key"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "delta": {
+                  "description": "Wheel steps: -30..30; positive down.",
+                  "format": "int32",
+                  "maximum": 30,
+                  "minimum": -30,
+                  "type": "integer"
+                },
+                "do": {
+                  "const": "desktop_scroll",
+                  "type": "string"
+                },
+                "image_id": {
+                  "description": "Desktop image ID from screen_observe(view=desktop); copy unchanged.",
+                  "type": "string"
+                },
+                "x": {
+                  "description": "Horizontal coordinate in returned image pixels, measured from the left edge.",
+                  "format": "double",
+                  "minimum": 0,
+                  "type": "number"
+                },
+                "y": {
+                  "description": "Vertical coordinate in returned image pixels, measured from the top edge.",
+                  "format": "double",
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "do",
+                "image_id",
+                "x",
+                "y",
+                "delta"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "do": {
+                  "const": "window",
+                  "type": "string"
+                },
+                "mode": {
+                  "$ref": "#/$defs/WindowMode"
+                }
+              },
+              "required": [
+                "do",
+                "mode"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "ActThen": {
+          "enum": [
+            "diff",
+            "snapshot",
+            "none"
+          ],
+          "type": "string"
+        },
+        "HistoryDirection": {
+          "enum": [
+            "back",
+            "forward"
+          ],
+          "type": "string"
+        },
+        "MouseButton": {
+          "enum": [
+            "left",
+            "right",
+            "middle"
+          ],
+          "type": "string"
+        },
+        "TabAction": {
+          "enum": [
+            "new",
+            "close",
+            "focus"
+          ],
+          "type": "string"
+        },
+        "WindowMode": {
+          "enum": [
+            "normal",
+            "maximized",
+            "fullscreen"
+          ],
+          "type": "string"
+        }
+      },
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ActAction"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "execute (default) runs actions; wait retrieves a task; cancel requests cancellation. wait/cancel require task_id and accept wait_secs, with no execution parameters."
+        },
+        "action_timeout_ms": {
+          "default": null,
+          "description": "Execute only: element interaction timeout 500-30000 ms, default 5000. Navigation, wait and download have separate limits.",
+          "format": "uint64",
+          "maximum": 30000,
+          "minimum": 500,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "actions": {
+          "default": null,
+          "description": "Execute only: 1-20 ordered steps selected by do. Requires AI control; one modifying task at a time. Validates the batch before execution; stops on failure without undoing completed steps.",
+          "items": {
+            "$ref": "#/$defs/ActStep"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "page_id": {
+          "default": null,
+          "description": "Execute only: tab ID from browser_snapshot tabs[].page_id; default focused or available tab.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "task_id": {
+          "default": null,
+          "description": "Wait/cancel only: task_id returned by a browser or screenshot tool.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "then": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ActThen"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Execute only: diff (default), snapshot, or none. Failure preserves partial progress and returns current observation when available."
+        },
+        "timeout_secs": {
+          "default": null,
+          "description": "Execute only: total deadline 1-600 seconds, including preparation; default 120.",
+          "format": "uint64",
+          "maximum": 600,
+          "minimum": 1,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "wait_secs": {
+          "default": null,
+          "description": "Wait/cancel only: 0-20 seconds, default 20. Zero retrieves current state; does not extend the task deadline.",
+          "format": "uint64",
+          "maximum": 20,
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "title": "ActParams",
+      "type": "object"
+    }
+  },
+  {
+    "name": "browser_read",
+    "description": "Read visible page content in the browser of the connected Runcove space, including iframe content: main text, an element subtree, search matches, or tables, links and form fields. Returned element refs can be used with browser_act.",
+    "inputSchema": {
+      "$defs": {
+        "ReadExtract": {
+          "enum": [
+            "table",
+            "links",
+            "fields"
+          ],
+          "type": "string"
+        }
+      },
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "extract": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReadExtract"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Extract table, links or fields within ref, or across frames; default plain text. Excludes query/max_chars; results report truncation."
+        },
+        "max_chars": {
+          "default": null,
+          "description": "Plain text only: 1-20000 characters, default 4000.",
+          "format": "uint64",
+          "maximum": 20000,
+          "minimum": 1,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "page_id": {
+          "default": null,
+          "description": "Tab ID from browser_snapshot tabs[].page_id; default focused or available tab.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "query": {
+          "default": null,
+          "description": "Find visible text containing query, case-insensitive, across frames; at most 20 matches. Not combinable with ref, extract or max_chars.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ref": {
+          "default": null,
+          "description": "Element ref from browser_snapshot or browser_read, copied unchanged; reads its subtree. Default main content; excludes query.",
+          "pattern": "^e[A-Za-z0-9_-]{10}$",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "title": "BrowserReadParams",
+      "type": "object"
+    }
+  },
+  {
+    "name": "browser_snapshot",
+    "description": "Inspect the shared browser in the connected Runcove space: tabs, status, interactive elements and floating panels, including iframe content. Returns element refs for browser_act and browser_read.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "diff": {
+          "default": null,
+          "description": "Compare with the page's last unscoped snapshot or action feedback; default false. Baseline is shared across connections; a new document returns a full snapshot.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "image": {
+          "default": null,
+          "description": "Include a full-page image annotated with element refs; default false. Coordinates use the returned image pixels. For plain images, timed sequences or saved originals use screen_observe.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "page_id": {
+          "default": null,
+          "description": "Tab ID from browser_snapshot tabs[].page_id; default focused or available tab.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "recent_tasks_limit": {
+          "default": null,
+          "description": "Recent task summaries, newest first: 0-10; default 0.",
+          "format": "uint",
+          "maximum": 10,
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "ref": {
+          "default": null,
+          "description": "Element ref from browser_snapshot or browser_read, copied unchanged; limits semantic content to its subtree. Default whole page; images remain full-page. Excludes diff=true.",
+          "pattern": "^e[A-Za-z0-9_-]{10}$",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "text": {
+          "default": null,
+          "description": "Include up to 40 visible text lines; default false.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "title": "SnapshotParams",
+      "type": "object"
+    }
+  },
+  {
+    "name": "screen_observe",
+    "description": "Capture full-page or desktop images in the connected Runcove space, individually or as a timed sequence. Returns images and image_ids for coordinate actions; can save original PNGs. Continue a running capture with browser_act(action=\"wait\", task_id=...).",
+    "inputSchema": {
+      "$defs": {
+        "ScreenView": {
+          "enum": [
+            "desktop",
+            "page"
+          ],
+          "type": "string"
+        }
+      },
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "properties": {
+        "count": {
+          "default": null,
+          "description": "Optional number of screenshots, from 1 to 8. Defaults to 1.",
+          "format": "uint",
+          "maximum": 8,
+          "minimum": 1,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "interval_ms": {
+          "default": null,
+          "description": "Optional minimum interval between capture starts in milliseconds; default 1000. For count>1; zero captures back to back. Actual gaps may be longer; total observation limit is 600 seconds.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "page_id": {
+          "default": null,
+          "description": "Optional tab ID for view=\"page\", from browser_snapshot tabs[].page_id; default focused or available tab. The sequence stays with this tab. Ignored for view=\"desktop\".",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "save_dir": {
+          "default": null,
+          "description": "Optional absolute directory in the connected Runcove space; requires save_original=true. Default /workspace/agent-space/artifacts, on the same filesystem as bash/read/write. Creates missing directories and unique PNG files. Use /workspace for downloadable files.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "save_original": {
+          "default": false,
+          "description": "Optional: save original PNG files in addition to returned images; default false. Saved paths appear in files in capture order.",
+          "type": "boolean"
+        },
+        "view": {
+          "$ref": "#/$defs/ScreenView",
+          "description": "Required target: \"desktop\" captures the entire desktop including native dialogs; \"page\" captures the complete currently rendered document, including iframe regions as displayed. Does not expand unloaded content."
+        }
+      },
+      "required": [
+        "view"
+      ],
+      "title": "ScreenParams",
+      "type": "object"
+    }
+  }
+]

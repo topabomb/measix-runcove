@@ -1,0 +1,25 @@
+{
+  "target": "server",
+  "scope": "diagnostic before attachment-bound fix; independent first-connection probe",
+  "passed": true,
+  "checks": [
+    "reduced_page_limit_after_restart_preserves_profile_and_existing_pages"
+  ],
+  "first_attach_probe": {
+    "elapsed_ms": 7919,
+    "pages": 4
+  },
+  "page_limit_restart": {
+    "initial_limit": 4,
+    "restarted_limit": 1,
+    "restored_pages": 4,
+    "restored_after_profile_picker": true,
+    "new_page_error": "PAGE_LIMIT_REACHED",
+    "existing_page_navigation_and_close": true
+  },
+  "cleanup_passed": true,
+  "product_source_digest": "1efce9a917b668048ebd855ab45e5182c00c15e494927ea35e037672e5cac231",
+  "tool_attachment_timeout_ms": 5000,
+  "independent_probe_timeout_ms": 15000,
+  "original_report_sha256": "68f4bff095ce98385e48f0c04199e8f2153b8a546a50273f495f849659ea880c"
+}

@@ -73,13 +73,14 @@ class DavCapacityVM(unittest.TestCase):
         def observe(user):
             client = Client(user["username"])
             client.initialize()
-            result = client.tool("browser_observe", {})
+            value, result = client.finish(client.tool("browser_snapshot", {}))
             # Read-only cold-start observation can time out without replaying an action.
             if result.get("isError"):
-                result = client.tool("browser_observe", {})
-            self.assertFalse(result.get("isError"), text(result))
-            self.assertTrue(text(result)["health"]["browser"])
-            self.assertEqual(text(result)["control"]["control"], "AI")
+                value, result = client.finish(client.tool("browser_snapshot", {}))
+            self.assertFalse(result.get("isError"), value)
+            self.assertEqual(value["state"], "succeeded")
+            self.assertTrue(value["value"]["page_id"])
+            self.assertEqual(value["control"]["mode"], "AI")
 
         try:
             image = "nikolaik/python-nodejs:python3.12-nodejs22-slim"

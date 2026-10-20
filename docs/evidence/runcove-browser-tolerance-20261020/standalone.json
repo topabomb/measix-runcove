@@ -1,0 +1,43 @@
+{
+  "target": "standalone",
+  "scope": "focused browser tool contract using development assets",
+  "image": "runcove-workspace:build",
+  "checks": [
+    "starts_without_kvm_msb_or_docker_socket",
+    "single_space_routes_have_no_management_or_user_selection",
+    "shared_nine_tools_and_nonroot_secret_isolation",
+    "profile_preparation_cannot_follow_user_links_with_root_privileges",
+    "real_shared_desktop_screenshot",
+    "root_task_owner_keeps_final_results_without_following_user_paths",
+    "dav_workbench_and_mcp_edits_share_writable_user_ownership",
+    "artifact_listing_respects_payload_permissions_through_user_symlinks",
+    "publication_uses_single_space_address",
+    "stopped_data_child_dies_with_killed_control_owner_and_helper_recovers",
+    "tool_review_catalog_and_fixture_setup",
+    "tool_review_test_browser_structured_vm.py",
+    "rewritten_host_workbench_preserves_own_origin_and_nonce_checks",
+    "lost_desktop_owner_blocks_recreation_and_control_until_container_restart",
+    "active_mcp_sse_closes_on_graceful_shutdown",
+    "graceful_restart_preserves_workspace_and_expires_page_session"
+  ],
+  "passed": true,
+  "image_id": "sha256:faa012b38c50eb07a333a6caf9be6c4e9d1cd09c67489f2f1164e63715cddc96",
+  "source_digest": "42f24c0e5c7185e8330b9e482a3c9d356569bc991ccb5c3701a7f18daff24f1c",
+  "binaries_sha256": {
+    "runcove-standalone": "ff3d034a6a60f7173d73bdde8aea691decbd0f59c1920bd375a5813f8fbbafaf",
+    "agent-space-static-http": "7d2efa41aa855b1b9bc525400c7bcf38654d0b30c64b06d845f10c3b8383d541",
+    "agent-space-webdav": "7cd4f5d0344cc759553b08aee6f31248f3addfca391caf371a62ea103bb569d4",
+    "agent-space-desktop": "43c58f9e6454d8259bdcdb934016e934cb7431b9ca0c13103d36a26ef6b0f019"
+  },
+  "suite_logs": {
+    "test_browser_structured_vm.py.log": "f54375fd9ffd9cc50daecc7d80b1c869d7074a3adc03f144e1b94cad96fb9173"
+  },
+  "full": false,
+  "shared_full": false,
+  "tools_only": true,
+  "page_limit_restart": {
+    "skipped": true,
+    "reason": "outside focused browser tool review"
+  },
+  "cleanup_passed": true
+}

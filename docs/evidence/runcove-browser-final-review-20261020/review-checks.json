@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "checks": [
+    "verify-production-upgrade.py: same task op=wait and all helper call argument shapes pass",
+    "verify-workspace-import.py: same task op=wait and all helper call argument shapes pass",
+    "changed Python parses and all new browser/image evidence JSON parses",
+    "DAV capacity verifier handles task completion and compact page/control result"
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "target": "server",
+  "image": "runcove-server:runcove-61a1d41f93a18d9b",
+  "image_id": "sha256:dc5d61e08fa29c02775089083efe31ae2968ad6246d317600d5a52e90cb4b861",
+  "scope": "development assets",
+  "full": false,
+  "shared_full": true,
+  "checks": [
+    "shared_test_browser_vm.py",
+    "shared_test_browser_structured_vm.py",
+    "shared_test_browser_pages_vm.py",
+    "shared_test_media_vm.py",
+    "shared_test_browser_profiles_vm.py",
+    "shared_test_desktop_files_vm.py",
+    "shared_test_browser_lifecycle_vm.py",
+    "shared_real_vnc_keyboard_clipboard_viewers_responsive_and_idle",
+    "reduced_page_limit_after_restart_preserves_profile_and_existing_pages"
+  ],
+  "passed": true,
+  "source_digest": "6f4beb28654039b4cfb17a2ac7e7b21dc1a2ecba20335ecd031607856d3487e7",
+  "binaries_sha256": {
+    "agent-space-mcp": "d8837866729700a678f70b2de16c27002b765e3fbcb1aa37446eb204a6fbe0d2",
+    "agent-space-static-http": "7d2efa41aa855b1b9bc525400c7bcf38654d0b30c64b06d845f10c3b8383d541",
+    "agent-space-webdav": "7cd4f5d0344cc759553b08aee6f31248f3addfca391caf371a62ea103bb569d4",
+    "agent-space-desktop": "4fb9e4616c4071f2eb03249aaff2263d287d2afc6fd2fe44f20c8c59a71d8636"
+  },
+  "suite_logs": {
+    "test_browser_lifecycle_vm.py.log": "22f21dd8a5a0dcba1d2a1442df3da4cdb9ac7779bd248a96160f67bd6b7004b5",
+    "test_browser_pages_vm.py.log": "a39ac5c60b2751ac8e19d1979672be3257cd43cb884424c51ecda03e72bcdff3",
+    "test_browser_profiles_vm.py.log": "c323f97e76d95ed0dbf9a0074b987dbbd4fb58d660a0180cf21ba49c06ccc951",
+    "test_browser_structured_vm.py.log": "243a35cbdc661d9219cd5ec43d12fc6b69503d688cd70691b7f331c28d30e05f",
+    "test_browser_vm.py.log": "a3656c026b07513b7c7b4e1af1ee3a91d355610e32eaa6237450fd9ba2490dd9",
+    "test_desktop_files_vm.py.log": "68fabe76c6eabcf9a465addd40871078ccd3142c1fda32d43df1b5e6d74172b6",
+    "test_media_vm.py.log": "a50cb634103bb2ba1191cfc4f465047ea34a1e9ce2f7844d0bb4efcb5db33b57",
+    "ui.log": "6e6ff4101e2ba74544a95b38d78771be685515966430f1a4bd8c69e9376f6edc"
+  },
+  "page_limit_restart": {
+    "initial_limit": 4,
+    "restarted_limit": 1,
+    "restored_pages": 4,
+    "restored_after_profile_picker": true,
+    "clean_profile_verified": true,
+    "restored_urls_match": true,
+    "new_page_error": "PAGE_LIMIT_REACHED",
+    "existing_page_navigation_and_close": true
+  },
+  "cleanup_passed": true
+}

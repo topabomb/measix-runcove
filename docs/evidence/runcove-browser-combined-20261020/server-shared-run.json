@@ -1,0 +1,27 @@
+{
+  "target": "server",
+  "image": "runcove-server:runcove-61a1d41f93a18d9b",
+  "image_id": "sha256:dc5d61e08fa29c02775089083efe31ae2968ad6246d317600d5a52e90cb4b861",
+  "scope": "development assets",
+  "full": false,
+  "shared_full": true,
+  "checks": [
+    "shared_test_browser_vm.py",
+    "shared_test_browser_structured_vm.py",
+    "shared_test_browser_pages_vm.py",
+    "shared_test_media_vm.py",
+    "shared_test_browser_profiles_vm.py",
+    "shared_test_desktop_files_vm.py",
+    "shared_test_browser_lifecycle_vm.py"
+  ],
+  "passed": false,
+  "source_digest": "5a201196b227f00b7b4d0ed5305ab375037a71c66b03d33b2071d34058b64689",
+  "binaries_sha256": {
+    "agent-space-mcp": "a0c0d8274d734167f0370f9f1cb69f837e02d554e19c6c229bc2eb3972866654",
+    "agent-space-static-http": "d0a008d3adb94ca7a5e102575ce2042e1ad3131e231ffbc17048aae8e4ba3287",
+    "agent-space-webdav": "cb9e3020827001a1e143a7a07a2cc7eee616f26e8b13faf31eaf3f38e8f240cf",
+    "agent-space-desktop": "3ad665a9f916b2b7e06dbd6c5110b744dd5a019fdaf585811e95ec68b60762f3"
+  },
+  "failure_log_sha256": "13d6b600724ddc3d0fb55f56e0cb52383993c67b197f6729ff58db31667f5654",
+  "cleanup_passed": true
+}

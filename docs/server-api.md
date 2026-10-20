@@ -140,15 +140,15 @@ Basic 的密码和 Bearer 的值都使用**完整 token 原文**。调用方不�
 
 ## 4. MCP 工具和 Web 发布
 
-自定义空间的五个工具为 bash、read、write、edit、web_publish。桌面预设空间另提供 browser_observe、browser_run、browser_task；`tools/list` 返回英文描述与完整参数合同，不依赖客户端保留instructions。镜像配置和浏览器参数见[浏览器合同](browser-desktop.md)。Web 发布的参数、路由、认证、生命周期和验收见 [Web 发布合同](web-publish.md)。
+自定义空间的五个工具为 bash、read、write、edit、web_publish。桌面预设空间另提供 browser_snapshot、browser_act、browser_read、screen_observe；`tools/list` 返回英文描述与完整参数合同，不依赖客户端保留instructions。镜像配置和浏览器参数见[浏览器合同](browser-desktop.md)。Web 发布的参数、路由、认证、生命周期和验收见 [Web 发布合同](web-publish.md)。
 
-工具自身异常明确时直接说明原因和必要的修正方式；未知异常文本去除ANSI控制序列后限制为2048字符并保留头尾截断标记。命令输出、文件正文和已有产物沿用各自限额，不套用错误文本上限。read的offset/limit均为正整数，目录与文件不存在分别报告，底层输出截断时明确提示缩小行范围；edit未匹配或多处匹配时引导使用当前精确文本或增加上下文。文件执行超时/取消保留清理确认信息，并提示重试前检查实际文件。
+工具自身异常明确时直接说明原因和必要的修正方式；未知异常文本去除ANSI控制序列后限制为2048字符并保留头尾截断标记。命令输出、文件正文和已有产物沿用各自限额，不套用错误文本上限。read文本读取的offset/limit均为正整数，图片读取忽略行范围；目录与文件不存在分别报告，底层输出截断时明确提示缩小行范围；edit未匹配或多处匹配时引导使用当前精确文本或增加上下文。文件执行超时/取消保留清理确认信息，并提示重试前检查实际文件。
 
 人工接管仅限制浏览器自动化，不阻断 bash/read/write/edit 或工作台文件上传。bash 仍按空间串行执行；文件工具可同时提交，每空间最多4项并行，超出排队，同一真实路径的写入/编辑互斥。文件工具总期限包含启动、排队与锁等待；未开始的超时请求不会迟到执行，已经提交后的失败不能一律视为没有副作用。基础工具共用原有VM生命周期与授权校验，具体文件一致性边界见[架构说明](architecture.md#基础工具并发)。
 
-工具参数保持原名称和数量；服务端忽略未知字段，web_publish只解析所选action需要的字段。可选字段省略/null使用默认值，page_id/workdir/file/directory的空白占位字符串视为未提供；浏览器可选view/action同样接受空白占位，并去掉枚举值两端空白。代码、文件正文、路径和替换内容原样保留。实际使用的字段仍校验类型、必需输入及目标冲突，不推测拼错的字段名，不把有效的wait_secs=0当成空值。web_publish采用平面Schema，保活默认值由服务端配置决定，Schema不写死为10分钟。Bash超时在入队前校验可表示的执行期限，超大值返回参数错误。
+基础工具忽略未知字段，web_publish只解析所选action需要的字段；browser_snapshot、browser_read、browser_act及动作步骤拒绝未知字段，screen_observe忽略未知字段。已知但当前操作不使用的字段按[浏览器合同](browser-desktop.md#有序动作与任务控制)归一化。可选字段省略/null使用默认值，page_id/workdir/file/directory的空白占位字符串视为未提供；浏览器顶层可选view/op等选择项同样接受空白占位，并去掉两端空白。命令、文件正文、路径和替换内容原样保留。实际使用的字段仍校验类型、必需输入及目标冲突，不推测拼错的字段名，不把有效的wait_secs=0当成空值。web_publish采用平面Schema，仅接受keep_alive_secs，保活默认秒数由当前服务配置披露。Bash超时在入队前校验可表示的执行期限，超大值返回参数错误。
 
-工具目录自身提供使用引导，不依赖客户端转发initialize.instructions：bash与browser_observe以Runcove远程工作区标明身份并引导组内工具，其余工具介绍自身。bash直接说明受管文件归属，工作目录切换错误也进入返回输出；browser_run说明共享浏览器及output输出方式。artifacts只是用于构造路径的默认产物目录字符串，已有工作区文件可直接登记输出。
+工具目录自身提供使用引导，不依赖 initialize.instructions。浏览器观察、动作、读取和截图使用单一四工具入口；公开参数说明给出对象、默认行为及常用下一步，任务和图像语义见[浏览器合同](browser-desktop.md)。
 
 MCP 入口为 `/u/{username}/mcp`，使用 Streamable HTTP；不提供旧式 HTTP+SSE 双端点传输。Streamable HTTP 的响应可以是 JSON 或 SSE，客户端须接受两者。当前锁定 RMCP 1.7.0，服务端使用 SDK 默认协议版本 `2025-11-25` 和协商机制；请求 `2025-11-25`、`2025-06-18`、`2025-03-26` 时分别返回同一版本。
 

@@ -42,6 +42,17 @@ struct Job {
     modifies: bool,
 }
 type Reply = Result<Json<Value>, (StatusCode, Json<Value>)>;
+#[derive(Debug)]
+struct CleanupUnconfirmed(String);
+impl std::fmt::Display for CleanupUnconfirmed {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "CLEANUP_UNCONFIRMED: {}", self.0)
+    }
+}
+impl std::error::Error for CleanupUnconfirmed {}
+fn cleanup_error(message: impl Into<String>) -> anyhow::Error {
+    CleanupUnconfirmed(message.into()).into()
+}
 fn fail(code: &str) -> (StatusCode, Json<Value>) {
     (StatusCode::CONFLICT, Json(json!({"error":code})))
 }
@@ -49,7 +60,8 @@ fn fail(code: &str) -> (StatusCode, Json<Value>) {
 #[serde(deny_unknown_fields)]
 struct Run {
     task_id: String,
-    code: String,
+    operation: String,
+    args: Value,
     #[serde(default = "default_timeout")]
     timeout_secs: u64,
     #[serde(default)]
@@ -58,7 +70,7 @@ struct Run {
     captures: Vec<Value>,
 }
 fn default_timeout() -> u64 {
-    60
+    120
 }
 #[derive(Deserialize)]
 struct Poll {
@@ -134,25 +146,9 @@ fn list_artifacts() -> anyhow::Result<Value> {
     }
     Ok(json!({"files":files}))
 }
-async fn observe(State(app): State<App>, Json(params): Json<Value>) -> Reply {
-    if !matches!(params["view"].as_str(), None | Some("dom" | "ax")) {
-        return Err(fail("INVALID_VIEW"));
-    }
-    let mut desktop = app.desktop.lock().await;
-    desktop.start().await.map_err(|e| fail(&e.to_string()))?;
-    desktop.last_used = Instant::now();
-    drop(desktop);
-    let mut value = desktop::node(params)
-        .await
-        .map_err(|e| fail(&e.to_string()))?;
-    if let Some(fields) = value.as_object_mut() {
-        fields.remove("profilePicker");
-    }
-    Ok(Json(value))
-}
 async fn run(State(app): State<App>, Json(params): Json<Run>) -> Reply {
-    if params.code.is_empty()
-        || params.code.len() > 65536
+    if !matches!(params.operation.as_str(), "snapshot" | "act" | "read")
+        || params.args.to_string().len() > 65536
         || !(1..=600).contains(&params.timeout_secs)
         || params.captures.len() > 32
         || uuid::Uuid::parse_str(&params.task_id).is_err()
@@ -163,14 +159,15 @@ async fn run(State(app): State<App>, Json(params): Json<Run>) -> Reply {
     if jobs.contains_key(&params.task_id) {
         return Err(fail("DUPLICATE_TASK"));
     }
+    let modifies = params.operation == "act";
     for job in jobs.values() {
         let status = job.status.lock().await;
-        if job.modifies && status["terminal"] != true {
+        if modifies && job.modifies && status["terminal"] != true {
             return Err(fail("BUSY"));
         }
     }
     let id = params.task_id.clone();
-    let job = new_job(&id, params.timeout_secs, true).map_err(|e| fail(&e.to_string()))?;
+    let job = new_job(&id, params.timeout_secs, modifies).map_err(|e| fail(&e.to_string()))?;
     jobs.insert(id.clone(), job.clone());
     drop(jobs);
     tokio::spawn(async move {
@@ -244,40 +241,77 @@ fn new_job(id: &str, timeout: u64, modifies: bool) -> anyhow::Result<Arc<Job>> {
     });
     Ok(job)
 }
+fn fixed_delays(params: &Run) -> Option<Vec<u64>> {
+    if params.operation != "act" {
+        return None;
+    }
+    let actions = params.args["actions"].as_array()?;
+    if actions.is_empty() || actions.len() > 20 {
+        return None;
+    }
+    actions
+        .iter()
+        .map(|a| {
+            if a["do"] != "wait" || !a["text"].is_null() || !a["gone"].is_null() {
+                return None;
+            }
+            let secs = a["secs"].as_u64()?;
+            (secs <= 60).then_some(secs)
+        })
+        .collect()
+}
 async fn execute(app: App, job: Arc<Job>, params: Run) {
     let until = tokio::time::Instant::from_std(job.deadline);
+    let delays = fixed_delays(&params);
+    let pure_wait = delays.is_some();
     let prepare = async {
         let mut desktop = app.desktop.lock().await;
-        desktop.start().await?;
         desktop.last_used = Instant::now();
+        // A delay needs the existing task owner, not a browser or display.
+        if pure_wait {
+            return Ok((json!({}), None));
+        }
+        desktop.start().await?;
         let pages = desktop
             .pages
             .clone()
             .ok_or_else(|| anyhow::anyhow!("BROWSER_UNAVAILABLE: page admission unavailable"))?;
         drop(desktop);
-        let mut value = desktop::node(json!({"page_id":params.page_id})).await?;
-        if params.page_id.is_none()
-            && value["page_id"].is_null()
-            && value["nativeWindow"] != true
-            && value["profilePicker"] != true
-        {
-            let id = pages.ensure_page().await?;
-            value = desktop::node(json!({"page_id":id})).await?;
-        }
-        if value.get("error").is_some() {
+        let value = desktop::node(json!({"page_id":params.page_id})).await?;
+        // Desktop/tab operations must remain usable at the profile picker or
+        // without a responsive renderer. Page operations validate their target
+        // lazily in the worker before doing any work.
+        if value.get("error").is_some() && params.operation != "act" {
             *job.result.lock().await = Some(json!({"tabs":value["tabs"]}));
             anyhow::bail!(value.to_string());
         }
-        Ok((value, pages))
+        Ok((value, Some(pages)))
     };
     let prepared = tokio::select! {
      result=prepare=>result,
      _=job.cancel.cancelled()=>Err(anyhow::anyhow!("EXECUTION_CANCELLED")),
      _=tokio::time::sleep_until(until)=>Err(anyhow::anyhow!("EXECUTION_TIMEOUT")),
     };
-    let started = prepared.is_ok();
+    let started = prepared.is_ok() && !pure_wait;
     let outcome = match prepared {
-        Ok((observation, pages)) => worker(&job, &params, observation, app.port, pages).await,
+        Ok((_, None)) => {
+            let wait = async {
+                let delays = delays.as_ref().unwrap();
+                for (index, seconds) in delays.iter().enumerate() {
+                    *job.result.lock().await = Some(
+                        json!({"value":{"completed":index,"of":delays.len()},"side_effects":"not_started"}),
+                    );
+                    tokio::time::sleep(Duration::from_secs(*seconds)).await;
+                }
+                Ok(json!({"value":{"completed":delays.len(),"of":delays.len()}}))
+            };
+            tokio::select! {
+                result = wait => result,
+                _ = job.cancel.cancelled() => Err(anyhow::anyhow!("EXECUTION_CANCELLED")),
+                _ = tokio::time::sleep_until(until) => Err(anyhow::anyhow!("EXECUTION_TIMEOUT")),
+            }
+        }
+        Ok((observation, Some(pages))) => worker(&job, &params, observation, app.port, pages).await,
         Err(error) => {
             let mut desktop = app.desktop.lock().await;
             if !desktop.display_alive() {
@@ -305,11 +339,17 @@ async fn execute(app: App, job: Arc<Job>, params: Run) {
     };
     *job.status.lock().await =
         json!({"task_id":job.id,"state":"running","phase":"cleaning","terminal":false});
-    let _ = tokio::time::timeout(
-        Duration::from_secs(2),
-        desktop::node(json!({"action":"restore"})),
-    )
-    .await;
+    if job.modifies && !pure_wait {
+        let _ = tokio::time::timeout(
+            Duration::from_secs(2),
+            desktop::node(json!({"action":"restore"})),
+        )
+        .await;
+    }
+    let cleanup_confirmed = outcome
+        .as_ref()
+        .err()
+        .is_none_or(|e| e.downcast_ref::<CleanupUnconfirmed>().is_none());
     let error = match outcome {
         Ok(value) => {
             *job.result.lock().await = Some(value);
@@ -317,9 +357,6 @@ async fn execute(app: App, job: Arc<Job>, params: Run) {
         }
         Err(error) => Some(error.to_string()),
     };
-    let cleanup_confirmed = !error
-        .as_ref()
-        .is_some_and(|e| e.contains("CLEANUP_UNCONFIRMED"));
     let mut final_status = json!({"task_id":job.id,"state":state,"terminal":true,"cleanup_confirmed":cleanup_confirmed});
     if let Some(error) = error {
         final_status["error"] = json!(error);
@@ -328,6 +365,23 @@ async fn execute(app: App, job: Arc<Job>, params: Run) {
         } else {
             "not_started"
         });
+    }
+    if let Some(result) = job.result.lock().await.as_ref() {
+        if state == "failed" && cleanup_confirmed {
+            for key in ["error", "failed_step"] {
+                if let Some(v) = result.get(key) {
+                    final_status[key] = v.clone();
+                }
+            }
+        }
+        if job.modifies && cleanup_confirmed {
+            if let Some(v) = result.get("side_effects") {
+                final_status["side_effects"] = v.clone();
+            }
+        }
+    }
+    if !job.modifies {
+        final_status.as_object_mut().unwrap().remove("side_effects");
     }
     *job.status.lock().await = final_status;
     *job.finished.lock().await = Some(Instant::now());
@@ -354,7 +408,11 @@ async fn worker(
         !remaining.is_zero() && !job.cancel.is_cancelled(),
         "EXECUTION_TIMEOUT_OR_CANCELLED"
     );
-    let worker_spec = json!({"code":params.code,"page_id":observation["page_id"],"window":observation["window"],"nativeWindow":observation["nativeWindow"],"profilePicker":observation["profilePicker"],"pageResponsive":observation["health"]["page"],"captures":params.captures,"timeoutMs":remaining.as_millis(),"guard_port":port,"task_id":job.id});
+    let selected = params
+        .page_id
+        .as_ref()
+        .map_or_else(|| observation["page_id"].clone(), |id| json!(id));
+    let worker_spec = json!({"operation":params.operation,"args":params.args,"page_id":selected,"window":observation["window"],"captures":params.captures,"guard_port":port,"task_id":job.id});
     let spec = json!({"program":"node","args":[format!("{}/browser-worker.cjs",desktop::NODE)],"uid":process::workspace_uid(),
     "timeout_secs":remaining.as_secs_f64(),"max_bytes":32768,"max_lines":500,"cleanup_on_exit":true});
     let mut command = Command::new("python3");
@@ -398,7 +456,7 @@ async fn worker(
     let ending = tokio::select! {
       exit=child.wait()=>{exit?;false},
       _=job.cancel.cancelled()=>true,
-      changed=page_events.changed()=>{page_limit=changed.is_ok();true},
+      changed=page_events.changed(), if job.modifies=>{page_limit=changed.is_ok();true},
       _=tokio::time::sleep_until(tokio::time::Instant::from_std(job.deadline))=>true,
     };
     if ending {
@@ -413,19 +471,28 @@ async fn worker(
             .await
             .is_err()
         {
-            process::stop_tree(identity).await?;
+            process::stop_tree(identity)
+                .await
+                .map_err(|e| cleanup_error(e.to_string()))?;
             let _ = child.wait().await;
         }
     }
-    let bytes = reader.await??;
-    let diagnostic = errors.await??;
-    anyhow::ensure!(
-        !bytes.is_empty(),
-        "CLEANUP_UNCONFIRMED: worker result lost: {}",
-        String::from_utf8_lossy(&diagnostic)
-    );
+    let bytes = reader
+        .await
+        .map_err(|e| cleanup_error(e.to_string()))?
+        .map_err(|e| cleanup_error(e.to_string()))?;
+    let diagnostic = errors
+        .await
+        .map_err(|e| cleanup_error(e.to_string()))?
+        .map_err(|e| cleanup_error(e.to_string()))?;
+    if bytes.is_empty() {
+        return Err(cleanup_error(format!(
+            "worker result lost: {}",
+            String::from_utf8_lossy(&diagnostic)
+        )));
+    }
     let output: Value = serde_json::from_slice(&bytes)
-        .map_err(|e| anyhow::anyhow!("CLEANUP_UNCONFIRMED: invalid worker owner result: {e}"))?;
+        .map_err(|e| cleanup_error(format!("invalid worker owner result: {e}")))?;
     let stdout = output["stdout"].as_str().unwrap_or_default();
     let stderr = output["stderr"].as_str().unwrap_or_default();
     let saved = read_worker_result(
@@ -447,14 +514,24 @@ async fn worker(
         }
         result["logs"] = Value::Object(logs);
     }
+    let encoded = screen::encode_snapshot(job, &mut result).await;
     *job.result.lock().await = Some(result.clone());
-    anyhow::ensure!(output["cleanup_confirmed"] == true, "CLEANUP_UNCONFIRMED");
+    if output["cleanup_confirmed"] != true {
+        return Err(cleanup_error(
+            "worker descendants were not confirmed stopped",
+        ));
+    }
+    encoded?;
     // The worker can exit before this connection receives its popup event.
     // Drain a real target snapshot before publishing success, retaining outputs.
     // Forced endings already stopped the worker. Do not extend cancellation's
     // existing cleanup budget with an additional browser round trip.
-    let synchronized = if ending { Ok(()) } else { pages.sync().await };
-    page_limit |= page_events.has_changed().unwrap_or(false);
+    let synchronized = if ending || !job.modifies {
+        Ok(())
+    } else {
+        pages.sync().await
+    };
+    page_limit |= job.modifies && page_events.has_changed().unwrap_or(false);
     anyhow::ensure!(!page_limit, "{}", pages.limit_error());
     anyhow::ensure!(output["cancelled"] != true, "EXECUTION_CANCELLED");
     anyhow::ensure!(output["timed_out"] != true, "EXECUTION_TIMEOUT");
@@ -478,7 +555,7 @@ async fn worker(
         }) {
             anyhow::bail!(cause.to_owned());
         }
-        anyhow::bail!("SCRIPT_ERROR: {cause}");
+        anyhow::bail!("WORKER_ERROR: {cause}");
     }
     saved?;
     Ok(result)
@@ -491,7 +568,9 @@ fn read_worker_result(path: &std::path::Path) -> anyhow::Result<Value> {
         .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
         .open(path)?;
     let metadata = file.metadata()?;
-    let limit = 12 * 1024 * 1024;
+    // Raw PNG is private to the helper and can be larger than its encoded
+    // WebP result. Keep a bounded allowance for semantic metadata and logs.
+    let limit = (agent_engine::media::REPORT_LIMIT + 512 * 1024) as u64;
     anyhow::ensure!(
         metadata.is_file()
             && metadata.uid() == process::workspace_uid()
@@ -508,14 +587,21 @@ fn decode_worker_result(bytes: &[u8]) -> anyhow::Result<Value> {
     let result: Value = serde_json::from_slice(bytes)?;
     anyhow::ensure!(
         result.is_object(),
-        "SCRIPT_ERROR: worker result must be an object"
+        "WORKER_ERROR: worker result must be an object"
     );
     anyhow::ensure!(
         result.as_object().unwrap().keys().all(|key| matches!(
             key.as_str(),
-            "value" | "images" | "files" | "captures" | "output_warning"
+            "value"
+                | "images"
+                | "files"
+                | "captures"
+                | "output_warning"
+                | "error"
+                | "failed_step"
+                | "side_effects"
         )),
-        "SCRIPT_ERROR: worker result contains unsupported fields"
+        "WORKER_ERROR: worker result contains unsupported fields"
     );
     Ok(result)
 }
@@ -703,7 +789,6 @@ async fn main() -> anyhow::Result<()> {
     let router = Router::new()
         .route("/health", get(health))
         .route("/viewer", post(viewer))
-        .route("/observe", post(observe))
         .route("/input", post(input))
         .route("/artifacts", get(artifacts))
         .route("/run", post(run))

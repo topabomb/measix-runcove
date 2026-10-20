@@ -1,0 +1,8 @@
+{
+  "metric": "compact JSON character count; not model tokens",
+  "baseline_characters": 21427,
+  "current_characters": 18681,
+  "reduction_percent": 12.8,
+  "actions_before": 22,
+  "actions_after": 16
+}
