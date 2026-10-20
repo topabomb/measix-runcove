@@ -206,9 +206,9 @@ public_base_url = "{dav_origin}"
         for username in ('alice','bob'):
             user = api('POST','',{'username':username});users[username] = user
             clients[username] = Client(backend,user['token'],username=username,authority=f'localhost:{port}')
-            clients[username].tool('bash',command='mkdir -p /workspace/browser/assets /workspace/browser/api /workspace/browser/deep/page; printf '+username+'-payload > /workspace/browser/payload.txt')
+            clients[username].tool('bash',cmd='mkdir -p /workspace/browser/assets /workspace/browser/api /workspace/browser/deep/page; printf '+username+'-payload > /workspace/browser/payload.txt')
             if username=='alice':
-                clients[username].tool('bash',command='python3 -m http.server 38080 --bind 127.0.0.1 --directory /workspace/browser >/tmp/browser-app.log 2>&1 < /dev/null &')
+                clients[username].tool('bash',cmd='python3 -m http.server 38080 --bind 127.0.0.1 --directory /workspace/browser >/tmp/browser-app.log 2>&1 < /dev/null &')
                 time.sleep(.5)
                 target={'port':38080}
             else: target={'directory':'/workspace/browser'}

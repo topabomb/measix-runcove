@@ -167,7 +167,7 @@ io_idle_timeout_secs = 5
             client = Client(port, created['token'], username=run, authority=authority)
 
         def guest(code):
-            return client.tool('bash', command='python3 -c ' + shlex.quote(code))
+            return client.tool('bash', cmd='python3 -c ' + shlex.quote(code))
 
         guest('''import os
 with open('/workspace/large.bin', 'wb') as f:

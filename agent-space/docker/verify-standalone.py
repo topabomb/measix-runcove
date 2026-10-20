@@ -77,21 +77,21 @@ def main():
   assert len(client.call('tools/list')['tools'])==9
   def tool(name,args):
    result=client.tool(name,args);assert not result.get('isError'),text(result);return text(result)
-  output_value=tool('bash',{'command':"id -u; python3 -c 'import os;print([k for k in os.environ if k.startswith(\"RUNCOVE_\")])'"})
+  output_value=tool('bash',{'cmd':"id -u; python3 -c 'import os;print([k for k in os.environ if k.startswith(\"RUNCOVE_\")])'"})
   assert '1001' in json.dumps(output_value) and '[]' in json.dumps(output_value),output_value
   command('docker','exec',container,'bash','-c','umask 077; printf root-private >/tmp/root-private')
   assert client.tool('read',{'path':'/tmp/root-private'}).get('isError')
   check('shared_nine_tools_and_nonroot_secret_isolation')
   # Exercise actual root-controller startup against user-prepared symlinks.
   command('docker','exec',container,'bash','-c','mkdir -m 700 /tmp/root-private-directory')
-  tool('bash',{'command':'mkdir -p /workspace/.agent-space/desktop/profile; ln -s /tmp/root-private-directory /workspace/.agent-space/desktop/profile/Default'})
+  tool('bash',{'cmd':'mkdir -p /workspace/.agent-space/desktop/profile; ln -s /tmp/root-private-directory /workspace/.agent-space/desktop/profile/Default'})
   assert client.tool('browser_observe',{}).get('isError')
-  tool('bash',{'command':'rm /workspace/.agent-space/desktop/profile/Default; mkdir /workspace/.agent-space/desktop/profile/Default'})
+  tool('bash',{'cmd':'rm /workspace/.agent-space/desktop/profile/Default; mkdir /workspace/.agent-space/desktop/profile/Default'})
   tool('write',{'path':'/workspace/.agent-space/desktop/profile/Default/Preferences','content':json.dumps({'download':{'default_directory':'/workspace/.agent-space/desktop/artifacts'}})})
-  tool('bash',{'command':'ln -s /tmp/root-private /workspace/.agent-space/desktop/profile/Default/Preferences.agent-space-migrate'})
+  tool('bash',{'cmd':'ln -s /tmp/root-private /workspace/.agent-space/desktop/profile/Default/Preferences.agent-space-migrate'})
   assert client.tool('browser_observe',{}).get('isError')
   assert command('docker','exec',container,'cat','/tmp/root-private')=='root-private'
-  tool('bash',{'command':'rm /workspace/.agent-space/desktop/profile/Default/Preferences.agent-space-migrate'})
+  tool('bash',{'cmd':'rm /workspace/.agent-space/desktop/profile/Default/Preferences.agent-space-migrate'})
   check('profile_preparation_cannot_follow_user_links_with_root_privileges')
   observed=client.tool('browser_observe',{'view':'desktop'})
   assert not observed.get('isError'),text(observed)
@@ -119,12 +119,12 @@ def main():
   assert command('docker','exec',container,'stat','-c','%u:%g','/workspace/interop.txt','/workspace/agent-space/artifacts/from-workbench.txt').splitlines()==['1001:1001','1001:1001']
   check('dav_workbench_and_mcp_edits_share_writable_user_ownership')
   command('docker','exec',container,'bash','-c','printf private-metadata >/tmp/root-private-directory/hidden-root-file')
-  tool('bash',{'command':'mv /workspace/agent-space/artifacts /workspace/agent-space/artifacts.saved; ln -s /tmp/root-private-directory /workspace/agent-space/artifacts'})
+  tool('bash',{'cmd':'mv /workspace/agent-space/artifacts /workspace/agent-space/artifacts.saved; ln -s /tmp/root-private-directory /workspace/agent-space/artifacts'})
   try:
    status,_,body=request('GET','/desktop/api/artifacts',headers=ui_headers)
    assert status==503 and b'hidden-root-file' not in body,(status,body)
   finally:
-   tool('bash',{'command':'rm /workspace/agent-space/artifacts; mv /workspace/agent-space/artifacts.saved /workspace/agent-space/artifacts'})
+   tool('bash',{'cmd':'rm /workspace/agent-space/artifacts; mv /workspace/agent-space/artifacts.saved /workspace/agent-space/artifacts'})
   status,_,body=request('GET','/desktop/api/artifacts',headers=ui_headers)
   assert status==200 and b'from-workbench.txt' in body,(status,body)
   check('artifact_listing_respects_payload_permissions_through_user_symlinks')
@@ -176,7 +176,7 @@ print('stopped data child reaped after parent death')"""
   assert client.tool('browser_observe',{}).get('isError')
   status,_,body=request('GET','/desktop/api/control',headers=ui_headers)
   assert status==200 and json.loads(body)['control']=='BLOCKED',(status,body)
-  assert 'still-available' in json.dumps(tool('bash',{'command':'echo still-available'}))
+  assert 'still-available' in json.dumps(tool('bash',{'cmd':'echo still-available'}))
   check('lost_desktop_owner_blocks_recreation_and_control_until_container_restart')
   stream=http.client.HTTPConnection('127.0.0.1',main_port,timeout=15)
   stream.request('GET','/mcp',headers={'Authorization':'Bearer '+token,'Accept':'text/event-stream','Mcp-Session-Id':client.session,'MCP-Protocol-Version':'2025-11-25'})

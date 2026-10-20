@@ -171,7 +171,7 @@ token_env = "AGENT_SPACE_ADMIN_TOKEN"
                     assert status == 200, (status, body)
                     user['client'] = connect(username, user)
                 command = 'test "$(cat /workspace/counter 2>/dev/null || echo 0)" = "' + str(iteration - 1) + '" && printf "' + str(iteration) + '\\n" > /workspace/counter && sync && echo persisted-' + str(iteration)
-                output = user['client'].tool('bash', command=command)
+                output = user['client'].tool('bash', cmd=command)
                 assert 'persisted-' + str(iteration) in output, output
             if iteration == 1:
                 report['actualVmExecutables'] = docker('exec', name, 'sh', '-c', 'for task_exe in /proc/[0-9]*/exe; do target=$(readlink "$task_exe" 2>/dev/null); case "$target" in */bin/msb) sha256sum "$task_exe";; esac; done').strip().splitlines()
@@ -213,7 +213,7 @@ token_env = "AGENT_SPACE_ADMIN_TOKEN"
         for username, user in users.items():
             assert detail(username)['agentSpaceId'] == user['space']
             user['client'] = connect(username, user)
-            output = user['client'].tool('bash', command='cat /workspace/counter')
+            output = user['client'].tool('bash', cmd='cat /workspace/counter')
             assert str(rounds) in output, output
         wait_stopped(users)
         report['restartPreservedSpacesAndWorkspaceCounters'] = True

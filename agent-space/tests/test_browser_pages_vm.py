@@ -68,7 +68,7 @@ class PageLimits(unittest.TestCase):
   self.assertEqual(self.count(),self.maximum)
  def test_04_native_new_window_does_not_poison_later_observation(self):
   self.fill()
-  result=self.client.tool('bash',{'command':'DISPLAY=:1 xdotool key --clearmodifiers ctrl+n; sleep 1'})
+  result=self.client.tool('bash',{'cmd':'DISPLAY=:1 xdotool key --clearmodifiers ctrl+n; sleep 1'})
   self.assertFalse(result.get('isError'),text(result))
   self.assertEqual(self.count(),self.maximum)
   value,reply=self.run_code('return 23;')

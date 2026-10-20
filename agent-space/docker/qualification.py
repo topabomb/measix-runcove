@@ -49,7 +49,7 @@ def verify_page_limit_restart(output,container,command,passed):
  value,reply=run(client,f"for(const p of context.pages())if(p!==page)await p.close();await page.goto('data:text/html,<title>Page restart preservation</title>');while(context.pages().length<{maximum})await context.newPage();return context.pages().length;")
  assert not reply.get('isError') and value['value']==maximum,value
  def node(code):
-  reply=client.tool('bash',{'command':'node -e '+shlex.quote('(async()=>{'+code+'})().then(()=>process.exit()).catch(e=>{console.error(e);process.exit(1)});')})
+  reply=client.tool('bash',{'cmd':'node -e '+shlex.quote('(async()=>{'+code+'})().then(()=>process.exit()).catch(e=>{console.error(e);process.exit(1)});')})
   assert not reply.get('isError'),browser_client.text(reply)
  # Close Chrome explicitly, then enable its native picker with a disposable
  # second profile. On selection the original session is restored after guard

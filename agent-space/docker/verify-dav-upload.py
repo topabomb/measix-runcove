@@ -143,7 +143,7 @@ def main():
         assert dav_request('PROPFIND', headers={'Depth': '0'}, timeout=90)[0] == 207
         client = Client(core_port, created['token'], username=username, authority=authority)
         identity_command = "cat /proc/sys/kernel/random/boot_id; python3 -c \"import glob,json; print([json.load(open(p))['instance'] for p in sorted(glob.glob('/tmp/agent-space/*/instance.json'))])\""
-        identity = client.tool('bash', command=identity_command)
+        identity = client.tool('bash', cmd=identity_command)
         expected = hashlib.sha256()
         with payload.open('wb') as file:
             remaining = LENGTH
@@ -216,7 +216,7 @@ def main():
             # verified fixture before the next capacity-contained upload.
             assert dav_request('DELETE', path)[0] == 204
             print(f'PASS upload {attempt+1}: {LENGTH} bytes, SHA-256, ranges, {statuses["207"]} concurrent directory requests', flush=True)
-        assert client.tool('bash', command=identity_command) == identity, 'VM/helper identity changed'
+        assert client.tool('bash', cmd=identity_command) == identity, 'VM/helper identity changed'
         report['checks'].append('same VM/helper and healthy MCP after native LAN uploads')
         status, user = admin('GET', f'/admin/v1/users/{username}')
         assert status == 200

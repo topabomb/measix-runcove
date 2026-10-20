@@ -145,7 +145,7 @@ public_base_url = "http://127.0.0.1:{dav_port}"
             return request(port, method, path + name, body, dict(auth, **headers))
         status, _, headers = dav('PUT', 'dated-v2', b'new-version', **{'X-OC-Mtime': '946684800'})
         assert status == 201 and {k.lower(): v for k, v in headers.items()}['x-oc-mtime'] == 'accepted'
-        assert '946684800' in client.tool('bash', command='stat -c %Y /workspace/dated-v2')
+        assert '946684800' in client.tool('bash', cmd='stat -c %Y /workspace/dated-v2')
         # Root spellings must be rejected before recursive DAV work touches children.
         for suffix in ('', '/', '//'):
             for method in ('DELETE', 'MOVE'):
@@ -180,7 +180,7 @@ public_base_url = "http://127.0.0.1:{dav_port}"
             slow.endheaders(); slow.send(b'abc')
             deadline = time.monotonic() + 10
             while True:
-                count = client.tool('bash', command="find /workspace/.agent-space-upload -type f ! -name owner ! -name boot-id | wc -l")
+                count = client.tool('bash', cmd="find /workspace/.agent-space-upload -type f ! -name owner ! -name boot-id | wc -l")
                 if count.splitlines() and count.splitlines()[0].strip() == '1': break
                 assert time.monotonic() < deadline, 'Upload did not enter guest staging'
                 time.sleep(.05)
@@ -248,7 +248,7 @@ public_base_url = "http://127.0.0.1:{dav_port}"
             {'Host': 'localhost:8932', 'Authorization': 'Bearer ' + old_token, 'Content-Type': 'application/json'})
         assert status == 401
         client = Client(port, token, username='verify')
-        text = client.tool('bash', command='cat /root/migration-marker /workspace/migration-marker')
+        text = client.tool('bash', cmd='cat /root/migration-marker /workspace/migration-marker')
         assert 'root-before' in text and 'workspace-before' in text
         published = json.loads(client.tool('web_publish', action='publish', name='report', directory='/workspace/report'))
         status, body, _ = request(port, 'GET', published['url'], headers={'X-Publish-Key':published['password']})
@@ -276,7 +276,7 @@ public_base_url = "http://127.0.0.1:{dav_port}"
         assert status == 200 and body == b'workspace-before'
         status, _, _ = request(port, 'PUT', dav_path + 'after-dav.txt', b'dav-after', auth)
         assert status == 201
-        text = client.tool('bash', command='cat /workspace/after-dav.txt; '
+        text = client.tool('bash', cmd='cat /workspace/after-dav.txt; '
             'test -x /opt/agent-space/bin/agent-space-static-http && '
             'test -x /opt/agent-space/bin/agent-space-webdav && '
             'test -f /opt/agent-space/README.md && echo managed-layout-ok')
@@ -288,7 +288,7 @@ public_base_url = "http://127.0.0.1:{dav_port}"
         status, body, _ = request(port, 'GET', dav_path + 'after-dav.txt', headers=auth)
         assert status == 200 and body == b'dav-after'
         client = Client(port, token, username='verify')
-        text = client.tool('bash', command='cat /root/migration-marker /workspace/migration-marker')
+        text = client.tool('bash', cmd='cat /root/migration-marker /workspace/migration-marker')
         assert 'root-before' in text and 'workspace-before' in text
         if args.rclone:
             client_path = root / 'clients.json'

@@ -152,6 +152,8 @@ Basic 的密码和 Bearer 的值都使用**完整 token 原文**。调用方不�
 
 MCP 入口为 `/u/{username}/mcp`，使用 Streamable HTTP；不提供旧式 HTTP+SSE 双端点传输。Streamable HTTP 的响应可以是 JSON 或 SSE，客户端须接受两者。当前锁定 RMCP 1.7.0，服务端使用 SDK 默认协议版本 `2025-11-25` 和协商机制；请求 `2025-11-25`、`2025-06-18`、`2025-03-26` 时分别返回同一版本。
 
+`bash` 的命令字符串使用必填参数 `cmd`；可选 `timeout_secs` 单位为秒，`workdir` 仅对本次调用生效。
+
 客户端完成 `initialize` 后发送 `notifications/initialized`；后续 HTTP 请求携带初始化响应的 `Mcp-Session-Id` 和协商得到的 `MCP-Protocol-Version`，不能继续使用另一写死版本。初始化和目录发现不启动 VM。Host 重启结束已有协议会话，客户端须重新初始化；持久工作区和账号凭据不随协议会话结束而删除。
 
 Web 发布的参数、响应、认证、配置和保活示例统一见 [Web 发布参考](web-publish.md#使用示例)。

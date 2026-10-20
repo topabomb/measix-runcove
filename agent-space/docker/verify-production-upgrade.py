@@ -52,12 +52,12 @@ def main():
   value=json.loads(c.tool('browser_run',code=code))
   while value.get('state')=='running':value=json.loads(c.tool('browser_task',task_id=value['task_id']))
   assert value['state']=='succeeded',value;return value.get('value')
- def verify_space(name,port,dav_port,token,dav_token,original,expected_tools):
+ def verify_space(name,port,dav_port,token,dav_token,original,expected_tools,bash_key='cmd'):
   assert snapshot(name)==original,'persistent identity/credential/resource/image changed'
   c=client(port,token);assert {tool['name'] for tool in c.request('tools/list')['tools']}==expected_tools
-  text=c.tool('bash',command='cat /root/runcove-migration-marker /workspace/runcove-migration-marker')
+  text=c.tool('bash',**{bash_key:'cat /root/runcove-migration-marker /workspace/runcove-migration-marker'})
   assert 'root-before' in text and 'workspace-before' in text
-  c.tool('bash',command='nohup python3 -m http.server 8128 --bind 127.0.0.1 --directory /workspace/migration-site >/tmp/migration-site.log 2>&1 </dev/null &')
+  c.tool('bash',**{bash_key:'nohup python3 -m http.server 8128 --bind 127.0.0.1 --directory /workspace/migration-site >/tmp/migration-site.log 2>&1 </dev/null &'})
   assert browser(c,"await page.goto('http://127.0.0.1:8128/');return await page.evaluate(()=>localStorage.getItem('migration-profile'));")=='preserved'
   assert any(x['type']=='image' for x in c.tool_result('browser_observe',view='desktop')['content'])
   status,body=request(dav_port,'PROPFIND','/u/desktop/dav/',headers={'Authorization':'Bearer '+dav_token,'Depth':'1'});assert status==207
@@ -96,7 +96,7 @@ def main():
   docker('run','--rm','--entrypoint','tar','-v',rollback_data+':/data','-v',str(root)+':/backup:ro',a.old_image,'xzf','/backup/'+backup.name,'-C','/data',timeout=600)
   rollback,port,dav_port=launch(a.old_image,rollback_data,cfg,'rollback');c=client(port,token)
   c.tool('bash',command='nohup python3 -m http.server 8128 --bind 127.0.0.1 --directory /workspace/migration-site >/tmp/migration-site.log 2>&1 </dev/null &')
-  verify_space(rollback,port,dav_port,token,dav_token,original,original_tools)
+  verify_space(rollback,port,dav_port,token,dav_token,original,original_tools,bash_key='command')
   assert 'backup-boundary-ok' in c.tool('bash',command='test ! -e /workspace/candidate-only && echo backup-boundary-ok')
   stop(rollback);check('isolated_complete_backup_rollback');report['passed']=True
  except BaseException as error:

@@ -121,8 +121,8 @@ def main():
         client = Client(port, token, endpoint='/mcp', authority='127.0.0.1:' + str(port))
         assert 'root-owned' in client.tool('read', path='/workspace/root-data/record')
         client.tool('edit', path='/workspace/root-data/record', old_text='root-owned', new_text='payload-edit')
-        assert '1001:1001' in client.tool('bash', command="stat -c '%u:%g' /workspace/root-data/record; test -L /workspace/preserved-link && echo link-preserved")
-        client.tool('bash', command='nohup python3 -m http.server 8129 --bind 127.0.0.1 --directory /workspace/import-site >/tmp/import-site.log 2>&1 </dev/null &')
+        assert '1001:1001' in client.tool('bash', cmd="stat -c '%u:%g' /workspace/root-data/record; test -L /workspace/preserved-link && echo link-preserved")
+        client.tool('bash', cmd='nohup python3 -m http.server 8129 --bind 127.0.0.1 --directory /workspace/import-site >/tmp/import-site.log 2>&1 </dev/null &')
         assert browser(client, "return {tabs:context.pages().map(p=>p.url()),marker:await page.evaluate(()=>localStorage.getItem('workspace-import'))};") == {'tabs': ['http://127.0.0.1:8129/'], 'marker': 'preserved'}
         assert any(x['type'] == 'image' for x in client.tool_result('browser_observe', view='desktop')['content'])
         check('standalone_restores_tabs_profile_links_and_writable_user_data')

@@ -16,7 +16,7 @@ class DesktopLifecycle(unittest.TestCase):
   cookie=response.headers['Set-Cookie'].split(';')[0];nonce=json.loads(response.read())['nonce'];connection.close()
   headers={'Cookie':cookie,'Origin':BASE,'X-Desktop-Nonce':nonce};started=time.monotonic();slept=False;frozen=None
   def python(code):
-   reply=client.tool('bash',{'command':'python3 -c '+shlex.quote(code)});self.assertFalse(reply.get('isError'),text(reply));return text(reply)
+   reply=client.tool('bash',{'cmd':'python3 -c '+shlex.quote(code)});self.assertFalse(reply.get('isError'),text(reply));return text(reply)
   try:
    while time.monotonic()-started<335:
     if frozen is None and time.monotonic()-started>=290:

@@ -340,6 +340,21 @@ async fn desktop_catalog_and_permissive_arguments_reach_the_mcp_handlers() {
         );
     }
     let schema = |name: &str| &tools.iter().find(|t| t.name == name).unwrap().input_schema;
+    assert_eq!(schema("bash")["required"], json!(["cmd"]));
+    assert_eq!(schema("bash")["properties"]["cmd"]["type"], "string");
+    assert!(schema("bash")["properties"].get("command").is_none());
+    assert!(h
+        .client
+        .call_tool(
+            CallToolRequestParams::new("bash").with_arguments(
+                json!({"command":"printf must-not-run"})
+                    .as_object()
+                    .unwrap()
+                    .clone(),
+            ),
+        )
+        .await
+        .is_err());
     assert_eq!(
         schema("browser_observe")["$defs"]["BrowserView"]["enum"],
         json!(["dom", "ax", "page", "desktop"])
@@ -392,7 +407,7 @@ async fn desktop_catalog_and_permissive_arguments_reach_the_mcp_handlers() {
     for (name, args, runtime_error) in [
         (
             "bash",
-            json!({"command":"printf ok", "workdir":"", "timeout_secs":null,"extra":{"x":[null,1]}}),
+            json!({"cmd":"printf ok", "workdir":"", "timeout_secs":null,"extra":{"x":[null,1]}}),
             None,
         ),
         (
@@ -436,11 +451,11 @@ async fn desktop_catalog_and_permissive_arguments_reach_the_mcp_handlers() {
     for (name, args) in [
         (
             "bash",
-            json!({"command":"printf must-not-run", "timeout_secs":u64::MAX}),
+            json!({"cmd":"printf must-not-run", "timeout_secs":u64::MAX}),
         ),
         (
             "bash",
-            json!({"command":"printf must-not-run", "timeout_secs":0}),
+            json!({"cmd":"printf must-not-run", "timeout_secs":0}),
         ),
         (
             "write",
@@ -479,12 +494,8 @@ async fn desktop_catalog_and_permissive_arguments_reach_the_mcp_handlers() {
     let reply = h
         .client
         .call_tool(
-            CallToolRequestParams::new("bash").with_arguments(
-                json!({"command":"printf alive"})
-                    .as_object()
-                    .unwrap()
-                    .clone(),
-            ),
+            CallToolRequestParams::new("bash")
+                .with_arguments(json!({"cmd":"printf alive"}).as_object().unwrap().clone()),
         )
         .await
         .unwrap();

@@ -31,7 +31,7 @@ class MediaQualification(unittest.TestCase):
    client=Client(name);client.initialize()
    client.tool('write',{'path':'/workspace/qualification/read-images.py','content':fixture})
    client.tool('write',{'path':'/workspace/qualification/formats.json','content':json.dumps(formats['value'])})
-   meta=text(client.tool('bash',{'command':'python3 /workspace/qualification/read-images.py'}))
+   meta=text(client.tool('bash',{'cmd':'python3 /workspace/qualification/read-images.py'}))
    self.assertFalse(meta.get('isError'),meta)
    root='/workspace/qualification/media/'
    disabled=client.tool('read',{'path':root+'wrong-extension.txt'})
@@ -133,7 +133,7 @@ class MediaQualification(unittest.TestCase):
 
  def test_02c_private_directories_share_workspace_file_permissions(self):
   directory='/workspace/tmp/chatgpt-ops'
-  created=self.client.tool('bash',{'command':'umask 077; mkdir -p '+directory+'; chmod 700 '+directory})
+  created=self.client.tool('bash',{'cmd':'umask 077; mkdir -p '+directory+'; chmod 700 '+directory})
   self.assertFalse(created.get('isError'),text(created))
   path=directory+'/shared.txt'
   self.assertFalse(self.client.tool('write',{'path':path,'content':'before'}).get('isError'))
@@ -161,14 +161,14 @@ class MediaQualification(unittest.TestCase):
   # Traverse the same private parent when listing artifacts. Standalone also
   # verifies separately that a root-private target remains inaccessible.
   artifacts='/workspace/agent-space/artifacts'
-  moved=self.client.tool('bash',{'command':'mv '+artifacts+' '+artifacts+'.permissions-check; ln -s '+directory+' '+artifacts})
+  moved=self.client.tool('bash',{'cmd':'mv '+artifacts+' '+artifacts+'.permissions-check; ln -s '+directory+' '+artifacts})
   self.assertFalse(moved.get('isError'),text(moved))
   try:
    with urllib.request.urlopen(urllib.request.Request(base+'artifacts',headers=headers),timeout=10) as response:
     listed=json.load(response)
    self.assertIn('shared.txt',[f['name'] for f in listed['files']])
   finally:
-   restored=self.client.tool('bash',{'command':'rm '+artifacts+'; mv '+artifacts+'.permissions-check '+artifacts})
+   restored=self.client.tool('bash',{'cmd':'rm '+artifacts+'; mv '+artifacts+'.permissions-check '+artifacts})
    self.assertFalse(restored.get('isError'),text(restored))
 
  def test_03_cancel_sequence_preserves_frames_and_allows_browser_work(self):
@@ -227,14 +227,14 @@ class MediaQualification(unittest.TestCase):
   stop=stop.replace("b'--remote-debugging-port=9222' in (x/'cmdline').read_bytes()", "b'--remote-debugging-port=9222' in (x/'cmdline').read_bytes().split(bytes([0]))")
   self.client.tool('write',{'path':'/workspace/qualification/stop-browser.py','content':stop})
   try:
-   reply=self.client.tool('bash',{'command':'python3 /workspace/qualification/stop-browser.py'});self.assertFalse(reply.get('isError'),text(reply))
+   reply=self.client.tool('bash',{'cmd':'python3 /workspace/qualification/stop-browser.py'});self.assertFalse(reply.get('isError'),text(reply))
    page,reply=self.finish(self.client.tool('screen_observe',{'view':'page'}));self.assertTrue(reply.get('isError'),page)
    desktop,reply=self.finish(self.client.tool('screen_observe',{'view':'desktop'}));self.assertFalse(reply.get('isError'),desktop)
    self.assertEqual(desktop['captured_count'],1)
-   state=text(self.client.tool('bash',{'command':"python3 -c \"from pathlib import Path;p=Path('/workspace/qualification/stopped-browser.pid').read_text();print(Path('/proc/'+p+'/stat').read_text().split(') ')[1][0])\""}))
+   state=text(self.client.tool('bash',{'cmd':"python3 -c \"from pathlib import Path;p=Path('/workspace/qualification/stopped-browser.pid').read_text();print(Path('/proc/'+p+'/stat').read_text().split(') ')[1][0])\""}))
    self.assertIn('T',state['text'])
   finally:
-   self.client.tool('bash',{'command':"python3 -c \"import os,signal;from pathlib import Path;p=Path('/workspace/qualification/stopped-browser.pid');os.kill(int(p.read_text()),signal.SIGCONT) if p.exists() else None\""})
+   self.client.tool('bash',{'cmd':"python3 -c \"import os,signal;from pathlib import Path;p=Path('/workspace/qualification/stopped-browser.pid');os.kill(int(p.read_text()),signal.SIGCONT) if p.exists() else None\""})
   self.assertTrue(text(self.client.tool('browser_observe',{}))['health']['browser'])
 
  def test_06_parallel_images_and_mcp_cancellation_behind_a_file_lock(self):
@@ -256,7 +256,7 @@ time.sleep(5)
   self.client.tool('write',{'path':'/workspace/qualification/hold-lock.py','content':script})
   holder=Client('desktop');holder.initialize();reader=Client('desktop');reader.initialize()
   with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-   holding=pool.submit(holder.tool,'bash',{'command':'python3 /workspace/qualification/hold-lock.py'})
+   holding=pool.submit(holder.tool,'bash',{'cmd':'python3 /workspace/qualification/hold-lock.py'})
    until=time.monotonic()+5
    while 'ready' not in json.dumps(self.client.tool('read',{'path':root+'lock-ready'})):
     self.assertLess(time.monotonic(),until);time.sleep(.05)

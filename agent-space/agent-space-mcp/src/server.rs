@@ -23,7 +23,7 @@ struct BashParams {
     #[schemars(
         description = "Bash command or script. Put command arguments in this string; provide stdin with a pipe, here-document, or redirection."
     )]
-    command: String,
+    cmd: String,
     #[schemars(
         description = "Optional command execution limit in seconds; positive integer. Omit or pass JSON null to use the configured default."
     )]
@@ -822,11 +822,11 @@ impl AgentSpaceMcpServer {
         let cmd = format!(
             "{{ cd {} && {{\n{}\n}}; }} 2>&1",
             shell_escape(workdir),
-            params.command
+            params.cmd
         );
 
         tracing::Span::current().record("workspace", session.workspace_name.as_str());
-        info!(workspace = %session.workspace_name, command_bytes = params.command.len(), timeout_secs, "bash exec");
+        info!(workspace = %session.workspace_name, command_bytes = params.cmd.len(), timeout_secs, "bash exec");
         let start = std::time::Instant::now();
 
         match session.exec(&cmd, timeout).await {
@@ -867,7 +867,7 @@ impl AgentSpaceMcpServer {
             Err(agent_engine::engine::EngineError::Timeout(message)) => {
                 warn!(
                     workspace = %session.workspace_name,
-                    command_bytes = params.command.len(),
+                    command_bytes = params.cmd.len(),
                     timeout_secs,
                     duration_ms = start.elapsed().as_millis(),
                     "bash timed out"
@@ -1409,12 +1409,12 @@ mod tests {
     #[test]
     fn optional_selectors_and_unknown_fields_are_tolerated_without_changing_payloads() {
         let bash: BashParams = serde_json::from_value(
-            json!({"command":" echo hi ","workdir":"", "timeout_secs":null,"unused":1}),
+            json!({"cmd":" echo hi ","workdir":"", "timeout_secs":null,"unused":1}),
         )
         .unwrap();
         assert!(bash.workdir.is_none());
         assert!(bash.timeout_secs.is_none());
-        assert_eq!(bash.command, " echo hi ");
+        assert_eq!(bash.cmd, " echo hi ");
         let run: RunParams =
             serde_json::from_value(json!({"code":" return ''; ","page_id":" ","script_path":null}))
                 .unwrap();
@@ -1442,8 +1442,7 @@ mod tests {
         assert_eq!(edit.new_text, "");
         assert!(serde_json::from_value::<RunParams>(json!({"code":null})).is_err());
         assert!(
-            serde_json::from_value::<BashParams>(json!({"command":"x","timeout_secs":"bad"}))
-                .is_err()
+            serde_json::from_value::<BashParams>(json!({"cmd":"x","timeout_secs":"bad"})).is_err()
         );
         assert!(serde_json::from_value::<WriteParams>(json!({"content":"x","extra":1})).is_err());
     }

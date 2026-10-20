@@ -243,24 +243,19 @@ async fn configured_default_and_manual_bash_timeout_are_seconds() -> anyhow::Res
         .await?;
 
     let started = Instant::now();
-    let defaulted = call(&client, "bash", json!({"command": "sleep 2"})).await?;
+    let defaulted = call(&client, "bash", json!({"cmd": "sleep 2"})).await?;
     assert_eq!(defaulted.is_error, Some(true));
     assert!(started.elapsed() < Duration::from_secs(4));
 
     let overridden = call(
         &client,
         "bash",
-        json!({"command": "sleep 1.2; printf ok", "timeout_secs": 3}),
+        json!({"cmd": "sleep 1.2; printf ok", "timeout_secs": 3}),
     )
     .await?;
     assert_ne!(overridden.is_error, Some(true));
 
-    let legacy = call(
-        &client,
-        "bash",
-        json!({"command": "sleep 2", "timeout": 1000}),
-    )
-    .await?;
+    let legacy = call(&client, "bash", json!({"cmd": "sleep 2", "timeout": 1000})).await?;
     assert_eq!(
         legacy.is_error,
         Some(true),
@@ -270,7 +265,7 @@ async fn configured_default_and_manual_bash_timeout_are_seconds() -> anyhow::Res
     let zero = call(
         &client,
         "bash",
-        json!({"command": "printf unsafe", "timeout_secs": 0}),
+        json!({"cmd": "printf unsafe", "timeout_secs": 0}),
     )
     .await;
     assert!(zero.is_err(), "zero-second manual timeout must be rejected");
@@ -278,14 +273,14 @@ async fn configured_default_and_manual_bash_timeout_are_seconds() -> anyhow::Res
     let oversized = call(
         &client,
         "bash",
-        json!({"command": "touch /workspace/oversized-timeout", "timeout_secs": u64::MAX}),
+        json!({"cmd": "touch /workspace/oversized-timeout", "timeout_secs": u64::MAX}),
     )
     .await;
     assert!(oversized.is_err(), "overflowing deadline must be rejected");
     let intact = call(
         &client,
         "bash",
-        json!({"command": "test ! -e /workspace/oversized-timeout && printf alive", "workdir":"", "timeout_secs":null,"extra":{"ignored":true}}),
+        json!({"cmd": "test ! -e /workspace/oversized-timeout && printf alive", "workdir":"", "timeout_secs":null,"extra":{"ignored":true}}),
     )
     .await?;
     assert_ne!(intact.is_error, Some(true));
@@ -294,7 +289,7 @@ async fn configured_default_and_manual_bash_timeout_are_seconds() -> anyhow::Res
     let missing_workdir = call(
         &client,
         "bash",
-        json!({"command":"printf must-not-run", "workdir":"/workspace/missing-workdir-for-contract"}),
+        json!({"cmd":"printf must-not-run", "workdir":"/workspace/missing-workdir-for-contract"}),
     )
     .await?;
     let text = serde_json::to_string(&missing_workdir)?;
@@ -332,7 +327,7 @@ async fn every_builtin_tool_resumes_a_paused_workspace() -> anyhow::Result<()> {
 
     pause(workspace).await?;
     assert_ne!(
-        call(&client, "bash", json!({"command": "true"}))
+        call(&client, "bash", json!({"cmd": "true"}))
             .await?
             .is_error,
         Some(true)
@@ -451,7 +446,7 @@ async fn tiny_text_limits_preserve_file_protocol_and_image_results() -> anyhow::
         .await?,
     )?;
     assert_eq!(no_content["content"][0]["text"], "(no content in range)");
-    call(&client, "bash", json!({"command":"python3 -c \"import base64;open('/workspace/image','wb').write(base64.b64decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'))\""})).await?;
+    call(&client, "bash", json!({"cmd":"python3 -c \"import base64;open('/workspace/image','wb').write(base64.b64decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'))\""})).await?;
     let disabled =
         serde_json::to_value(call(&client, "read", json!({"path":"/workspace/image"})).await?)?;
     let error: serde_json::Value =

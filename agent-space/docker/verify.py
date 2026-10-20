@@ -249,7 +249,7 @@ workspace_name = "dockerverify-workspace"
         assert 'agent-space-static-http' in docker('exec', name, 'sh', '-c', 'command -v agent-space-static-http')
         passed('image/version, helper, and five-tool contract are exact; metadata does not wake VM')
 
-        client.tool('bash', command='mkdir -p /workspace/report && printf "<p>published-site</p>" > /workspace/report/index.html && printf "selected-file" > /workspace/report/data.txt')
+        client.tool('bash', cmd='mkdir -p /workspace/report && printf "<p>published-site</p>" > /workspace/report/index.html && printf "selected-file" > /workspace/report/data.txt')
         published = json.loads(client.tool('web_publish', action='publish', name='site', directory='/workspace/report', keep_alive_minutes=1))
         published_at = time.monotonic()
         assert set(published) == {'name', 'type', 'url', 'username', 'password'}
@@ -282,7 +282,7 @@ workspace_name = "dockerverify-workspace"
         wait_workspace_status(name,'stopped')
         assert published_get(published, {'X-Publish-Key':published['password']})[0]==404
         passed('finite keepalive protects idle VM, get does not extend it, expiry reclaims VM and invalidates URL')
-        client.tool('bash', command='echo runtime-restarted')
+        client.tool('bash', cmd='echo runtime-restarted')
         old=published
         published=json.loads(client.tool('web_publish',action='publish',name='site',directory='/workspace/report',keep_alive_minutes=1))
         assert published['url']==old['url'] and published_get(old,{'X-Publish-Key':old['password']})[0]==401
@@ -293,12 +293,12 @@ workspace_name = "dockerverify-workspace"
         assert status==200 and not body and next((v for k,v in headers.items() if k.lower()=='content-length'),None)=='13'
         assert published_get(file,{'X-Publish-Key':file['password']},path=file['url']+'index.html')[0]==404
         assert published_get(file,{'Authorization':'Basic '+token})[0]==401
-        client.tool('bash',command='mkdir -p /workspace/report/sub; printf nested > /workspace/report/sub/item.txt')
+        client.tool('bash',cmd='mkdir -p /workspace/report/sub; printf nested > /workspace/report/sub/item.txt')
         status,_,redirect=published_get(published,{'X-Publish-Key':published['password']},path=published['url']+'sub?q=1')
         assert status==307 and redirect['location']==urlsplit(published['url']).path+'sub/?q=1'
-        client.tool('bash',command='mv /workspace/report/data.txt /workspace/report/data.original; mkdir /workspace/report/data.txt; printf forbidden > /workspace/report/data.txt/index.html')
+        client.tool('bash',cmd='mv /workspace/report/data.txt /workspace/report/data.original; mkdir /workspace/report/data.txt; printf forbidden > /workspace/report/data.txt/index.html')
         assert published_get(file,{'X-Publish-Key':file['password']})[0]==404
-        client.tool('bash',command='rmdir /workspace/report/data.txt 2>/dev/null || { rm /workspace/report/data.txt/index.html; rmdir /workspace/report/data.txt; }; mv /workspace/report/data.original /workspace/report/data.txt')
+        client.tool('bash',cmd='rmdir /workspace/report/data.txt 2>/dev/null || { rm /workspace/report/data.txt/index.html; rmdir /workspace/report/data.txt; }; mv /workspace/report/data.original /workspace/report/data.txt')
 
         api_source = """from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import functools, hashlib, json
@@ -325,7 +325,7 @@ class App(SimpleHTTPRequestHandler):
 ThreadingHTTPServer(('127.0.0.1',38080),functools.partial(App,directory='/workspace/report')).serve_forever()
 """
         client.tool('write',path='/workspace/api.py',content=api_source)
-        client.tool('bash',command='python3 /workspace/api.py >/tmp/agent-port-http.log 2>&1 < /dev/null & echo port-server-started')
+        client.tool('bash',cmd='python3 /workspace/api.py >/tmp/agent-port-http.log 2>&1 < /dev/null & echo port-server-started')
         for attempt in range(20):
             try:
                 port_publication=json.loads(client.tool('web_publish',action='publish',name='api',port=38080,keep_alive_minutes=1))
@@ -351,7 +351,7 @@ ThreadingHTTPServer(('127.0.0.1',38080),functools.partial(App,directory='/worksp
         connection.request('POST',port_publication['url']+'upload?from=android',body=payload,headers={'X-Publish-Key':port_publication['password'],'Authorization':'Bearer application-test-token','Content-Type':'application/octet-stream'})
         response=connection.getresponse(); upload=json.loads(response.read()); assert response.status==200; connection.close()
         assert upload=={'sha256':__import__('hashlib').sha256(payload).hexdigest(),'length':len(payload),'path':'/upload?from=android','authorization':'Bearer application-test-token','publish_key_present':False}
-        client.tool('bash',command="python3 -c \"open('/workspace/report/blob.bin','wb').write(bytes(range(256))*16384)\"")
+        client.tool('bash',cmd="python3 -c \"open('/workspace/report/blob.bin','wb').write(bytes(range(256))*16384)\"")
         large=json.loads(client.tool('web_publish',action='publish',name='large',file='/workspace/report/blob.bin',keep_alive_minutes=1))
         status,download,_=published_get(large,{'X-Publish-Key':large['password']})
         assert status==200 and __import__('hashlib').sha256(download).digest()==__import__('hashlib').sha256(payload).digest()
@@ -385,17 +385,17 @@ ThreadingHTTPServer(('127.0.0.1',38080),functools.partial(App,directory='/worksp
         assert published_get(published,{'X-Publish-Key':published['password']})[0]==200
         client.tool('web_publish',action='unpublish',name='site')
         client.tool('web_publish',action='unpublish',name='api')
-        assert 'published-site' in client.tool('bash',command='python3 -c "import urllib.request; print(urllib.request.urlopen(\'http://127.0.0.1:38080/\', timeout=3).read().decode())"')
+        assert 'published-site' in client.tool('bash',cmd='python3 -c "import urllib.request; print(urllib.request.urlopen(\'http://127.0.0.1:38080/\', timeout=3).read().decode())"')
         passed('file/directory/port coexist with independent paths and credentials, automatic auth, ranges, stable retry and scoped close; app survives')
 
         started = time.monotonic()
-        timeout_text = client.tool_error('bash', command='sleep 4')
+        timeout_text = client.tool_error('bash', cmd='sleep 4')
         timeout_result = json.loads(timeout_text)
         assert time.monotonic() - started < 5, timeout_text
         assert timeout_result['error'] == 'EXECUTION_TIMEOUT' and timeout_result['cleanup_confirmed'], timeout_text
         assert timeout_result['side_effects'] == 'may_have_occurred', timeout_text
         assert 'manual-ok' in client.tool(
-            'bash', command='sleep 3; echo manual-ok', timeout_secs=5
+            'bash', cmd='sleep 3; echo manual-ok', timeout_secs=5
         )
         passed('configured fallback and manual bash timeout both use seconds')
 
@@ -408,7 +408,7 @@ ThreadingHTTPServer(('127.0.0.1',38080),functools.partial(App,directory='/worksp
         assert published_get(paused_publication,{'X-Publish-Key':paused_publication['password']})[:2]==(200,b'old')
         wait_workspace_status(name,'running')
         assert 'bash-resumed' in pause_then_call(
-            name, client, 'bash', command='echo bash-resumed'
+            name, client, 'bash', cmd='echo bash-resumed'
         )
         assert 'old' in pause_then_call(
             name, client, 'read', path='/workspace/a.txt'
@@ -426,13 +426,13 @@ ThreadingHTTPServer(('127.0.0.1',38080),functools.partial(App,directory='/worksp
 
         client.tool(
             'bash',
-            command='echo docker-root > /root/docker-marker; '
+            cmd='echo docker-root > /root/docker-marker; '
                     'echo docker-volume > /workspace/docker-marker; echo written',
         )
         with concurrent.futures.ThreadPoolExecutor() as pool:
             work = pool.submit(
                 client.tool, 'bash',
-                command='sleep 12; echo long-call-survived', timeout_secs=30,
+                cmd='sleep 12; echo long-call-survived', timeout_secs=30,
             )
             time.sleep(8)
             wait_workspace_status(name, 'running')
@@ -442,7 +442,7 @@ ThreadingHTTPServer(('127.0.0.1',38080),functools.partial(App,directory='/worksp
         original_session = client.session
         wait_workspace_status(name, 'stopped')
         wake = client.tool(
-            'bash', command='cat /root/docker-marker /workspace/docker-marker'
+            'bash', cmd='cat /root/docker-marker /workspace/docker-marker'
         )
         assert 'docker-root' in wake and 'docker-volume' in wake
         assert client.session == original_session
@@ -451,7 +451,7 @@ ThreadingHTTPServer(('127.0.0.1',38080),functools.partial(App,directory='/worksp
         print(f'Waiting {args.idle_seconds}s to verify idle MCP session retention...', flush=True)
         time.sleep(args.idle_seconds)
         assert 'docker-volume' in client.tool(
-            'bash', command='cat /workspace/docker-marker'
+            'bash', cmd='cat /workspace/docker-marker'
         )
         assert client.session == original_session
         passed(f'original MCP session still executes after {args.idle_seconds}s idle')
@@ -465,7 +465,7 @@ ThreadingHTTPServer(('127.0.0.1',38080),functools.partial(App,directory='/worksp
         wait_workspace_status(name,'stopped')
         passed('Host restart invalidates all publication state; old URL does not wake the VM')
         result = client.tool(
-            'bash', command='cat /root/docker-marker /workspace/docker-marker'
+            'bash', cmd='cat /root/docker-marker /workspace/docker-marker'
         )
         assert 'docker-root' in result and 'docker-volume' in result, result
         passed('graceful container restart preserves root disk and workspace volume')
@@ -548,8 +548,8 @@ token_env = "AGENT_SPACE_ADMIN_TOKEN"
         assert status == 200, (status, detail)
         sandbox_name, volumes_owned = detail['sandboxName'], detail['ownedVolumeNames']
         dynamic_client = Client(dynamic_port, user_token, username='alice')
-        assert 'dynamic-user-ok' in dynamic_client.tool('bash', command='echo dynamic-user-ok')
-        dynamic_client.tool('bash', command='mkdir -p /workspace/report && echo dynamic-publication > /workspace/report/index.html')
+        assert 'dynamic-user-ok' in dynamic_client.tool('bash', cmd='echo dynamic-user-ok')
+        dynamic_client.tool('bash', cmd='mkdir -p /workspace/report && echo dynamic-publication > /workspace/report/index.html')
         dynamic_publication = json.loads(dynamic_client.tool(
             'web_publish', action='publish', name='report', directory='/workspace/report',
         ))
@@ -584,7 +584,7 @@ token_env = "AGENT_SPACE_ADMIN_TOKEN"
         assert status == 200, (status, rotated)
         dynamic_client = Client(dynamic_port, rotated['token'], username='alice')
         assert 'dynamic-publication' in dynamic_client.tool(
-            'bash', command='cat /workspace/report/index.html'
+            'bash', cmd='cat /workspace/report/index.html'
         )
         passed('disable closes publications and new token restores retained workspace files')
 

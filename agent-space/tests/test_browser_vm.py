@@ -17,9 +17,9 @@ class BrowserQualification(unittest.TestCase):
   tool('write',{'path':'/workspace/qualification/server.cjs','content':fixture})
   starter=(Path(__file__).parent/'fixtures/start-browser-site.py').read_text()
   tool('write',{'path':'/workspace/qualification/start-site.py','content':starter})
-  started=tool('bash',{'command':"python3 /workspace/qualification/start-site.py && python3 -c \"from pathlib import Path;Path('/workspace/qualification/upload.bin').write_bytes(b'u'*1048576)\""})
+  started=tool('bash',{'cmd':"python3 /workspace/qualification/start-site.py && python3 -c \"from pathlib import Path;Path('/workspace/qualification/upload.bin').write_bytes(b'u'*1048576)\""})
   assert 'Qualification fixture ready' in json.dumps(started),started
-  tool('bash',{'command':"python3 -c \"from pathlib import Path;p=Path('/workspace/qualification/private uploads');p.mkdir(exist_ok=True);p.chmod(0o700);f=p/'原生 reference.bin';f.write_bytes(b'u'*1048576);f.chmod(0o600)\""})
+  tool('bash',{'cmd':"python3 -c \"from pathlib import Path;p=Path('/workspace/qualification/private uploads');p.mkdir(exist_ok=True);p.chmod(0o700);f=p/'原生 reference.bin';f.write_bytes(b'u'*1048576);f.chmod(0o600)\""})
  @classmethod
  def browser(cls,code,timeout=60,success=True):
   reply=cls.client.tool('browser_run',{'code':code,'timeout_secs':timeout});value=text(reply)
@@ -117,7 +117,7 @@ class BrowserQualification(unittest.TestCase):
    code="const fs=await import('node:fs');fs.rmSync('/workspace/agent-space/artifacts/fixture.bin',{force:true});await page.goto('http://127.0.0.1:8124');await page.bringToFront();await page.getByRole('link',{name:'Download',exact:true}).focus();"
    self.browser(code+("throw Error('qualification failure before user download');" if failed else 'return true;'),success=not failed)
    # A user keypress does not attach Playwright or install a temporary download directory.
-   reply=self.client.tool('bash',{'command':"DISPLAY=:1 xdotool key Return; python3 -c \"import time,hashlib;from pathlib import Path;p=Path('/workspace/agent-space/artifacts/fixture.bin');deadline=time.monotonic()+15\nwhile not p.exists() and time.monotonic()<deadline: time.sleep(.1)\nassert p.read_bytes()==bytes([123])*65536;print(hashlib.sha256(p.read_bytes()).hexdigest())\""})
+   reply=self.client.tool('bash',{'cmd':"DISPLAY=:1 xdotool key Return; python3 -c \"import time,hashlib;from pathlib import Path;p=Path('/workspace/agent-space/artifacts/fixture.bin');deadline=time.monotonic()+15\nwhile not p.exists() and time.monotonic()<deadline: time.sleep(.1)\nassert p.read_bytes()==bytes([123])*65536;print(hashlib.sha256(p.read_bytes()).hexdigest())\""})
    self.assertFalse(reply.get('isError'),text(reply));self.assertIn(hashlib.sha256(bytes([123])*65536).hexdigest(),json.dumps(text(reply)))
  def test_03_deadline_and_cancellation(self):
   value,_=self.browser('while(true){}',2,False);self.assertEqual(value['state'],'timed_out')
@@ -202,7 +202,7 @@ class BrowserQualification(unittest.TestCase):
   # reproduce the complete UID1001 profile left by the previous Server helper.
   close="const r=await fetch('http://127.0.0.1:9222/json/version');const ws=new WebSocket((await r.json()).webSocketDebuggerUrl);await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('close deadline')),10000);ws.onopen=()=>ws.send(JSON.stringify({id:1,method:'Browser.close'}));ws.onclose=()=>{clearTimeout(timer);resolve();};ws.onerror=reject;});"
   reply=self.client.tool('write',{'path':'/workspace/qualification/close-browser.mjs','content':close});self.assertFalse(reply.get('isError'),text(reply))
-  reply=self.client.tool('bash',{'command':"node /workspace/qualification/close-browser.mjs && python3 -c \"import os,time;from pathlib import Path;time.sleep(1);p=Path('/workspace/.agent-space/desktop/profile');entries=[p,*p.rglob('*')];[(os.chown(f,1001,1001,follow_symlinks=False)) for f in entries];print('legacy profile entries:',len(entries))\""})
+  reply=self.client.tool('bash',{'cmd':"node /workspace/qualification/close-browser.mjs && python3 -c \"import os,time;from pathlib import Path;time.sleep(1);p=Path('/workspace/.agent-space/desktop/profile');entries=[p,*p.rglob('*')];[(os.chown(f,1001,1001,follow_symlinks=False)) for f in entries];print('legacy profile entries:',len(entries))\""})
   self.assertFalse(reply.get('isError'),text(reply));self.assertIn('legacy profile entries:',json.dumps(text(reply)))
   reply=self.client.tool('browser_observe',{});self.assertFalse(reply.get('isError'),text(reply))
   value,_=self.browser("const fs=await import('node:fs');return {tabs:context.pages().map(p=>p.url()),marker:await page.evaluate(()=>localStorage.getItem('identity-restore')),cookie:(await context.cookies()).find(c=>c.name==='identity-restore')?.value,profileOwner:fs.statSync('/workspace/.agent-space/desktop/profile').uid,uid:process.getuid()};")

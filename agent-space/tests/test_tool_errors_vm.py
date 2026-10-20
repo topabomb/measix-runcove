@@ -19,7 +19,7 @@ class ToolErrors(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        result = cls.client.tool("bash", {"command": "rm -rf -- /workspace/tool-error-qualification"})
+        result = cls.client.tool("bash", {"cmd": "rm -rf -- /workspace/tool-error-qualification"})
         assert not result.get("isError"), contents(result)
 
     def test_file_errors_and_edit_guidance(self):
@@ -51,11 +51,11 @@ class ToolErrors(unittest.TestCase):
                 self.assertTrue(result.get("isError")); self.assertIn("positive integers", contents(result))
 
     def test_command_output_is_not_shortened_as_an_error(self):
-        result = self.client.tool("bash", {"command": "python3 -c \"print('x'*5000)\"; exit 7"})
+        result = self.client.tool("bash", {"cmd": "python3 -c \"print('x'*5000)\"; exit 7"})
         self.assertFalse(result.get("isError"), contents(result))
         self.assertIn("Exit code: 7", contents(result))
         self.assertGreater(len(contents(result)), 5000)
-        result = self.client.tool("bash", {"command": "echo before-timeout; sleep 10", "timeout_secs": 1})
+        result = self.client.tool("bash", {"cmd": "echo before-timeout; sleep 10", "timeout_secs": 1})
         self.assertTrue(result.get("isError"))
         self.assertIn("before-timeout", contents(result))
         self.assertIn("cleanup_confirmed", contents(result))

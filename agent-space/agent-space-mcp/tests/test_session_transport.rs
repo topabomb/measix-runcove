@@ -257,12 +257,8 @@ async fn same_http_session_survives_idle_and_workspace_reclaim() -> anyhow::Resu
         "handshake/discovery must be independent of VM capacity"
     );
     let call = || {
-        CallToolRequestParams::new("bash").with_arguments(
-            json!({"command": "echo hello"})
-                .as_object()
-                .unwrap()
-                .clone(),
-        )
+        CallToolRequestParams::new("bash")
+            .with_arguments(json!({"cmd": "echo hello"}).as_object().unwrap().clone())
     };
     assert_ne!(client.call_tool(call()).await?.is_error, Some(true));
     let session = manager.get_session("smcp-alice").await?;
@@ -284,12 +280,8 @@ async fn same_http_session_survives_idle_and_workspace_reclaim() -> anyhow::Resu
 
     // A UTF-8 boundary in the log preview used to panic before executing.
     let long_command = "中".repeat(100);
-    let unicode = CallToolRequestParams::new("bash").with_arguments(
-        json!({"command": long_command})
-            .as_object()
-            .unwrap()
-            .clone(),
-    );
+    let unicode = CallToolRequestParams::new("bash")
+        .with_arguments(json!({"cmd": long_command}).as_object().unwrap().clone());
     assert_ne!(client.call_tool(unicode).await?.is_error, Some(true));
     client.cancel().await?;
     ct.cancel();

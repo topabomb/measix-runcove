@@ -9,7 +9,7 @@ class WorkspaceLayout(unittest.TestCase):
  @classmethod
  def setUpClass(cls):
   cls.client=Client('desktop');cls.client.initialize()
-  cls.good('bash',{'command':'true','timeout_secs':60})
+  cls.good('bash',{'cmd':'true','timeout_secs':60})
  @classmethod
  def good(cls,name,args):
   result=cls.client.tool(name,args)
@@ -17,7 +17,7 @@ class WorkspaceLayout(unittest.TestCase):
   return text(result)
  @classmethod
  def python(cls,code):
-  result=cls.client.tool('bash',{'command':'python3 -c '+shlex.quote(code),'workdir':'','timeout_secs':None,'unused':True})
+  result=cls.client.tool('bash',{'cmd':'python3 -c '+shlex.quote(code),'workdir':'','timeout_secs':None,'unused':True})
   assert not result.get('isError'),text(result)
   assert result['content'][-1]['text']=='Exit code: 0',result
   return text(result)
@@ -67,7 +67,7 @@ class WorkspaceLayout(unittest.TestCase):
   with urllib.request.urlopen(req) as response:USERS['preferences']=json.load(response)
   client=Client('preferences');client.initialize()
   def run(code):
-   result=client.tool('bash',{'command':'python3 -c '+shlex.quote(code),'timeout_secs':60})
+   result=client.tool('bash',{'cmd':'python3 -c '+shlex.quote(code),'timeout_secs':60})
    self.assertFalse(result.get('isError'),text(result))
    self.assertEqual(result['content'][-1]['text'],'Exit code: 0',result)
   run("from pathlib import Path;import json;p=Path('/workspace/.agent-space/desktop');d=p/'profile/Default';d.mkdir(parents=True);(p/'artifacts').write_text('user-owned');Path('/workspace/my-downloads').mkdir();(d/'Preferences').write_text(json.dumps({'download':{'default_directory':'/workspace/my-downloads'}}))")

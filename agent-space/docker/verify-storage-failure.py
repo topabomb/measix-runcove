@@ -63,7 +63,7 @@ def main():
                     assert time.monotonic() < until; time.sleep(.2)
             user = admin('POST', '/admin/v1/users', {'username': 'storage'})
             client = Client(main_port, user['token'], username='storage', authority='127.0.0.1:' + str(main_port))
-            client.tool('bash', command='mount -t tmpfs -o size=8m tmpfs /workspace')
+            client.tool('bash', cmd='mount -t tmpfs -o size=8m tmpfs /workspace')
             dav = admin('POST', '/admin/v1/users/storage/dav-token', {'agentSpaceId': user['agentSpaceId']})['token']
             prefix = '/u/storage/dav/'
         port = int(docker('port', name, '8933/tcp').rsplit(':', 1)[1])
@@ -120,7 +120,7 @@ assert elapsed<3.5 and len(progress)>10,(elapsed,len(progress))
 print(json.dumps({"early_status":412,"connection_closed_seconds":elapsed,"progress_frames":len(progress)}))
 '''
         probe = probe.replace('/dav/preserved.txt', prefix + 'preserved.txt')
-        result = client.tool('bash', command='python3 -c ' + shlex.quote(probe)) if client else docker('exec', name, 'python3', '-c', probe)
+        result = client.tool('bash', cmd='python3 -c ' + shlex.quote(probe)) if client else docker('exec', name, 'python3', '-c', probe)
         report['rejected_upload'] = json.JSONDecoder().raw_decode(result.lstrip())[0]
         report.update(passed=True, attempts=20, checks=['real 8 MiB filesystem ENOSPC returns 507', 'failed overwrite preserves original bytes', 'temporary upload cleanup permits next write', 'early rejected PUT response and fixed total drain deadline'])
     except BaseException:

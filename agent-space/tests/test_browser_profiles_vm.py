@@ -15,7 +15,7 @@ class BrowserProfiles(unittest.TestCase):
    while value.get('state')=='running':
     reply=client.tool('browser_task',{'task_id':value['task_id']});value=text(reply)
    return value,reply
-  def bash(code):return tool('bash',{'command':code})
+  def bash(code):return tool('bash',{'cmd':code})
   def node(code):return bash('node -e '+shlex.quote('(async()=>{'+code+'})().then(()=>process.exit()).catch(e=>{console.error(e);process.exit(1)});'))
   def python(code):return bash('python3 -c '+shlex.quote(code))
   close="""let version;try{version=await(await fetch('http://127.0.0.1:9222/json/version')).json();}catch{return;}
