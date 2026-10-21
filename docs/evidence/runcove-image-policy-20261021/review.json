@@ -1,0 +1,51 @@
+{
+  "date": "2026-10-21",
+  "source_sha256": "c017de31745e27be8fac63aeb1f6994a5b9db2bbf33cdfc24384a34336912b1c",
+  "review_scope": "All pending image-policy source, callers, tests, contracts and evidence; main branch",
+  "findings_fixed": [
+    "Image download artifacts still exposed raw byte counts, MIME and duplicate names",
+    "GIF artifacts were incorrectly classified as application/octet-stream",
+    "Original-image tests lost checks when public dimensions were removed",
+    "Earlier capture follow-up used a different page and did not establish the initial failure cause"
+  ],
+  "tests": {
+    "media_unit": 5,
+    "mcp_unit_no_default_features": 34,
+    "mcp_http_contract": 5,
+    "desktop_helper_unit": 9,
+    "total_passed": 53
+  },
+  "checks": {
+    "clippy_default_all_targets": true,
+    "clippy_no_default_features_lib_bins": true,
+    "rust_fmt": true,
+    "python_syntax": true,
+    "node_syntax": true,
+    "diff_check": true,
+    "private_deployment_data_excluded": true
+  },
+  "build": {
+    "binary_export_only": true,
+    "sqlite_linked": "3.51.3",
+    "binaries_sha256": {
+      "agent-space-mcp": "b772abfc272fa5b5c63baa4cef08f8581bc7f251755c6c8e046aef35a70eb094",
+      "agent-space-desktop": "f3c29579ca834c3406f49ff9c16820a1de9bb8c6750be3463f00b4b9cd076a76"
+    }
+  },
+  "stale_observation": {
+    "capture_guard_changed": false,
+    "original_cause_resolved": false,
+    "historical_event_missing_before_after_differences": true,
+    "local_diagnostic_captures": 16,
+    "local_diagnostic_failures": 0,
+    "local_diagnostic_browser": "153.0.8010.12",
+    "local_diagnostic_is_production_evidence": false
+  },
+  "operational_corrections": [
+    "A candidate was rejected before replacement after the reviewed source changed; upload staging was removed",
+    "The Windows encoded-command length limit was exceeded before installation; installation now uses a hash-verified uploaded script file",
+    "A neighboring service start-time change was observed during earlier preparation; this task issued no commands to that service. Final neighboring health was checked independently."
+  ],
+  "full_qualification": false,
+  "test_containers_created": false
+}

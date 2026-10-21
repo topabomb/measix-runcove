@@ -5,7 +5,6 @@ use image_codec::{
     metadata::Orientation,
     AnimationDecoder, DynamicImage, ImageDecoder, ImageFormat, ImageReader, Limits,
 };
-use serde::Serialize;
 use std::{
     io::Cursor,
     sync::{Arc, OnceLock},
@@ -17,7 +16,7 @@ pub const SOURCE_LIMIT: usize = 10 * 1024 * 1024;
 /// the final MCP result budget and of text output limits.
 pub const REPORT_LIMIT: usize = SOURCE_LIMIT.div_ceil(3) * 4 + 64 * 1024;
 pub const OUTPUT_LIMIT: usize = 8 * 1024 * 1024;
-pub const MAX_EDGE: u32 = 1980;
+pub const MAX_EDGE: u32 = 2560;
 const PIXEL_LIMIT: u64 = 16_000_000;
 
 /// Acquire before reading binary input. Move the permit into the actual codec
@@ -31,9 +30,8 @@ pub async fn acquire() -> anyhow::Result<OwnedSemaphorePermit> {
         .await?)
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 pub struct Picture {
-    #[serde(skip)]
     pub bytes: Vec<u8>,
     pub mime_type: &'static str,
     pub original_width: u32,
@@ -43,6 +41,21 @@ pub struct Picture {
     pub resized: bool,
     pub orientation_corrected: bool,
     pub first_frame_only: bool,
+}
+
+impl Picture {
+    /// Public image metadata excludes the geometry kept by capture owners.
+    pub fn summary(&self) -> serde_json::Value {
+        serde_json::json!({"size": size_label(self.bytes.len()), "format": "WebP"})
+    }
+}
+
+pub fn size_label(bytes: usize) -> String {
+    match bytes {
+        0..=1023 => format!("{bytes} B"),
+        1024..=1_048_575 => format!("{:.1} KiB", bytes as f64 / 1024.0),
+        _ => format!("{:.1} MiB", bytes as f64 / 1_048_576.0),
+    }
 }
 
 fn limits() -> Limits {
@@ -58,7 +71,7 @@ fn dimensions(decoder: &impl ImageDecoder) -> anyhow::Result<(u32, u32)> {
     anyhow::ensure!(
         u64::from(width) * u64::from(height) <= PIXEL_LIMIT
             && decoder.total_bytes() <= 128 * 1024 * 1024,
-        "IMAGE_TOO_LARGE: decoded image exceeds 16 million pixels or the decode budget"
+        "IMAGE_TOO_LARGE: image exceeds the decoding limit"
     );
     Ok((width, height))
 }
@@ -148,7 +161,7 @@ pub fn process(bytes: Vec<u8>, output_budget: Option<usize>) -> anyhow::Result<P
     // Every image entry point uses one resize and one encoding policy.
     // Do not shrink again or lower quality when the remaining budget is small.
     if oriented.0.max(oriented.1) > MAX_EDGE {
-        image = image.resize(MAX_EDGE, MAX_EDGE, FilterType::Lanczos3);
+        image = image.resize(MAX_EDGE, MAX_EDGE, FilterType::CatmullRom);
     }
     picture.width = image.width();
     picture.height = image.height();
@@ -157,14 +170,16 @@ pub fn process(bytes: Vec<u8>, output_budget: Option<usize>) -> anyhow::Result<P
     let mut config = webp::WebPConfig::new()
         .map_err(|_| anyhow::anyhow!("IMAGE_ENCODING_FAILED: WebP configuration unavailable"))?;
     config.quality = 90.0;
-    config.method = 6;
+    config.method = 4;
+    config.alpha_quality = 100;
+    config.alpha_compression = 1;
     picture.bytes = webp::Encoder::from_rgba(&rgba, picture.width, picture.height)
         .encode_advanced(&config)
         .map_err(|e| anyhow::anyhow!("IMAGE_ENCODING_FAILED: {e:?}"))?
         .to_vec();
     anyhow::ensure!(
         picture.bytes.len() <= output_budget.unwrap_or(OUTPUT_LIMIT).min(OUTPUT_LIMIT),
-        "IMAGE_BUDGET_EXCEEDED: WebP Q90 output exceeds the remaining image budget"
+        "IMAGE_BUDGET_EXCEEDED: image exceeds the remaining image budget"
     );
     Ok(picture)
 }
@@ -195,29 +210,42 @@ mod tests {
             );
             assert!(!output.resized);
         }
-        let output = process(
-            encode(DynamicImage::new_rgba8(2100, 10), ImageFormat::Png),
-            None,
-        )
-        .unwrap();
-        assert_eq!(output.width, MAX_EDGE);
-        assert!(image_codec::load_from_memory(&output.bytes)
-            .unwrap()
-            .color()
-            .has_alpha());
-        assert_eq!(
-            image_codec::load_from_memory(&output.bytes)
+        for width in [256, MAX_EDGE - 1, MAX_EDGE, MAX_EDGE + 1] {
+            let source =
+                DynamicImage::ImageRgba8(image_codec::RgbaImage::from_fn(width, 4, |x, y| {
+                    image_codec::Rgba([40, 120, 200, ((x + y * 37) % 256) as u8])
+                }));
+            let output = process(encode(source.clone(), ImageFormat::Png), None).unwrap();
+            assert_eq!(output.width, width.min(MAX_EDGE));
+            assert_eq!(output.resized, width > MAX_EDGE);
+            let expected = if width > MAX_EDGE {
+                source.resize(MAX_EDGE, MAX_EDGE, FilterType::CatmullRom)
+            } else {
+                source
+            }
+            .to_rgba8();
+            let decoded = image_codec::load_from_memory(&output.bytes)
                 .unwrap()
-                .to_rgba8()
-                .get_pixel(0, 0)[3],
-            0
-        );
+                .to_rgba8();
+            assert_eq!(decoded.dimensions(), expected.dimensions());
+            assert!(decoded
+                .pixels()
+                .zip(expected.pixels())
+                .all(|(a, b)| a[3] == b[3]));
+            assert_eq!(
+                output.summary(),
+                serde_json::json!({"size":size_label(output.bytes.len()),"format":"WebP"})
+            );
+        }
+        assert_eq!(size_label(1023), "1023 B");
+        assert_eq!(size_label(1536), "1.5 KiB");
+        assert_eq!(size_label(1_048_576), "1.0 MiB");
     }
     #[test]
     fn one_resize_same_quality_for_files_and_sequences() {
         let source = encode(DynamicImage::new_rgb8(1440, 6000), ImageFormat::Png);
         let file = process(source.clone(), None).unwrap();
-        assert_eq!((file.width, file.height), (475, 1980));
+        assert_eq!((file.width, file.height), (614, 2560));
         assert_eq!((file.original_width, file.original_height), (1440, 6000));
         assert!(file.resized);
         let sequence = process(source.clone(), Some(file.bytes.len())).unwrap();
@@ -227,7 +255,7 @@ mod tests {
             .to_string()
             .contains("IMAGE_BUDGET_EXCEEDED"));
         let portrait = process(
-            encode(DynamicImage::new_rgb8(5, 2100), ImageFormat::Png),
+            encode(DynamicImage::new_rgb8(5, MAX_EDGE + 200), ImageFormat::Png),
             None,
         )
         .unwrap();

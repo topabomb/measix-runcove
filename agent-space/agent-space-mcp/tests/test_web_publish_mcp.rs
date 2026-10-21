@@ -332,6 +332,23 @@ async fn desktop_catalog_and_structured_arguments_reach_the_mcp_handlers() {
         let description = tool.description.as_deref().unwrap();
         assert!(!description.trim().is_empty());
         assert!(!description.contains("README.md"));
+        let disclosure = serde_json::to_string(tool).unwrap();
+        for detail in [
+            "1980",
+            "2560",
+            "CatmullRom",
+            "Lanczos",
+            "Q90",
+            "alpha_quality",
+            "resizing",
+            "encoding",
+        ] {
+            assert!(
+                !disclosure.contains(detail),
+                "{} exposes {detail}",
+                tool.name
+            );
+        }
         if ["browser_snapshot", "browser_act", "browser_read"].contains(&tool.name.as_ref()) {
             assert_eq!(
                 tool.input_schema.get("additionalProperties"),

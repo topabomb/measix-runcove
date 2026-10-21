@@ -1,0 +1,67 @@
+{
+  "date": "2026-10-21",
+  "source_revision_base": "c30568c8fbcbec9eedb8f7c8af6c71ba05f54ca9",
+  "source_sha256": "a9e012896938b553478620def8fb23d5759263e19dcf6929ccaf7d4fbba6bef4",
+  "uncommitted_source": true,
+  "binary_sha256": {
+    "agent-space-mcp": "b8183d404b880883444f4d08574fec467a89dfec0afabd35066d044b9231fa6d",
+    "agent-space-desktop": "42664f6f8e5803cf167139d7ace6374932ff7d7d1bbe64b5c5484d264adaaed2"
+  },
+  "image_rebuilt": false,
+  "test_containers_created": false,
+  "backup": false,
+  "migration": false,
+  "passed": true,
+  "checks": [
+    "temporary_space_initialized_before_update",
+    "installed_running_binaries_metadata_config_mounts_ports_verified",
+    "live_catalogue_omits_image_processing_details",
+    "existing_space_file_read_uses_compact_metadata_and_new_image_limit",
+    "annotated_snapshot_retains_internal_long_page_coordinate_mapping",
+    "production_image_retains_transparent_and_semtransparent_pixels"
+  ],
+  "catalogue_bytes_before": 23335,
+  "read_metadata_bytes_before": 202,
+  "deployed": true,
+  "catalogue_bytes_after": 23083,
+  "read_metadata_bytes_after": 70,
+  "read_summary": {
+    "format": "WebP",
+    "path": "/workspace/media-fixture.png",
+    "size": "362 B"
+  },
+  "alpha_samples": [
+    0,
+    127,
+    255
+  ],
+  "temporary_space_cleanup_confirmed": true,
+  "upload_staging_removed": true,
+  "original_accounts_config_mounts_preserved": true,
+  "production_and_peer_healthy": true,
+  "initial_verification_failure": {
+    "step": "page capture after long-page coordinate click",
+    "code": "STALE_OBSERVATION",
+    "completed_checks": 6,
+    "follow_up": "Read-only observations repeated on the same deployed binaries; no redeployment."
+  },
+  "follow_up_checks": [
+    "page_capture_and_saved_original_reread_are_consistent",
+    "desktop_sequence_and_task_retrieval_preserve_images_without_reencoding",
+    "live_installed_and_guest_helper_hashes_verified"
+  ],
+  "follow_up_temporary_space_cleanup_confirmed": true,
+  "follow_up_script_correction": "The first follow-up attempted to parse an already structured Bash JSON result twice; corrected the checker, with no product change.",
+  "frame_summary": {
+    "elapsed_secs": 0.1,
+    "format": "WebP",
+    "index": 1,
+    "size": "7.8 KiB"
+  },
+  "saved_summary": {
+    "format": "PNG",
+    "frame_index": 1,
+    "size": "23.4 KiB"
+  },
+  "capture_failure_boundary": "The first failure did not retain before/after state differences. Its follow-up used a different stable page, so it did not establish the cause or resolve that original event."
+}

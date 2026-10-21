@@ -151,12 +151,9 @@ pub(crate) async fn encode_snapshot(job: &Job, result: &mut Value) -> anyhow::Re
     let capture = &mut captures[0];
     picture_geometry(capture, &picture);
     if result["value"].is_object() {
-        result["value"]["image"] = json!({
-            "image_id":capture["image_id"],"width":picture.width,"height":picture.height,
-            "original_width":picture.original_width,"original_height":picture.original_height,
-            "resized":picture.resized,"scale":capture["scale"],"full_page":true,
-            "document_width":capture["content_width"],"document_height":capture["content_height"]
-        });
+        let mut image = picture.summary();
+        image["image_id"] = capture["image_id"].clone();
+        result["value"]["image"] = image;
     }
     result["captures"] = captures;
     result["images"] = json!([{"mimeType":picture.mime_type,
@@ -249,18 +246,11 @@ async fn capture_sequence(
         let now_ms = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis() as u64;
         let age = now_ms.saturating_sub(capture["at"].as_u64().unwrap_or(now_ms));
         let elapsed = (accepted.elapsed().as_millis() as u64).saturating_sub(age);
-        result["frames"].as_array_mut().unwrap().push(
-            json!({"index":index+1,"image_id":capture["image_id"],"elapsed_ms":elapsed,
-            "width":picture.width,"height":picture.height,"resized":picture.resized,
-            "original_width":picture.original_width,"original_height":picture.original_height}),
-        );
-        if params.view == "page" {
-            let frame = result["frames"].as_array_mut().unwrap().last_mut().unwrap();
-            frame["full_page"] = json!(true);
-            frame["scale"] = capture["scale"].clone();
-            frame["document_width"] = capture["content_width"].clone();
-            frame["document_height"] = capture["content_height"].clone();
-        }
+        let mut frame = picture.summary();
+        frame["index"] = json!(index + 1);
+        frame["image_id"] = capture["image_id"].clone();
+        frame["elapsed_ms"] = json!(elapsed);
+        result["frames"].as_array_mut().unwrap().push(frame);
         result["captures"].as_array_mut().unwrap().push(capture);
         result["images"].as_array_mut().unwrap().push(json!({"mimeType":picture.mime_type,"data":base64::engine::general_purpose::STANDARD.encode(&picture.bytes)}));
         result["captured_count"] = json!(index + 1);
@@ -295,8 +285,11 @@ async fn save_frame(
         })?;
     file["frame_index"] = json!(index + 1);
     file["image_id"] = capture["capture"]["image_id"].clone();
-    file["width"] = capture["capture"]["width"].clone();
-    file["height"] = capture["capture"]["height"].clone();
+    file["size"] = json!(agent_engine::media::size_label(bytes.len()));
+    file["format"] = json!("PNG");
+    let object = file.as_object_mut().unwrap();
+    object.remove("bytes");
+    object.remove("mime_type");
     result["files"].as_array_mut().unwrap().push(file);
     Ok(())
 }
@@ -410,7 +403,7 @@ mod image_tests {
     use tokio_util::sync::CancellationToken;
 
     #[tokio::test]
-    async fn snapshot_failure_never_publishes_private_png_or_geometry() {
+    async fn snapshot_images_keep_geometry_private_on_success_and_failure() {
         let job = Job {
             id: "image-test".into(),
             finished: Mutex::new(None),
@@ -422,6 +415,17 @@ mod image_tests {
             result: Mutex::new(None),
             modifies: false,
         };
+        // A transparent 3000x4 PNG exercises the real shared codec.
+        let mut success = json!({"value":{},"images":[{"data":"iVBORw0KGgoAAAANSUhEUgAAC7gAAAAECAYAAAAeGnKNAAAARUlEQVR4nO3BMQEAAADCoPVP7W0HoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADgDbuEAAG/9OHnAAAAAElFTkSuQmCC"}],
+            "captures":[{"image_id":"public-image","content_width":3000,"content_height":4}]});
+        encode_snapshot(&job, &mut success).await.unwrap();
+        assert_eq!(success["captures"][0]["width"], 2560);
+        assert!(success["captures"][0]["scale"].as_f64().unwrap() < 1.0);
+        let image = success["value"]["image"].as_object().unwrap();
+        assert_eq!(image.len(), 3);
+        assert_eq!(image["image_id"], "public-image");
+        assert_eq!(image["format"], "WebP");
+        assert!(image["size"].as_str().unwrap().ends_with(" B"));
         for cancelled in [false, true] {
             if cancelled {
                 job.cancel.cancel();

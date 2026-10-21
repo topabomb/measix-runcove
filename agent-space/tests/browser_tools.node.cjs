@@ -187,8 +187,8 @@ test('rounded preview dimensions map each coordinate axis independently',async()
  await fresh('/login');await page.setContent('<style>body{margin:0;width:1440px;height:10000px}button{position:absolute;left:100px;top:9950px;width:40px;height:2px;border:0;padding:0}</style><button aria-label="Thin target" onclick="window.hit=true"></button>');
  const v=await good('snapshot',{image:true}),c=captures.get(v.image.image_id);
  // Match the shared Rust resize's integer dimensions, deliberately nonuniform
- // by a fraction of a pixel: 1440x10000 -> 285x1980.
- c.width=285;c.height=1980;c.scale=c.width/c.content_width;
+ // by a fraction of a pixel: 1440x10000 -> 369x2560.
+ c.width=369;c.height=2560;c.scale=c.width/c.content_width;
  await act([{do:'click',image_id:c.image_id,x:120*c.width/c.content_width,y:9951*c.height/c.content_height}]);
  assert.equal(await page.evaluate(()=>window.hit),true);
 });

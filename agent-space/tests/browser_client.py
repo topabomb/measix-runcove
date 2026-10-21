@@ -1,7 +1,7 @@
 """Live qualification support. Requires a dedicated test Host and credential file.
 Never stores or prints credentials; initialize instructions are deliberately ignored.
 """
-import json,urllib.request,os,re,shlex
+import base64,json,urllib.request,os,re,shlex,struct
 from pathlib import Path
 Q=Path(os.environ["AGENT_SPACE_BROWSER_TEST_DIR"])
 BASE=os.environ.get("AGENT_SPACE_BROWSER_TEST_URL","http://127.0.0.1:"+(Q/"port").read_text())
@@ -76,3 +76,19 @@ def text(result):
  raw=next(c["text"] for c in result["content"] if c["type"]=="text")
  try:return json.loads(raw)
  except json.JSONDecodeError:return {'text':raw}
+
+def image_dimensions(reply):
+ """Inspect returned WebP bytes; geometry is intentionally absent from MCP text."""
+ data=base64.b64decode(next(c['data'] for c in reply['content'] if c['type']=='image'))
+ assert data[:4]==b'RIFF' and data[8:12]==b'WEBP'
+ offset=12
+ while offset+8<=len(data):
+  kind=data[offset:offset+4];size=int.from_bytes(data[offset+4:offset+8],'little');chunk=data[offset+8:offset+8+size]
+  if kind==b'VP8X':return 1+int.from_bytes(chunk[4:7],'little'),1+int.from_bytes(chunk[7:10],'little')
+  if kind==b'VP8 ':
+   assert chunk[3:6]==b'\x9d\x01\x2a'
+   width,height=struct.unpack('<HH',chunk[6:10]);return width&0x3fff,height&0x3fff
+  if kind==b'VP8L':
+   bits=int.from_bytes(chunk[1:5],'little');return 1+(bits&0x3fff),1+((bits>>14)&0x3fff)
+  offset+=8+size+(size%2)
+ raise AssertionError('WebP dimensions missing')

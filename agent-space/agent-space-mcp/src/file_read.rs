@@ -72,7 +72,7 @@ pub(crate) struct ReadParams {
     pub(crate) limit: Option<u64>,
     #[serde(default)]
     #[schemars(
-        description = "Return JPEG, PNG, WebP or GIF content as an image; default false, including null. Animations return the first frame. Text line options are ignored for images."
+        description = "View an image; default false, including null. Text line options are ignored for images."
     )]
     pub(crate) multimodal: Option<bool>,
 }
@@ -185,7 +185,7 @@ pub(crate) async fn read_file(
                 });
                 return Ok(match processed {
                     Ok(picture) => {
-                        let mut metadata = serde_json::to_value(&picture).unwrap();
+                        let mut metadata = picture.summary();
                         metadata["path"] = report["path"].clone();
                         CallToolResult::success(vec![
                             Content::text(metadata.to_string()),

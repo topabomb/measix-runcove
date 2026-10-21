@@ -32,7 +32,7 @@ Use `/workspace` for large downloads, archives and build outputs.
   windows too. Coordinates use pixels in the returned image.
 - Uploads and downloads use workspace paths. Saved downloads and screenshot files
   survive later task failure or cancellation. No JavaScript tool is provided.
-- `read` returns numbered text by default. Set `multimodal: true` to view JPEG, PNG, WebP or GIF; line-range parameters are ignored for images. Animations show the first frame.
+- `read` returns numbered text by default. Set `multimodal: true` to view an image; line-range parameters are ignored for images.
 - `/workspace/.agent-space/uploads` contains incomplete DAV uploads on the same
   disk as your files. Do not modify or manually clean it. It is hidden from DAV.
 - `web_publish` publishes a selected file, directory or running HTTP port. Use

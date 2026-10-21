@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-21",
+  "source_revision_base": "c30568c8fbcbec9eedb8f7c8af6c71ba05f54ca9",
+  "source_sha256": "c017de31745e27be8fac63aeb1f6994a5b9db2bbf33cdfc24384a34336912b1c",
+  "binary_sha256": {
+    "agent-space-mcp": "b772abfc272fa5b5c63baa4cef08f8581bc7f251755c6c8e046aef35a70eb094",
+    "agent-space-desktop": "f3c29579ca834c3406f49ff9c16820a1de9bb8c6750be3463f00b4b9cd076a76"
+  },
+  "replaced_binaries": [
+    "agent-space-mcp",
+    "agent-space-desktop"
+  ],
+  "image_rebuilt": false,
+  "test_containers_created": false,
+  "passed": true,
+  "checks": [
+    "running_binaries_metadata_accounts_config_mounts_and_ports_verified",
+    "read_and_png_gif_download_metadata_compact_original_bytes_preserved",
+    "annotated_long_page_coordinate_click_and_alpha_preserved",
+    "same_long_page_after_click_original_png_and_reread_consistent",
+    "desktop_sequence_task_retrieval_and_guest_helper_verified"
+  ],
+  "deployed": true,
+  "image_download_summaries": [
+    {
+      "format": "PNG",
+      "size": "2.1 KiB"
+    },
+    {
+      "format": "GIF",
+      "size": "42 B"
+    }
+  ],
+  "capture_stale_events": 1,
+  "temporary_space_cleanup_confirmed": true,
+  "upload_staging_removed": true,
+  "peer_restart_observed": false,
+  "original_accounts_config_mounts_preserved": true,
+  "production_and_peer_healthy": true,
+  "capture_recovery_boundary": {
+    "stale_events": 1,
+    "same_page_after_fresh_snapshot": true,
+    "coordinate_click_executed_once": true,
+    "cause_determined": false,
+    "before_after_capture_state_differences_retained": false
+  }
+}

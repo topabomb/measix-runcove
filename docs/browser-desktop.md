@@ -160,15 +160,17 @@ STALE_REF 后根据当前观察更新 ref，从未完成步骤继续，不重放
 
 page 捕获当前顶层文档完整布局，独立滚动容器和 iframe 只显示其当前渲染区域，不展开虚拟列表、无限列表或懒加载内容；desktop 捕获整个桌面及原生窗口，忽略 page_id。截图不主动滚动、不聚焦，捕获后核对文档、滚动位置和视口几何未改变；不用 Playwright 附着。目标只在首次选择，同一标签可导航；关闭后失败并保留已完成帧，不替换目标。桌面截图只依赖显示服务，浏览器卡住时仍可使用，不为截图重启已有浏览器。
 
-第一帧准备好即捕获，后续从捕获开始计至少 interval_secs 秒（默认 1，count=1 时忽略），处理慢则顺延；0 连续捕获。最多8帧，含准备、处理、等待的总期限最多600秒。运行中返回进度，终态含 view/requested_count/captured_count/frames，frames 有 index/image_id/elapsed_secs/width/height/original_width/original_height/resized；网页另有 full_page/document_width/document_height/scale。图像按同顺序放在标准 MCP image 块，不复制进文本。失败、取消、超时保留已有帧。
+第一帧准备好即捕获，后续从捕获开始计至少 interval_secs 秒（默认 1，count=1 时忽略），处理慢则顺延；0 连续捕获。最多8帧，含准备、处理、等待的总期限最多600秒。运行中返回进度，终态含 view/requested_count/captured_count/frames，frames 有 index/image_id/elapsed_secs/size/format；size 使用 B、KiB 或 MiB。图像按同顺序放在标准 MCP image 块，不复制进文本。失败、取消、超时保留已有帧。
 
 截图先取得完整范围的原始 PNG，不提前缩放或裁掉底部；不主动滚动以扩展懒加载或无限列表。源 PNG≤10 MiB、解码画布≤1600万像素；不能在源预算内表示完整范围时明确报错。
 
-图片返回统一由共享管线处理：`browser_snapshot(image=true)`、`screen_observe(view=page/desktop)` 和 `read(multimodal=true)` 均只进行一次 Lanczos3 等比例缩小，最长边≤1980像素，小图不放大；随后编码为 WebP Q90（method=6），保留透明度。快照标注在原始捕获阶段完成，返回实际尺寸与 scale；坐标动作继续使用返回图片的像素坐标和 image_id。整页图片按实际宽高分别换算横纵坐标，避免等比例缩放取整后，长页底部出现纵向偏移；scale 保留为宽度比例。`browser_act(wait/cancel)` 原样转交任务图片，不再次压缩。
+图片返回统一由共享管线处理：`browser_snapshot(image=true)`、`screen_observe(view=page/desktop)` 和 `read(multimodal=true)` 均只进行一次 CatmullRom 等比例缩小，最长边≤2560像素，小图不放大；随后编码为 WebP Q90（method=4），显式固定 alpha_quality=100、alpha_compression=1，缩放后的透明通道无损编码。快照标注在原始捕获阶段完成。工具说明不披露编码、缩放或透明度实现，图片元数据只含人类可读的 size 和 format，以及操作所需的 image_id、帧关联或文件路径；尺寸、缩放、方向修正和首帧标记留在内部。坐标动作继续使用返回图片的像素坐标和 image_id；整页图片在内部按实际宽高分别换算横纵坐标，避免取整后的长页纵向偏移。`browser_act(wait/cancel)` 原样转交任务图片，不再次压缩。
 
 每次结果的图片编码字节合计≤8 MiB，连续截图按实际累计大小计算预算，不按张数降低质量或分辨率；预算不足报 IMAGE_BUDGET_EXCEEDED 并保留已完成帧。完整结果仍遵循12 MiB传输预算，不进行逐级降质或二次缩放。长页面缩小后文字可能变小，需要精读时使用 browser_read 或查看保存的原始 PNG。
 
-默认不落盘。save_original=true 按缩放和 WebP 编码前的完整原始 PNG 字节保存，可选 save_dir 指定绝对目录，默认 `/workspace/agent-space/artifacts`。缺失目录自动创建，沿用空间文件权限；save_original=false 或 null 时忽略 save_dir。文件名 `screen-<10位Base62>.png` 原子创建、不覆盖。files 含 frame_index/image_id/path/width/height/bytes/mime_type；可经工作台、DAV 下载，或 read(multimodal=true) 查看。保存失败保留当前可显示帧，返回 SCREEN_SAVE_FAILED。
+默认不落盘。save_original=true 按缩放和 WebP 编码前的完整原始 PNG 字节保存，可选 save_dir 指定绝对目录，默认 `/workspace/agent-space/artifacts`。缺失目录自动创建，沿用空间文件权限；save_original=false 或 null 时忽略 save_dir。文件名 `screen-<10位Base62>.png` 原子创建、不覆盖。files 含 frame_index/image_id/path/size/format；可经工作台、DAV 下载，或 read(multimodal=true) 查看。保存失败保留当前可显示帧，返回 SCREEN_SAVE_FAILED。
+
+浏览器下载的 JPEG、PNG、WebP、GIF 文件在 files 与 downloads 中也只披露可读的 size、format 和必要的路径/来源；不重复文件名、原始字节计数或MIME字段。下载文件保留原字节，后续 read 查看时才进入图片处理管线。页面自身的表单字段不受图片元数据精简影响。
 
 ### 页面数量上限
 
@@ -213,11 +215,11 @@ read 保留 path/offset/limit，新增 `multimodal`，默认 false；自定义�
 |---|---|
 | 文本文件，任意 multimodal | 保持行号、offset/limit、默认500行及现有文本截断，不施加图片源大小限制 |
 | 图片，默认关闭 | MULTIMODAL_REQUIRED，提示设置 multimodal=true |
-| 支持图片，multimodal=true | 文件与尺寸说明加一个标准 MCP image 块 |
+| 支持图片，multimodal=true | path、size、format 加一个标准 MCP image 块 |
 | 图片同时指定 offset/limit | 忽略行范围；文本读取仍校验正整数行范围 |
 | 不支持、损坏或超限媒体 | 具体执行错误，isError=true；不退回文本读取 |
 
-按内容识别 JPEG、PNG、WebP、GIF，扩展名不决定处理方式；BM、II* 等短 ASCII 前缀不单独作为媒体依据。GIF、动态 WebP、APNG 只取首个合成帧并注明；不调用额外模型做 OCR 或图片描述。源文件≤10 MiB，解码画布≤1600万像素，每次一张。完整解码前检查尺寸、像素与解码预算，修正 EXIF 方向并按前述统一规则返回最长边≤1980像素的 WebP Q90，保留透明度；不会修改源文件。保存的原始 PNG 经 read 查看时同样返回处理后的图片，下载原文件仍保留原始像素和 PNG 字节。
+按内容识别 JPEG、PNG、WebP、GIF，扩展名不决定处理方式；BM、II* 等短 ASCII 前缀不单独作为媒体依据。GIF、动态 WebP、APNG 只取首个合成帧；不调用额外模型做 OCR 或图片描述。源文件≤10 MiB，解码画布≤1600万像素，每次一张。完整解码前检查尺寸、像素与解码预算，修正 EXIF 方向并按前述统一规则返回最长边≤2560像素的 WebP Q90，保留透明度；不会修改源文件。返回元数据仅含 path、size、format。保存的原始 PNG 经 read 查看时同样返回处理后的图片，下载原文件仍保留原始像素和 PNG 字节。
 
 文件脚本复用真实路径、同一打开句柄、共享读锁和有界二进制读取；沿用原文件准入、四路队列、期限、取消及活动租约。内部图片报文有独立预算，包含 Base64/JSON；50 KiB 默认文本上限不变，媒体报文截断、缺失或解析失败直接报错。Rust 共享模块负责识别、校验、方向、缩放和编码，无需 Workspace 安装 Pillow。每个处理进程的图片管线最多并行两项，等待及处理计入请求期限；取消或超时不会提前释放仍在执行的同步解码/编码所占许可及活动租约，实际处理结束后回收。Server、Standalone 共用实现。
 

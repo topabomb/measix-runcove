@@ -71,7 +71,7 @@ async function pageCapture(send, { marks = [] } = {}) {
     Math.max(width, height) * before.dpr > 32760
   )
     throw Error(
-      "IMAGE_TOO_LARGE: Original page exceeds the 16 million pixel capture limit",
+      "IMAGE_TOO_LARGE: Original page exceeds the capture limit",
     );
   const overlay = "__runcove_" + crypto.randomUUID();
   let response;

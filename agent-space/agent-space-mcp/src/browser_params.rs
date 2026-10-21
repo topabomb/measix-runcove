@@ -28,7 +28,7 @@ pub struct SnapshotParams {
     pub r#ref: Option<String>,
     #[serde(default)]
     #[schemars(
-        description = "Include a full-page WebP image annotated with element refs, proportionally reduced to a maximum edge of 1980 pixels; default false. For unannotated images, timed sequences or saved PNGs, use screen_observe."
+        description = "Include a page image annotated with element refs; default false. For unannotated images or saved originals, use screen_observe."
     )]
     pub image: Option<bool>,
     #[serde(default)]

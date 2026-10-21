@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Real MCP image and observation acceptance on disposable qualification hosts."""
 import base64
+import hashlib
 import json
 import shlex
 import time
@@ -8,7 +9,7 @@ import unittest
 import concurrent.futures
 import urllib.request
 from pathlib import Path
-from browser_client import Client, TARGET, BASE, Q, space_path, text, element
+from browser_client import Client, TARGET, BASE, Q, space_path, text, element, image_dimensions
 
 
 class MediaQualification(unittest.TestCase):
@@ -38,8 +39,9 @@ class MediaQualification(unittest.TestCase):
     self.assertFalse(reply.get('isError'),text(reply))
     images=[c for c in reply['content'] if c['type']=='image'];self.assertEqual(len(images),1)
     self.assertEqual(images[0]['mimeType'],'image/webp')
-    raw=base64.b64decode(images[0]['data'],validate=True)
-    self.assertTrue(raw.startswith(b'RIFF') and raw[8:12]==b'WEBP');self.assertLessEqual(max(text(reply)['width'],text(reply)['height']),1980)
+    base64.b64decode(images[0]['data'],validate=True)
+    self.assertLessEqual(max(image_dimensions(reply)),2560)
+    self.assertEqual(set(text(reply)),{'path','size','format'});self.assertEqual(text(reply)['format'],'WebP')
     self.assertNotIn('data',text(reply));self.assertNotIn('structuredContent',reply)
     if file=='wrong-extension.txt':
      expected=meta['sha256']
@@ -47,13 +49,12 @@ class MediaQualification(unittest.TestCase):
      checksum="import hashlib,json;from pathlib import Path;print(json.dumps({'sha256':hashlib.sha256(Path('/workspace/qualification/media/wrong-extension.txt').read_bytes()).hexdigest()}))"
      actual=client.good('bash',{'cmd':'python3 -c '+shlex.quote(checksum)})['sha256']
      self.assertEqual(actual,expected)
-    if file in ['first.gif','animated.png','animated.webp']:self.assertTrue(text(reply)['first_frame_only'])
     if file in ['animated.png','animated.webp']:
      data='data:'+images[0]['mimeType']+';base64,'+images[0]['data']
      code="return await page.evaluate(async data=>{const im=new Image();im.src=data;await im.decode();const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const x=c.getContext('2d');x.drawImage(im,0,0);return Array.from(x.getImageData(0,0,1,1).data);},"+json.dumps(data)+");"
      pixel=self.client.fixture_js(code);self.assertGreater(pixel[0],240);self.assertLess(pixel[2],20)
-    if file=='transparent.png':self.assertTrue(text(reply)['resized']);self.assertEqual(text(reply)['width'],1980)
-    if file=='orientation.jpeg':self.assertTrue(text(reply)['orientation_corrected']);self.assertEqual((text(reply)['width'],text(reply)['height']),(20,40))
+    if file=='transparent.png':self.assertEqual(image_dimensions(reply)[0],2560)
+    if file=='orientation.jpeg':self.assertEqual(image_dimensions(reply),(20,40))
    for args in [{'offset':1},{'limit':500},{'offset':0,'limit':0},{'offset':1,'limit':500}]:
     reply=client.tool('read',dict(path=root+'transparent.png',multimodal=True,**args));self.assertFalse(reply.get('isError'));self.assertTrue(any(c['type']=='image' for c in reply['content']))
    for file in ['corrupt.png','large.png','pixels.png','unsupported.bmp']:
@@ -107,17 +108,20 @@ class MediaQualification(unittest.TestCase):
     self.assertEqual(str(Path(path).parent),directory or '/workspace/agent-space/artifacts')
     self.assertRegex(Path(path).name,r'^screen-[0-9A-Za-z]{10}\.png$')
     self.assertEqual(file['frame_index'],frame['index']);self.assertEqual(file['image_id'],frame['image_id'])
-    self.assertGreaterEqual(file['width'],frame['width']);self.assertGreaterEqual(file['height'],frame['height'])
+    self.assertEqual(set(file),{'path','image_id','frame_index','size','format'});self.assertEqual(file['format'],'PNG')
+    self.assertEqual(set(frame),{'index','image_id','elapsed_secs','size','format'})
     saved=self.client.tool('read',{'path':path,'multimodal':True})
     self.assertFalse(saved.get('isError'),text(saved))
     image=next(c for c in saved['content'] if c['type']=='image')
     self.assertEqual(image['mimeType'],'image/webp')
     self.assertEqual(image['data'],returned['data'])
    self.assertEqual(len(paths),len(set(paths)))
-   code="const fs=await import('node:fs');return "+json.dumps(paths)+".map(path=>{const b=fs.readFileSync(path);return {png:b.subarray(0,8).toString('hex'),width:b.readUInt32BE(16),height:b.readUInt32BE(20),bytes:b.length};});"
+   code="const fs=await import('node:fs'),crypto=await import('node:crypto');return "+json.dumps(paths)+".map(path=>{const b=fs.readFileSync(path);return {png:b.subarray(0,8).toString('hex'),width:b.readUInt32BE(16),height:b.readUInt32BE(20),bytes:b.length,sha256:crypto.createHash('sha256').update(b).digest('hex')};});"
    disk=self.client.fixture_js(code)
-   for actual,file in zip(disk,value['files']):
-    self.assertEqual(actual,dict(png='89504e470d0a1a0a',width=file['width'],height=file['height'],bytes=file['bytes']))
+   for actual,returned in zip(disk,images):
+    width,height=image_dimensions({'content':[returned]})
+    self.assertEqual(actual['png'],'89504e470d0a1a0a');self.assertGreater(actual['bytes'],0)
+    self.assertGreaterEqual(actual['width'],width);self.assertGreaterEqual(actual['height'],height)
    if view=='page':
     # Use the existing authenticated workbench stream to download the original.
     base=BASE+space_path('desktop','desktop/api/')
@@ -127,7 +131,8 @@ class MediaQualification(unittest.TestCase):
     headers={'Cookie':cookie,'X-Desktop-Nonce':nonce,'Origin':BASE}
     with urllib.request.urlopen(urllib.request.Request(base+'files'+paths[0].removeprefix('/workspace'),headers=headers),timeout=10) as response:
      downloaded=response.read()
-    self.assertEqual(len(downloaded),value['files'][0]['bytes']);self.assertTrue(downloaded.startswith(bytes.fromhex('89504e470d0a1a0a')))
+    self.assertEqual(len(downloaded),disk[0]['bytes']);self.assertTrue(downloaded.startswith(bytes.fromhex('89504e470d0a1a0a')))
+    self.assertEqual(hashlib.sha256(downloaded).hexdigest(),disk[0]['sha256'])
   value,reply=self.finish(self.client.tool('screen_observe',{'view':'desktop','save_original':True,'save_dir':'/proc/agent-space-originals'}))
   self.assertTrue(reply.get('isError'));self.assertEqual(value['error']['code'],'SCREEN_SAVE_FAILED')
   self.assertEqual(value['captured_count'],1);self.assertNotIn('files',value)
@@ -263,15 +268,15 @@ time.sleep(5)
    self.assertFalse(holding.result(timeout=10).get('isError'))
   self.assertFalse(self.client.tool('read',{'path':root+'wrong-extension.txt','multimodal':True}).get('isError'))
 
- def test_07_dense_chinese_text_uses_the_shared_1980_pipeline(self):
+ def test_07_dense_chinese_text_uses_the_shared_image_pipeline(self):
   rows=''.join(f'<tr><td>{i:02d}</td><td>浏览器截图质量验证：原始 PNG、中文正文、代码与数字</td><td>用户空间 /workspace/reports</td><td>成功 123,456.78</td></tr>' for i in range(1,31))
-  html='<meta charset="utf-8"><style>body{margin:0;width:2200px;min-height:1450px;background:white;color:#182334;font:20px sans-serif}main{padding:40px}table{border-collapse:collapse;width:100%}td{padding:8px;border-bottom:1px solid #cbd5e1}th{text-align:left}code{color:#c02655}</style><main><h1>Runcove 图片清晰度验证</h1><p>统一规则：原始 PNG → 一次等比例缩小至长边 1980 → WebP Q90。English text, 0O1Il, <code>screen_observe(image_id)</code></p><table>'+rows+'</table></main>'
+  html='<meta charset="utf-8"><style>body{margin:0;width:3000px;min-height:1450px;background:white;color:#182334;font:20px sans-serif}main{padding:40px}table{border-collapse:collapse;width:100%}td{padding:8px;border-bottom:1px solid #cbd5e1}th{text-align:left}code{color:#c02655}</style><main><h1>Runcove 图片清晰度验证</h1><p>中文正文、English text, 0O1Il, <code>screen_observe(image_id)</code></p><table>'+rows+'</table></main>'
   self.client.navigate('data:text/html,<title>Image quality fixture</title>')
   self.client.fixture_js('await page.setContent('+json.dumps(html)+');return true;')
   for tool,args in [('browser_snapshot',{'image':True}),('screen_observe',{'view':'page','save_original':True})]:
    value,reply=self.finish(self.client.tool(tool,args));self.assertFalse(reply.get('isError'),value)
    data=value.get('value',value);frame=data['image'] if tool=='browser_snapshot' else data['frames'][0]
-   self.assertEqual(frame['width'],1980);self.assertEqual(frame['original_width'],2200)
+   self.assertEqual(image_dimensions(reply)[0],2560);self.assertEqual(frame['format'],'WebP')
    image=next(c for c in reply['content'] if c['type']=='image');self.assertEqual(image['mimeType'],'image/webp')
    (Q/('text-'+tool+'.webp')).write_bytes(base64.b64decode(image['data']))
    (Q/('text-'+tool+'.json')).write_text(json.dumps({'geometry':frame,'bytes':len(base64.b64decode(image['data'])),'files':data.get('files',[])},indent=2))

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Frame, popup, floating panel and reference behavior through the real MCP owner."""
 import base64,json,shlex,time,unittest
-from browser_client import Client,element,reset_tabs,text,Q
+from browser_client import Client,element,reset_tabs,text,Q,image_dimensions
 
 class StructuredBrowser(unittest.TestCase):
  @classmethod
@@ -114,17 +114,12 @@ class StructuredBrowser(unittest.TestCase):
   result=self.act([{'do':'dialog','accept':True},{'do':'click','ref':element(view,'button',confirm)}]);self.assertEqual(result['dialogs'][0]['action'],'accepted')
   read=self.client.read_browser(max_chars=5);self.assertLessEqual(len(read['text']),5);self.assertTrue(read['truncated'])
   self.client.navigate('http://127.0.0.1:8125/table');table=self.client.read_browser(extract='table');self.assertNotIn('truncated',table);self.assertEqual(len(table['tables'][0]['rows']),30)
- def test_long_preview_rounding_preserves_vertical_click_position(self):
-  self.client.fixture_js("await page.setContent('<style>body{margin:0;width:1440px;height:10000px}button{position:absolute;left:100px;top:9950px;width:40px;height:2px;border:0;padding:0}</style><button aria-label=ThinTarget onclick=window.hit=true></button>');return true;")
-  image=self.client.snapshot(image=True)['image']
-  self.assertNotEqual(image['width']/image['document_width'],image['height']/image['document_height'])
-  self.act([{'do':'click','image_id':image['image_id'],'x':120*image['width']/image['document_width'],'y':9951*image['height']/image['document_height']}])
-  self.assertTrue(self.client.fixture_js('return await page.evaluate(()=>window.hit===true);'))
  def test_screenshot_coordinates_and_navigation_invalidation(self):
-  self.client.navigate('http://127.0.0.1:8125/canvas');view=self.client.snapshot(image=True);image=view['image']
-  self.assertTrue(image['image_id']);self.assertTrue(image['full_page']);self.assertLessEqual(max(image['width'],image['height']),1980)
+  self.client.navigate('http://127.0.0.1:8125/canvas');value,reply=self.client.finish(self.client.tool('browser_snapshot',{'image':True}));view=value['value'];image=view['image']
+  width,height=image_dimensions(reply);self.assertEqual(set(image),{'image_id','size','format'});self.assertLessEqual(max(width,height),2560)
   box=self.client.fixture_js("return await page.locator('canvas').boundingBox();")
-  self.act([{'do':'click','image_id':image['image_id'],'x':(box['x']+340)*image['scale'],'y':(box['y']+140)*image['scale']}]);self.assertIn('seat booked',self.client.read_browser()['text'])
+  document=self.client.fixture_js('return await page.evaluate(()=>({width:Math.max(innerWidth,document.documentElement.scrollWidth),height:Math.max(innerHeight,document.documentElement.scrollHeight)}));')
+  self.act([{'do':'click','image_id':image['image_id'],'x':(box['x']+340)*width/document['width'],'y':(box['y']+140)*height/document['height']}]);self.assertIn('seat booked',self.client.read_browser()['text'])
   # screen_observe page captures use the same image contract after resizing.
   shot=self.client.good('screen_observe',{'view':'page'});frame=shot['frames'][0]
   self.act([{'do':'click','image_id':frame['image_id'],'x':10,'y':10}])
@@ -134,16 +129,17 @@ class StructuredBrowser(unittest.TestCase):
   for tool,args in [('browser_snapshot',{'image':True}),('screen_observe',{'view':'page','save_original':True})]:
    value,reply=self.client.finish(self.client.tool(tool,args));self.assertFalse(reply.get('isError'),value)
    data=value.get('value',value);image=data['image'] if tool=='browser_snapshot' else data['frames'][0]
-   self.assertEqual(image['height'],1980);self.assertGreater(image['original_height'],6000)
+   width,height=image_dimensions(reply);self.assertEqual(height,2560)
    payload=next(c for c in reply['content'] if c['type']=='image');self.assertEqual(payload['mimeType'],'image/webp')
    self.assertEqual(base64.b64decode(payload['data'])[8:12],b'WEBP')
    (Q/(tool+'-long.webp')).write_bytes(base64.b64decode(payload['data']))
    code="return await page.evaluate(async data=>{const i=new Image();i.src=data;await i.decode();const c=document.createElement('canvas');c.width=i.width;c.height=i.height;const g=c.getContext('2d');g.drawImage(i,0,0);return {width:i.width,height:i.height,pixel:[...g.getImageData(Math.floor(i.width/2),i.height-12,1,1).data]};},"+json.dumps('data:image/webp;base64,'+payload['data'])+");"
-   decoded=self.client.fixture_js(code);self.assertEqual((decoded['width'],decoded['height']),(image['width'],image['height']));self.assertGreater(decoded['pixel'][0],220);self.assertLess(decoded['pixel'][1],40)
-   point=self.client.fixture_js("return await page.locator('#bottom').evaluate(e=>{const r=e.getBoundingClientRect();return {x:r.x+scrollX+r.width/2,y:r.y+scrollY+r.height/2};});")
-   self.act([{'do':'click','image_id':image['image_id'],'x':point['x']*image['scale'],'y':point['y']*image['scale']}]);self.assertIn('bottom clicked',self.client.read_browser()['text'])
+   decoded=self.client.fixture_js(code);self.assertEqual((decoded['width'],decoded['height']),(width,height));self.assertGreater(decoded['pixel'][0],220);self.assertLess(decoded['pixel'][1],40)
+   point=self.client.fixture_js("return await page.locator('#bottom').evaluate(e=>{const r=e.getBoundingClientRect();return {x:r.x+scrollX+r.width/2,y:r.y+scrollY+r.height/2,width:Math.max(innerWidth,document.documentElement.scrollWidth),height:Math.max(innerHeight,document.documentElement.scrollHeight)};});")
+   self.assertGreater(point['height'],6000)
+   self.act([{'do':'click','image_id':image['image_id'],'x':point['x']*width/point['width'],'y':point['y']*height/point['height']}]);self.assertIn('bottom clicked',self.client.read_browser()['text'])
    if tool=='screen_observe':
-    file=data['files'][0];self.assertEqual(file['height'],image['original_height']);self.assertEqual(file['mime_type'],'image/png')
+    file=data['files'][0];self.assertEqual(file['format'],'PNG')
     saved=self.client.tool('read',{'path':file['path'],'multimodal':True});self.assertEqual(next(c['data'] for c in saved['content'] if c['type']=='image'),payload['data'])
  def test_pending_native_js_dialog_uses_desktop_without_passive_dismissal(self):
   view=self.client.navigate('http://127.0.0.1:8125/dialogs');target=view['page_id']

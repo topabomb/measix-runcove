@@ -93,7 +93,7 @@ struct ScreenParams {
     interval_secs: Option<u64>,
     #[serde(default)]
     #[schemars(
-        description = "Also save original captured PNGs before resizing or WebP encoding, and return their paths in files; default false."
+        description = "Also save original images and return their paths in files; default false."
     )]
     save_original: Option<bool>,
     #[serde(default, deserialize_with = "publish_params::optional_string")]
@@ -522,7 +522,7 @@ impl AgentSpaceMcpServer {
         ))
     }
     #[tool(
-        description = "Capture unannotated page or desktop images, reduced proportionally to a maximum edge of 1980 pixels. Page captures cover the currently rendered full document; use browser_read for long text. For native browser UI use view=desktop. Supports timed sequences and saving original PNGs. Use returned image_id and image-pixel coordinates for actions. While state=running, retrieve the same task with browser_act(op=\"wait\")."
+        description = "Capture unannotated page or desktop images. Page captures cover the currently rendered full document; use browser_read for long text. For native browser UI use view=desktop. Supports timed sequences and saving originals. Use returned image_id and image-pixel coordinates for actions. While state=running, retrieve the same task with browser_act(op=\"wait\")."
     )]
     async fn screen_observe(
         &self,
@@ -1260,8 +1260,7 @@ fn browser_result(
         object.remove("window");
         object.remove("nativeWindow");
     }
-    // Capture ownership stays in the host cache; callers need only the public
-    // identity and dimensions used for pointer actions.
+    // Capture geometry stays in the host cache; callers use the image identity.
     if let Some(object) = value.as_object_mut() {
         object.remove("captures");
     }
@@ -1328,6 +1327,15 @@ fn compact_browser_feedback(value: &mut serde_json::Value) {
             }
         }
     }
+    // Browser downloads can register image files as well as captured originals.
+    // Normalize only these owned lists; page fields may legitimately have the
+    // same names as image metadata.
+    if let Some(items) = value.get_mut("files") {
+        compact_image_files(items);
+    }
+    if let Some(items) = value.pointer_mut("/value/downloads") {
+        compact_image_files(items);
+    }
     if let Some(object) = value.as_object_mut() {
         object.remove("phase");
         object.remove("logs");
@@ -1353,6 +1361,34 @@ fn compact_browser_feedback(value: &mut serde_json::Value) {
         value["error"]["message"] = json!(
             "The user controls the desktop. Observation remains available; resume actions after control is returned."
         );
+    }
+}
+fn compact_image_files(value: &mut serde_json::Value) {
+    let Some(items) = value.as_array_mut() else {
+        return;
+    };
+    for item in items {
+        let Some(object) = item.as_object_mut() else {
+            continue;
+        };
+        let format = match object.get("mime_type").and_then(|v| v.as_str()) {
+            Some("image/png") => "PNG",
+            Some("image/jpeg") => "JPEG",
+            Some("image/webp") => "WebP",
+            Some("image/gif") => "GIF",
+            _ => continue,
+        };
+        if let Some(bytes) = object.remove("bytes").and_then(|v| v.as_u64()) {
+            object.insert(
+                "size".into(),
+                json!(agent_engine::media::size_label(bytes as usize)),
+            );
+        }
+        object.insert("format".into(), json!(format));
+        object.remove("mime_type");
+        if object.contains_key("path") {
+            object.remove("name");
+        }
     }
 }
 fn browser_error(message: &str) -> serde_json::Value {
@@ -1477,7 +1513,8 @@ mod tests {
         let long = "x".repeat(8000);
         let result = browser_result(Ok(json!({"task_id":"id","state":"failed",
             "error":long,"side_effects":"may_have_occurred","cleanup_confirmed":false,
-            "value":{"partial":true},"files":[{"path":"/workspace/result.txt"}],
+            "value":{"partial":true,"downloads":[{"path":"/workspace/image.png","name":"image.png","bytes":1536,"mime_type":"image/png","url":"https://example.test/image.png"}],"fields":[{"name":"width","value":"3000"}]},
+            "files":[{"path":"/workspace/result.txt"},{"path":"/workspace/image.png","name":"image.png","bytes":1536,"mime_type":"image/png"}],
             "images":[{"data":"AA==","mimeType":"image/png"}]})));
         assert_eq!(result.is_error, Some(true));
         let wire = serde_json::to_value(result).unwrap();
@@ -1491,6 +1528,15 @@ mod tests {
         assert_eq!(body["cleanup_confirmed"], false);
         assert_eq!(body["value"]["partial"], true);
         assert_eq!(body["files"][0]["path"], "/workspace/result.txt");
+        assert_eq!(
+            body["files"][1],
+            json!({"path":"/workspace/image.png","size":"1.5 KiB","format":"PNG"})
+        );
+        assert_eq!(
+            body["value"]["downloads"][0],
+            json!({"path":"/workspace/image.png","size":"1.5 KiB","format":"PNG","url":"https://example.test/image.png"})
+        );
+        assert_eq!(body["value"]["fields"][0]["value"], "3000");
         assert_eq!(wire["content"][1]["type"], "image");
         let success = browser_result(Ok(json!({"state":"succeeded","value":long})));
         let wire = serde_json::to_value(success).unwrap();

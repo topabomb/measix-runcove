@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-21",
+  "source_sha256": "a9e012896938b553478620def8fb23d5759263e19dcf6929ccaf7d4fbba6bef4",
+  "scope": "targeted local checks and binary-only production update; no new qualification containers",
+  "tests": {
+    "media_unit": 5,
+    "mcp_unit_no_default_features": 34,
+    "mcp_http_contract": 5,
+    "desktop_helper_unit": 9,
+    "total_passed": 53
+  },
+  "checks": {
+    "affected_clippy_default_all_targets": true,
+    "affected_clippy_no_default_features_lib_bins": true,
+    "cargo_fmt": true,
+    "python_syntax": true,
+    "node_syntax": true,
+    "git_diff_check": true
+  },
+  "initial_check_correction": "No-default-features Clippy all-targets includes existing MSB-only integration tests. Retried with the documented lib/bins scope; default-features all-targets also passed.",
+  "build": {
+    "binary_export_only": true,
+    "sqlite_linked": "3.51.3",
+    "command": "docker build --target binary --output type=local,dest=target/media-unify-20261021/out --progress=plain -f target/media-unify-20261021/Dockerfile.export .",
+    "agent-space-mcp_sha256": "b8183d404b880883444f4d08574fec467a89dfec0afabd35066d044b9231fa6d",
+    "agent-space-desktop_sha256": "42664f6f8e5803cf167139d7ace6374932ff7d7d1bbe64b5c5484d264adaaed2"
+  },
+  "full_qualification": false,
+  "source_committed": false,
+  "pushed": false
+}

@@ -26,7 +26,7 @@ data = png(500, 500, noise=True)
 (root/'wrong-extension.txt').write_bytes(data)
 (root/'large-output.png').write_bytes(png(1500, 1200, noise=True))
 (root/'near-limit.png').write_bytes(png(1800, 1800, noise=True))
-(root/'transparent.png').write_bytes(png(2100, 20, alpha=True))
+(root/'transparent.png').write_bytes(png(3000, 20, alpha=True))
 (root/'corrupt.png').write_bytes(b'\x89PNG\r\n\x1a\ninvalid')
 with (root/'large.png').open('wb') as stream:
     stream.write(b'\x89PNG\r\n\x1a\n')
