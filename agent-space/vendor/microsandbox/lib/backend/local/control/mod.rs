@@ -1,8 +1,10 @@
 //! Backend-owned, identity-verified runtime control sessions.
 
+#[cfg(all(test, any(target_os = "linux", target_os = "macos")))]
+mod database_tests;
 #[cfg(all(test, unix))]
 mod delivery_tests;
-mod identity;
+pub(super) mod identity;
 #[cfg(all(test, unix))]
 mod lifecycle_tests;
 mod owner;

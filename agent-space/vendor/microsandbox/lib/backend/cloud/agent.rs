@@ -27,13 +27,17 @@ impl Backend for CloudBackend {
         BackendKind::Cloud
     }
 
-    fn info(&self) -> BackendInfo {
-        BackendInfo {
+    fn info(&self) -> crate::MicrosandboxResult<BackendInfo> {
+        Ok(BackendInfo {
             kind: BackendKind::Cloud,
             api_url: Some(self.url.clone()),
             source: self.selection_source,
             profile: self.profile.clone(),
-        }
+        })
+    }
+
+    fn as_cloud(&self) -> Option<&CloudBackend> {
+        Some(self)
     }
 
     fn sandboxes(&self) -> &dyn SandboxBackend {
@@ -150,7 +154,7 @@ mod tests {
 
         for bound in [false, true] {
             let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-            let backend = CloudBackend::new(
+            let backend = crate::test_support::cloud_backend(
                 format!("http://{}", listener.local_addr().unwrap()),
                 "test-key",
             )
@@ -201,7 +205,7 @@ mod tests {
 
         for cancel in [false, true] {
             let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-            let backend = CloudBackend::new(
+            let backend = crate::test_support::cloud_backend(
                 format!("http://{}", listener.local_addr().unwrap()),
                 "test-key",
             )
@@ -278,7 +282,8 @@ mod tests {
             }
             paths
         });
-        let backend: Arc<dyn Backend> = Arc::new(CloudBackend::new(url, "test-key").unwrap());
+        let backend: Arc<dyn Backend> =
+            Arc::new(crate::test_support::cloud_backend(url, "test-key").unwrap());
         let make_handle = |backend, id: &str| {
             crate::sandbox::Sandbox::from_cloud_state(
                 backend,

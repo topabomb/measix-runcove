@@ -8,7 +8,7 @@ Standalone 的 `StateStore::standalone` 只建立固定空间的只读内存访�
 
 Standalone 的桌面控制 owner 异常死亡时不能证明所有独立桌面后代已经结束：保留受保护的实例记录，控制进入 `BLOCKED`，拒绝创建第二个桌面 owner，错误明确要求重启容器。基础文件和命令仍可使用；容器重启由 Docker 清空原 PID namespace 后恢复。正常关闭桌面和正常停服继续使用既有后代清理边界，不新增通用守护或第二套回收器。
 
-Server 是单节点、可独立部署的托管空间服务。它为每个本地账号维护一个隔离的 microsandbox VM、持久根盘和 `/workspace` 独立磁盘卷，提供 Streamable HTTP MCP、文件状态用户管理，WebDAV 文件交换，以及随空间运行 session 结束的临时网页发布。当前锁定 microsandbox SDK、CLI 和运行时 0.7.2，使用可核验的本地临时补丁；VM 元数据由 SDK／runtime 维护，Agent Space 不直接写 MSB 数据库。
+Server 是单节点、可独立部署的托管空间服务。它为每个本地账号维护一个隔离的 microsandbox VM、持久根盘和 `/workspace` 独立磁盘卷，提供 Streamable HTTP MCP、文件状态用户管理，WebDAV 文件交换，以及随空间运行 session 结束的临时网页发布。microsandbox SDK、CLI 和运行时使用统一锁定的版本及可核验的本地临时补丁，来源和撤销条件见[运行时维护](runtime.md)；VM 元数据由 SDK／runtime 维护，Agent Space 不直接写 MSB 数据库。
 
 本文件说明实现的所有权与生命周期；接口、配置、操作和 MEASIX 接入步骤见[功能与接入参考](server-api.md)，容器部署见[Docker 部署](deployment.md)。WebDAV helper 和外部 DAV 入口已实现，固定版本验证范围单独登记；当前不提供平台 quota 或 compute/storage metering。
 

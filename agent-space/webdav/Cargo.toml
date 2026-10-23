@@ -24,7 +24,7 @@ uuid = { version = "1", features = ["v4"] }
 
 [dev-dependencies]
 agent-engine = { path = ".." }
-microsandbox = "=0.7.2"
+microsandbox = "=0.7.9"
 tempfile = "3"
 sha2 = "0.10"
 

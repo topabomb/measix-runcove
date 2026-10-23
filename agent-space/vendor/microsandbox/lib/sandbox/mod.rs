@@ -15,20 +15,27 @@ pub(crate) use builder::prepare_local_snapshot_restore;
 mod cloud;
 mod compact;
 pub(crate) mod config;
-#[cfg(any(windows, test))]
+#[cfg(test)]
 mod control_pipe;
 pub mod exec;
+#[cfg(feature = "local")]
+mod exit;
 #[cfg(feature = "local")]
 pub(crate) mod flat_rootfs;
 pub mod fs;
 mod handle;
 pub(crate) mod identity;
 pub mod init;
+pub mod jobs;
 pub(crate) mod metrics;
 #[cfg(feature = "local")]
 mod modify;
 #[cfg(feature = "local")]
 mod patch;
+#[cfg(all(feature = "local", windows))]
+pub(crate) use patch::{
+    windows_mark_delete, windows_open_relative_for_removal, windows_remove_open_entry,
+};
 #[cfg(feature = "local")]
 pub(crate) mod pause;
 #[cfg(all(feature = "local", windows))]
@@ -112,7 +119,9 @@ pub(crate) fn reserved_label_prefix(key: &str) -> Option<&'static str> {
 // `mod patch` and `mod types` are private; re-export the entry points the
 // local backend's lifecycle and create methods under `backend/local/` call.
 #[cfg(feature = "local")]
-pub(crate) use builder::{apply_checkpoint_restore_constraints, apply_snapshot_root_layout};
+pub(crate) use builder::{
+    apply_checkpoint_restore_constraints, apply_snapshot_guest_clock, apply_snapshot_root_layout,
+};
 #[cfg(feature = "local")]
 pub(crate) use modify::control_checkpoint_create;
 #[cfg(feature = "local")]
@@ -134,11 +143,15 @@ pub(crate) use types::validate_volume_mounts;
 
 pub use crate::logs::{LogEntry, LogOptions, LogSource, LogStreamOptions};
 pub use attach::AttachOptionsBuilder;
+#[allow(deprecated)]
 pub use branch::{BranchBuilder, BranchManyBuilder, BranchOutcome};
+pub use branch::{ForkBuilder, ForkManyBuilder, ForkOutcome};
 pub use builder::{RegistryConfigBuilder, SandboxBuilder};
 pub use compact::{DiskCompactionBuilder, DiskCompactionDiskResult, DiskCompactionResult};
-pub use config::SandboxConfig;
+pub use config::{SandboxConfig, SandboxConfigPatch};
 pub use exec::{ExecOptionsBuilder, ExecOutput, Rlimit, RlimitResource};
+#[cfg(feature = "local")]
+pub use exit::{SandboxRunExit, SandboxTerminationReason};
 pub use fs::{
     FsEntry, FsEntryKind, FsHandle, FsMetadata, FsOpenOptions, FsReadStream, FsSetAttrs,
     FsWriteSink, SandboxFsOps,
@@ -167,22 +180,23 @@ pub use microsandbox_network::policy::{
     Action as NetworkAction, NetworkPolicy, NetworkProfile, Rule as NetworkRule,
 };
 #[cfg(feature = "net")]
-pub use microsandbox_network::{OutboundProxy, Socks5Credentials};
+pub use microsandbox_network::{HttpConnectCredentials, OutboundProxy, Socks5Credentials};
 #[cfg(feature = "local")]
 pub use microsandbox_runtime::control::PauseControlState as SandboxPauseState;
 pub use microsandbox_types::SandboxLogLevel as LogLevel;
 pub use microsandbox_types::{CpuPlacement, PullPolicy};
 #[cfg(feature = "net")]
 pub use microsandbox_types::{
-    DnsConfigPatch, HostPattern, InterfaceOverridesPatch, NetworkRateLimiterConfigPatch,
-    SecretSubstitution, SecretViolationAction, SecretsConfigPatch, TlsConfigPatch,
+    DnsConfigPatch, HostPattern, HttpConfig, HttpConfigPatch, HttpDenyResponseFormat,
+    InterfaceOverridesPatch, NetworkRateLimiterConfigPatch, SecretSubstitution,
+    SecretViolationAction, SecretsConfigPatch, TlsConfigPatch,
 };
 pub use microsandbox_types::{
-    EnvVar, MAX_HOSTNAME_BYTES, MAX_SANDBOX_NAME_BYTES, NetworkSpec, NetworkSpecPatch,
-    PortProtocol, PublishedPortSpec, SandboxConfigPatch, SandboxLogLevel, SandboxPolicyPatch,
+    EnvVar, GuestClockPolicy, MAX_HOSTNAME_BYTES, MAX_SANDBOX_NAME_BYTES, NetworkSpec,
+    NetworkSpecPatch, PortProtocol, PublishedPortSpec, SandboxLogLevel, SandboxPolicyPatch,
     SandboxResources, SandboxResourcesPatch, SandboxRuntimeOptions, SandboxRuntimeOptionsPatch,
-    SandboxSpec, TransparentHugePagePolicy, VsockRouteSpec, VsockSocketType, VsockSpec,
-    VsockSpecPatch,
+    SandboxSpec, SandboxSpecPatch, TransparentHugePagePolicy, VsockRouteSpec, VsockSocketType,
+    VsockSpec, VsockSpecPatch,
 };
 pub use microsandbox_types::{ExternalMountRestorePolicy, ExternalMountWarning};
 #[cfg(feature = "local")]
@@ -194,14 +208,17 @@ mod external_mounts;
 mod restore_warnings;
 mod stop;
 #[cfg(feature = "local")]
-pub(crate) use external_mounts::resolve_external_mounts;
+pub(crate) use external_mounts::{
+    external_bind_guest_paths, require_guest_mounts, require_recorded_mounts,
+    resolve_external_mounts,
+};
 #[cfg(feature = "local")]
 pub use modify::{
     ChangeKind, ConfigPlannedChange, ModificationConflict, ModificationDisposition,
-    ModificationPolicy, ModificationWarning, PlannedChange, ResourceConvergenceState, ResourceKind,
-    ResourceResizeStatus, SandboxModificationBuilder, SandboxModificationPatch,
-    SandboxModificationPlan, SecretChangeKind, SecretModificationPatch, SecretPatchBuilder,
-    SecretPlannedChange, SecretSource,
+    ModificationPolicy, ModificationWarning, PlannedChange, PublishedPortKey,
+    ResourceConvergenceState, ResourceKind, ResourceResizeStatus, SandboxModificationBuilder,
+    SandboxModificationPatch, SandboxModificationPlan, SecretChangeKind, SecretModificationPatch,
+    SecretPatchBuilder, SecretPlannedChange, SecretSource,
 };
 #[cfg(feature = "ssh")]
 pub use ssh::{
@@ -386,18 +403,25 @@ impl Sandbox {
 
     #[cfg(feature = "local")]
     fn create_with_pull_progress_and_mode(
-        config: SandboxConfig,
+        mut config: SandboxConfig,
         requested_mode: SpawnMode,
     ) -> (
         PullProgressHandle,
         tokio::task::JoinHandle<MicrosandboxResult<Self>>,
     ) {
+        let backend = crate::backend::default_backend();
+        // Resolve before spawning: the task may first run after the caller changes cwd.
+        let paths = if backend.as_local().is_some() {
+            crate::backend::local::host_paths::resolve_host_paths(&mut config)
+        } else {
+            Ok(())
+        };
         let (handle, sender) = progress_channel();
         let task = tokio::spawn(async move {
+            paths?;
             let mode = create_spawn_mode(&config, requested_mode);
             // Pull progress is local-only; ignore the channel on non-local
             // backends and dispatch through the trait without progress events.
-            let backend = crate::backend::default_backend();
             match backend.kind() {
                 crate::backend::BackendKind::Local => {
                     let local = backend.as_local().ok_or_else(|| {
@@ -1691,6 +1715,7 @@ pub(crate) fn validate_env(env: &[EnvVar]) -> MicrosandboxResult<()> {
                 var.key
             )));
         }
+        init::validate_env_pair("environment variable", &var.key, &var.value)?;
     }
     Ok(())
 }
@@ -1736,7 +1761,7 @@ pub(super) async fn remove_local_persisted_sandbox(
     }
     if !matches!(
         current.status,
-        SandboxStatus::Stopped | SandboxStatus::Crashed
+        SandboxStatus::Created | SandboxStatus::Stopped | SandboxStatus::Crashed
     ) {
         return Err(crate::MicrosandboxError::SandboxStillRunning(format!(
             "cannot remove sandbox {name:?}: status is {:?}",
@@ -1780,7 +1805,7 @@ pub(super) async fn remove_local_persisted_sandbox(
     }
     if !matches!(
         current.status,
-        SandboxStatus::Stopped | SandboxStatus::Crashed
+        SandboxStatus::Created | SandboxStatus::Stopped | SandboxStatus::Crashed
     ) {
         return Err(crate::MicrosandboxError::SandboxStillRunning(format!(
             "cannot remove sandbox {name:?}: status changed to {:?}",
@@ -2077,6 +2102,8 @@ mod tests {
     async fn persisted_removal_rejects_a_stale_sandbox_identity() {
         let temp = tempdir().unwrap();
         let backend = LocalBackend::builder()
+            .config_path(temp.path().join("home").join("config.json"))
+            .managed_config_path(temp.path().join("home").join("managed.json"))
             .home(temp.path().join("home"))
             .build()
             .await
@@ -2107,6 +2134,41 @@ mod tests {
         assert!(sandbox_dir.join("marker").exists());
     }
 
+    #[tokio::test]
+    async fn persisted_removal_removes_a_sandbox_that_never_started() {
+        let temp = tempdir().unwrap();
+        let backend = LocalBackend::builder()
+            .config_path(temp.path().join("home").join("config.json"))
+            .managed_config_path(temp.path().join("home").join("managed.json"))
+            .home(temp.path().join("home"))
+            .build()
+            .await
+            .unwrap();
+        let pools = backend.db().await.unwrap();
+        let created = super::sandbox_entity::ActiveModel {
+            name: Set("never-started".to_string()),
+            config: Set("{}".to_string()),
+            status: Set(SandboxStatus::Created),
+            ephemeral: Set(false),
+            ..Default::default()
+        }
+        .insert(pools.write())
+        .await
+        .unwrap();
+        let sandbox_dir = backend.sandboxes_dir().join("never-started");
+        std::fs::create_dir_all(&sandbox_dir).unwrap();
+
+        remove_local_persisted_sandbox(&backend, "never-started", created.id)
+            .await
+            .unwrap();
+
+        assert!(!sandbox_dir.exists());
+        assert!(matches!(
+            remove_local_persisted_sandbox(&backend, "never-started", created.id).await,
+            Err(crate::MicrosandboxError::SandboxNotFound(_))
+        ));
+    }
+
     #[cfg(unix)]
     #[tokio::test]
     async fn persisted_removal_trusts_runtime_ownership_over_a_recycled_pid() {
@@ -2114,6 +2176,8 @@ mod tests {
 
         let temp = tempdir().unwrap();
         let backend = LocalBackend::builder()
+            .config_path(temp.path().join("home").join("config.json"))
+            .managed_config_path(temp.path().join("home").join("managed.json"))
             .home(temp.path().join("home"))
             .build()
             .await
@@ -2161,8 +2225,7 @@ mod tests {
     async fn persisted_removal_waits_for_snapshot_lineage_owner() {
         let temp = tempdir().unwrap();
         let backend = std::sync::Arc::new(
-            LocalBackend::builder()
-                .home(temp.path().join("home"))
+            crate::test_support::local_backend_builder(temp.path().join("home"))
                 .build()
                 .await
                 .unwrap(),

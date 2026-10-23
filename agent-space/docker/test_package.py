@@ -44,19 +44,21 @@ class QualificationImageIdentity(unittest.TestCase):
     spec=importlib.util.spec_from_file_location('identity_probe',Path(__file__).with_name(script))
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
     root=Path(directory)/'agent-space';root.mkdir()
-    evidence=root.parent/'docs/evidence/runcove-split-20261015';evidence.mkdir(parents=True)
     identities={'candidate':'sha256:'+'a'*64,'old':'sha256:'+'b'*64}
     tags=dict(identities);launched=[]
-    (evidence/'production-baseline.json').write_text(json.dumps({'imageId':identities['old']}))
+    if script=='verify-workspace-import.py':
+     evidence=root.parent/'docs/evidence/runcove-split-20261015';evidence.mkdir(parents=True)
+     (evidence/'production-baseline.json').write_text(json.dumps({'imageId':identities['old']}))
     lifecycle=root/'lifecycle.json'
     lifecycle.write_text(json.dumps({'passed':True,'cleanup_passed':True,'image_id':identities['candidate'],'idle_seconds':310}))
     argv=[script,'--image','candidate']
     if script=='verify-desktop.py':argv+=['--lifecycle',str(lifecycle)]
-    if script in ('verify-production-upgrade.py','verify-workspace-import.py'):argv+=['--old-image','old']
+    if script in ('verify-production-upgrade.py','verify-workspace-import.py'):argv+=['--old-image',identities['old'] if script=='verify-production-upgrade.py' else 'old']
     if script in ('verify-dav-large.py','verify-storage-failure.py'):argv+=['--evidence',str(root/'result.json')]
     def docker(*args,**kwargs):
      if args[:2]==('image','inspect'):
-      identity=tags.get(args[2],args[2]);tags[args[2]]='sha256:'+'c'*64
+      identity=tags.get(args[2],args[2])
+      if not args[2].startswith('sha256:'):tags[args[2]]='sha256:'+'c'*64
       info={'Id':identity,'Config':{'Labels':{'io.runcove.target':'standalone'}}}
       return identity if '--format' in args else json.dumps([info])
      if args[:2]==('volume','create'):
@@ -75,7 +77,7 @@ class QualificationImageIdentity(unittest.TestCase):
      stack.enter_context(contextlib.redirect_stdout(io.StringIO()))
      for name in ('ROOT','PROJECT'):
       if hasattr(module,name):stack.enter_context(patch.object(module,name,root))
-     if hasattr(module,'locked_msb_version'):stack.enter_context(patch.object(module,'locked_msb_version',return_value='0.7.2'))
+     if hasattr(module,'locked_msb_version'):stack.enter_context(patch.object(module,'locked_msb_version',return_value='0.7.9'))
      if hasattr(module,'docker'):stack.enter_context(patch.object(module,'docker',docker))
      else:stack.enter_context(patch.object(module.subprocess,'run',command))
      with self.assertRaises(LaunchReached):module.main()

@@ -261,8 +261,15 @@ token_env = "AGENT_SPACE_ADMIN_TOKEN"
             report['success'] = False
             report['finalizationError'] = redact(traceback.format_exc())
             print(label + ': finalization error ' + report['finalizationError'], flush=True)
-        for args in [('rm', '-f', name), ('volume', 'rm', volume, log_volume)]:
-            subprocess.run(['docker', *args], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        cleanup_errors = []
+        for args in [('rm', '-f', '-v', name), ('volume', 'rm', volume, log_volume)]:
+            result = subprocess.run(['docker', *args], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if result.returncode:
+                cleanup_errors.append(args[0])
+        report['cleanup_passed'] = not cleanup_errors
+        if cleanup_errors:
+            report['success'] = False
+            report['cleanup_errors'] = cleanup_errors
         report['durationSeconds'] = round(time.monotonic() - started, 2)
         report['artifacts'] = str(root)
         (root / 'result.json').write_text(json.dumps(report, indent=2) + '\n')

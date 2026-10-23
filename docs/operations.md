@@ -175,27 +175,6 @@ tar tzf "$BACKUP_DIR/data.tar.gz" >/dev/null
 4. 副本通过也不等于历史写入全部保留。使用已资格验证的匹配服务和 CLI 做受控容器替换，重新建立进程连接；不热换池、不重建空间或重放结果未知的命令。先在独立卷演练，实际切换按上文升级与回滚流程。
 5. 核对原凭据、账号/磁盘摘要、缓存 CLI 与实际 VM 可执行文件，验证 MCP、DAV PROPFIND/GET/Range/写入、桌面及重启。保留失败卷和修复后写入；清理旧容器时不用 `-v`，不得清理仍被使用的业务卷。
 
-### 旧版 SQLite-only 修复
+### 历史 SQLite-only 修复记录
 
-此路径只用于 **SDK/CLI 0.7.2、服务已链接 SQLite 3.51.3** 的历史部署；它保留原静态/动态协议、Token、配置和盘，不执行账号迁移。当前 SDK/runtime 生命周期补丁是配对资产，`sdk_source_modified=true` 的 CLI 不能单独装入旧应用，构建脚本会拒绝。其他版本应使用匹配源码完整构建并隔离验证。
-
-此旧版路径依赖运维方另行保存、与目标镜像匹配且已审计的 SQLite-only 源码归档；公开仓库不包含该旧版本，当前源码也不能代替它。只有具备匹配归档并完成隔离演练时，才可参考下面的维护流程；否则使用完整版本升级与回滚流程。`SQLITE_ONLY_SOURCE` 指向该归档的 `agent-space/`：
-
-```bash
-BASE_IMAGE=$(docker inspect "$CONTAINER" --format '{{.Image}}')
-docker build --target runtime-assets --output type=local,dest=/safe-build/sqlite351-runtime \
-  -f "$SQLITE_ONLY_SOURCE/docker/Dockerfile" "$SQLITE_ONLY_SOURCE"
-python3 docker/build-runtime-repair.py --base-image "$BASE_IMAGE" \
-  --runtime-assets /safe-build/sqlite351-runtime --image "$REPAIR_IMAGE"
-python3 docker/repair-container.py --container "$CONTAINER" --image "$REPAIR_IMAGE" \
-  --backup-dir "$BACKUP_DIR"
-# 独立演练、预览及备份条件核对通过后才执行：
-python3 docker/repair-container.py --container "$CONTAINER" --image "$REPAIR_IMAGE" \
-  --backup-dir "$BACKUP_DIR" --apply
-```
-
-`CONTAINER` 是实际目标，`SQLITE_ONLY_SOURCE` 是上述匹配归档的 `agent-space/`，`REPAIR_IMAGE` 为新的唯一标签，`BACKUP_DIR` 为有足够空间的新建私有外部目录。先在一次性卷验证原 Token、入口、双盘及重启；离线传输归档两端核对摘要。
-
-脚本要求 `HOME=/var/lib/microsandbox` 且全部状态位于可完整备份的挂载，拒绝共享写入者、嵌套挂载和不安全命名空间。预览不停止服务；apply 禁止旧容器自动重启、正常停止，冷备并检查副本后保留旧容器，以原环境/设备/端口/策略克隆替换。凭据只在内存传递；`result.json` 记录阶段、校验和失败后的停止结果，失败不自动启动另一写入者。停止失败时先排除仍运行的进程。
-
-回滚先保存修复后数据，再按旧冷备恢复到**全新数据/日志卷**，使用原 image ID、原配置及凭据启动；不让旧程序读取修复后卷或并行挂载原卷。原修复/回滚的固定测试结果见[证据目录](evidence/sqlite-20260930/README.md)，不表示当前源码已复现旧版本，不能作为当前部署身份。
+仅替换 0.7.2 CLI 的旧维护支线已撤销。当前 SDK/runtime 生命周期修补是配对资产，升级统一采用上文的完整镜像、隔离演练和整套冷备回滚流程，避免将新 CLI 单独装入旧服务。历史修复及恢复结果保留在[证据目录](evidence/sqlite-20260930/README.md)，只说明当时输入，不作为当前部署工具或资格。

@@ -1,0 +1,336 @@
+{
+  "checked_at": "2026-10-23",
+  "release": {
+    "tag": "v0.7.9",
+    "published_at": "2026-10-22T23:05:32Z",
+    "commit": "ec5c6ecf0065bacaffc1b3752f3580ba20e1d179",
+    "tag_signature_verified_by_github": true,
+    "source_archive_sha256": "e2fd1a2307bc8644767f3cf61d38a8ac9d72fd6cbc838c12dc984a165a49de01",
+    "runtime_archive_sha256": "04a6a3bb809cfc3bf900dbe9f0ac23f04890b42ba59f1256ef7f35b6fabf90f9",
+    "msb_sha256": "ec9ccdefa4b63ae6417cb5e496e46f0eedc8c1e6f702d975728ce877d9a09bbb",
+    "firmware_sha256": "3854efcd3fe625528fa00207d97586d9790db8c436bb6881a43986604336d18e"
+  },
+  "runcove_baseline": "8f9bd1aa291c7d32a23c729f0f984e5729d17726",
+  "issues": [
+    {
+      "number": 1642,
+      "state": "open",
+      "url": "https://github.com/superradcompany/microsandbox/issues/1642"
+    },
+    {
+      "number": 1826,
+      "state": "closed",
+      "url": "https://github.com/superradcompany/microsandbox/issues/1826"
+    },
+    {
+      "number": 1801,
+      "state": "closed",
+      "url": "https://github.com/superradcompany/microsandbox/issues/1801"
+    },
+    {
+      "number": 1709,
+      "state": "closed",
+      "url": "https://github.com/superradcompany/microsandbox/issues/1709"
+    }
+  ],
+  "fixes": [
+    {
+      "pr": 1766,
+      "commit": "c5c3fa7dde7620a018f01ce34bc48e92583449c9",
+      "status": "ahead",
+      "merge_base": "c5c3fa7dde7620a018f01ce34bc48e92583449c9",
+      "base": "c5c3fa7dde7620a018f01ce34bc48e92583449c9",
+      "ahead": 68
+    },
+    {
+      "pr": 1816,
+      "commit": "e5f72485e56cb8380b3c0b8fa0f7516c8f108408",
+      "status": "ahead",
+      "merge_base": "e5f72485e56cb8380b3c0b8fa0f7516c8f108408",
+      "base": "e5f72485e56cb8380b3c0b8fa0f7516c8f108408",
+      "ahead": 37
+    },
+    {
+      "pr": 1838,
+      "commit": "8e419cb7a74ad0f5c8f304449546157508f5d3a6",
+      "status": "ahead",
+      "merge_base": "8e419cb7a74ad0f5c8f304449546157508f5d3a6",
+      "base": "8e419cb7a74ad0f5c8f304449546157508f5d3a6",
+      "ahead": 27
+    }
+  ],
+  "remaining_lifecycle_pr": {
+    "pr": 1685,
+    "state": "open",
+    "draft": true
+  },
+  "environment": {
+    "platform": "Linux x86_64 / WSL Ubuntu / KVM",
+    "rustc": "1.96.0",
+    "guest_kernel": "6.12.113",
+    "isolated_catalog": true,
+    "production_mutated": false
+  },
+  "tests": [
+    {
+      "command": "cargo test --locked -p microsandbox --no-default-features --features local,net --lib backend::local::control -- --test-threads=1",
+      "result": "test result: ok. 29 passed; 0 failed; 8 ignored; 0 measured; 1205 filtered out; finished in 1.74s",
+      "log_sha256": "60bb6469783ed340c8f5b554e7018714c121bbc0dfd84eaa7acba8dcb90cfe80",
+      "passed_tests": [
+        "backend::local::control::database_tests::acknowledged_volumes_survive_other_processes_closing_catalog",
+        "backend::local::control::database_tests::database_identity_preserves_process_locks",
+        "backend::local::control::identity::tests::linux_process_identity_handles_parentheses_and_detects_exit",
+        "backend::local::control::identity::tests::linux_zombie_is_not_a_reusable_runtime_identity",
+        "backend::local::control::tests::database_identity_detects_replacement_but_not_ordinary_writes",
+        "backend::local::control::tests::unix::capacity_never_evicts_a_valid_session_and_invalid_entries_are_reclaimed",
+        "backend::local::control::tests::unix::configured_homes_never_share_discovery_even_with_equal_run_keys",
+        "backend::local::control::tests::unix::connected_peer_must_match_the_recorded_runtime_pid",
+        "backend::local::control::tests::unix::delayed_old_run_lookup_does_not_cancel_current_setup",
+        "backend::local::control::tests::unix::delayed_old_run_lookup_does_not_cancel_the_current_run_or_its_waiters",
+        "backend::local::control::tests::unix::idle_framed_disconnect_releases_the_registry_entry_without_another_lookup",
+        "backend::local::control::tests::unix::last_cancelled_waiter_cancels_setup_and_a_later_operation_starts_fresh",
+        "backend::local::control::tests::unix::nonresident_sandbox_states_still_reject_control_before_dispatch",
+        "backend::local::control::tests::unix::paused_runtime_preserves_retained_and_fresh_control_sessions",
+        "backend::local::control::tests::unix::process_birth_identity_rejects_an_exited_child",
+        "backend::local::control::tests::unix::reading_discovery_capabilities_never_opens_another_json_exchange",
+        "backend::local::control::tests::unix::real_framed_peer_reuses_one_setup_across_temporary_sdk_handles",
+        "backend::local::control::tests::unix::real_legacy_peer_and_stale_canonical_path_use_verified_fresh_json_connections",
+        "backend::local::control::tests::unix::recording_a_live_result_compares_both_the_run_and_active_snapshot_atomically",
+        "backend::local::control::tests::unix::registry_drop_closes_handles_that_outlive_the_backend",
+        "backend::local::control::tests::unix::replacing_the_database_file_invalidates_cached_connections_before_io",
+        "backend::local::control::tests::unix::run_replacement_with_the_same_pid_invalidates_prepared_operations",
+        "backend::local::control::tests::unix::shared_setup_survives_one_cancelled_waiter",
+        "backend::local::control::tests::unix::verified_dead_run_is_reclaimed_for_its_replacement_at_capacity",
+        "backend::local::control_lookup::tests::absent_catalog_and_terminal_target_request_slow_path",
+        "backend::local::control_lookup::tests::branch_refuses_a_restarted_source_before_writing_handoff_state",
+        "backend::local::control_lookup::tests::healthy_lookup_does_not_initialize_writer_or_reconcile_snapshots",
+        "backend::local::control_lookup::tests::older_schema_and_missing_active_run_fall_back_without_cleanup",
+        "backend::local::control_lookup::tests::schema_and_install_gates_are_not_bypassed"
+      ]
+    },
+    {
+      "command": "cargo test --locked -p microsandbox --no-default-features --features local,net --lib sandbox::exit -- --test-threads=1",
+      "result": "test result: ok. 1 passed; 0 failed; 1 ignored; 0 measured; 1240 filtered out; finished in 0.07s",
+      "log_sha256": "7b210906c66f885f0fc0d34181adb3dc72eb95a9779f60f5e62cb64d44e96d2d",
+      "passed_tests": [
+        "sandbox::exit::tests::retained_exit_is_current_and_bound_to_the_sandbox_identity"
+      ]
+    },
+    {
+      "command": "cargo test --locked -p microsandbox --no-default-features --features local,net --lib sandbox::exec::session -- --test-threads=1",
+      "result": "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 1232 filtered out; finished in 0.14s",
+      "log_sha256": "2f17392b2d276006fc8010191acd4f2b91374987cd06e31d357d941e5edebc9e",
+      "passed_tests": [
+        "sandbox::exec::session::agent::tests::cancelled_stdin_respects_transport_admission",
+        "sandbox::exec::session::agent::tests::cancelling_admitted_eof_keeps_stdin_closed",
+        "sandbox::exec::session::agent::tests::closing_stdin_wakes_waiting_writes",
+        "sandbox::exec::session::agent::tests::dropped_reader_preserves_timeout_and_output_flow",
+        "sandbox::exec::session::agent::tests::stdin_allowance_preserves_control_progress_and_eof_order",
+        "sandbox::exec::session::agent::tests::stream_deadline_bounds_and_reports_signal_failure",
+        "sandbox::exec::session::agent::tests::stream_deadline_cancelled_before_expiry_does_not_signal",
+        "sandbox::exec::session::agent::tests::stream_deadline_waits_for_start_and_fires_once",
+        "sandbox::exec::session::agent::tests::stream_pump_exit_cancels_deadline_without_late_signal",
+        "sandbox::exec::session::agent::tests::stream_pump_reports_unconfirmed_termination_without_fake_exit"
+      ]
+    },
+    {
+      "command": "cargo test --locked -p microsandbox-runtime --lib runner::relay -- --test-threads=1",
+      "result": "test result: ok. 108 passed; 0 failed; 0 ignored; 0 measured; 378 filtered out; finished in 0.50s",
+      "log_sha256": "5dc94608144c71b8292c8aeaef2365610b03ca59744ca4c30800914bdabbf878",
+      "passed_tests": [
+        "runner::relay::envelope::tests::checks_chunked_keys_and_names_without_prefix_false_positives",
+        "runner::relay::envelope::tests::permits_unknown_names_and_opaque_payloads",
+        "runner::relay::envelope::tests::rejects_ambiguous_truncated_and_excessively_nested_envelopes",
+        "runner::relay::exec_admission::tests::output_allowance_is_shared_and_replenished_by_consumption",
+        "runner::relay::exec_admission::tests::rejected_request_releases_capacity_but_running_errors_require_cleanup",
+        "runner::relay::tests::async_shutdown_bootstrap_backpressure_leaves_guest_consumer_runnable",
+        "runner::relay::tests::async_shutdown_cancellation_keeps_accepted_frame_behind_credit",
+        "runner::relay::tests::async_shutdown_ready_without_writer_never_uses_bootstrap_fallback",
+        "runner::relay::tests::async_shutdown_reports_dropped_receipt_and_receiver",
+        "runner::relay::tests::async_shutdown_shares_one_deadline_and_releases_unaccepted_permits",
+        "runner::relay::tests::async_shutdown_timeout_preserves_gated_accepted_frame",
+        "runner::relay::tests::async_shutdown_waits_for_ring_capacity_not_just_queue_acceptance",
+        "runner::relay::tests::async_shutdown_yields_to_writer_and_preserves_counted_fifo",
+        "runner::relay::tests::bulk_lane_rejects_control_frames",
+        "runner::relay::tests::bulk_open_admission_rejects_only_the_excess_operation",
+        "runner::relay::tests::bulk_open_rejection_is_typed_terminal_at_the_request_version",
+        "runner::relay::tests::bulk_scheduler_admits_one_maximum_filesystem_record",
+        "runner::relay::tests::bulk_scheduler_drop_flow_releases_queued_capacity",
+        "runner::relay::tests::bulk_scheduler_services_another_flow_before_draining_a_large_flow",
+        "runner::relay::tests::bulk_wire_metadata_validates_the_complete_fixed_header",
+        "runner::relay::tests::client_batch_handles_short_vectored_writes_and_releases_budget",
+        "runner::relay::tests::client_frame_validation_allows_ids_in_assigned_range",
+        "runner::relay::tests::client_frame_validation_allows_shutdown_control_id_zero",
+        "runner::relay::tests::client_frame_validation_rejects_non_shutdown_ids_outside_range",
+        "runner::relay::tests::client_mailbox_absorbs_more_than_two_large_frames_without_blocking",
+        "runner::relay::tests::client_shared_descriptor_combined_preserves_frame_credit_and_arena_release",
+        "runner::relay::tests::client_shared_descriptor_reaches_bulk_scheduler_without_socket_payload",
+        "runner::relay::tests::client_writer_preserves_local_bulk_and_terminal_order",
+        "runner::relay::tests::clock_sync_task_is_not_spawned_when_guest_clock_is_off",
+        "runner::relay::tests::clock_sync_task_sends_initial_sync_after_cold_boot",
+        "runner::relay::tests::clock_sync_task_skips_initial_sync_after_kernel_restore_sync",
+        "runner::relay::tests::combined_leased_disconnect_releases_slot_without_a_merger",
+        "runner::relay::tests::combined_reader_routes_directly_without_a_lane_actor",
+        "runner::relay::tests::control_names_never_trigger_shutdown_or_new_sessions",
+        "runner::relay::tests::control_writer_acknowledges_only_after_ring_admission",
+        "runner::relay::tests::dual_port_range_stays_quarantined_until_reverse_control_ack",
+        "runner::relay::tests::exec_control_rejects_signals_after_completion_without_waiting",
+        "runner::relay::tests::exec_control_revokes_queued_signals_and_rejects_reused_slots",
+        "runner::relay::tests::exec_control_timeout_reports_whether_the_signal_was_queued",
+        "runner::relay::tests::exec_control_waits_for_creation_and_uses_reserved_capacity",
+        "runner::relay::tests::exec_output_credit_passes_stalled_stdin_but_respects_creation_and_freeze",
+        "runner::relay::tests::exec_signal_and_shutdown_interrupt_input_but_preserve_effect_fences",
+        "runner::relay::tests::execution_input_saturation_preserves_ack_progress_and_order",
+        "runner::relay::tests::forwards_future_agent_bytes_and_reserved_shutdown_unchanged",
+        "runner::relay::tests::framing_failures_and_disconnect_requests_end_the_reader",
+        "runner::relay::tests::guest_bulk_to_closed_local_arena_drops_frame_without_failing_reader",
+        "runner::relay::tests::guest_bulk_uses_local_descriptor_when_an_arena_is_selected",
+        "runner::relay::tests::guest_merger_cancel_releases_data_and_discards_late_raw",
+        "runner::relay::tests::guest_merger_discards_finish_while_cancelling",
+        "runner::relay::tests::guest_merger_disconnect_releases_held_lane_budget",
+        "runner::relay::tests::guest_merger_enforces_per_flow_reorder_budget",
+        "runner::relay::tests::guest_merger_forwards_terminals_without_finish",
+        "runner::relay::tests::guest_merger_holds_raw_until_acceptance",
+        "runner::relay::tests::guest_merger_keeps_guest_cancel_route_until_terminal",
+        "runner::relay::tests::guest_merger_never_mixes_recycled_range_incarnations",
+        "runner::relay::tests::guest_merger_rejects_overlapping_raw_intervals",
+        "runner::relay::tests::guest_merger_restores_cross_lane_stream_order",
+        "runner::relay::tests::guest_merger_scopes_retired_finishes_to_one_incarnation",
+        "runner::relay::tests::guest_terminal_progresses_with_full_input_queue",
+        "runner::relay::tests::input_stall_admission_gate_preserves_existing_client_output",
+        "runner::relay::tests::input_stall_completion_paths_preserve_errors_during_shutdown",
+        "runner::relay::tests::input_stall_countdown_excludes_paused_time_without_resetting",
+        "runner::relay::tests::input_stall_freeze_preserves_admission_gate_until_delivery",
+        "runner::relay::tests::input_stall_on_bulk_lane_also_closes_client_admission",
+        "runner::relay::tests::input_stall_private_delivery_resumes_a_suspended_countdown",
+        "runner::relay::tests::input_stall_private_write_preserves_clock_stall_until_delivery",
+        "runner::relay::tests::input_stall_retains_frame_and_recovers_on_capacity_notification",
+        "runner::relay::tests::input_stall_shutdown_and_cancellation_release_the_health_gate",
+        "runner::relay::tests::input_stall_shutdown_without_task_completion_ignores_false_updates",
+        "runner::relay::tests::input_stall_temporary_backpressure_keeps_admission_open",
+        "runner::relay::tests::issue1801_retired_tcp_finish_is_discarded",
+        "runner::relay::tests::late_client_bulk_record_preserves_other_operations",
+        "runner::relay::tests::paused_client_rejects_work_without_registering_or_forwarding_sessions",
+        "runner::relay::tests::raw_bulk_flag_is_exclusive",
+        "runner::relay::tests::restore_activation_record_replaces_prepared_state_atomically",
+        "runner::relay::tests::restore_bulk_drain_preserves_every_fragmented_tail",
+        "runner::relay::tests::restore_thaw_drains_backpressured_bulk_before_acknowledgement",
+        "runner::relay::tests::restored_bulk_suffix_requires_the_source_decoder_prefix",
+        "runner::relay::tests::restored_control_suffix_requires_the_source_decoder_prefix",
+        "runner::relay::tests::restored_lane_reader_consumes_initial_frame_without_another_write",
+        "runner::relay::tests::restored_ready_preserves_captured_agent_identity",
+        "runner::relay::tests::restored_relay_defers_public_endpoint_binding",
+        "runner::relay::tests::restored_workload_thaw_uses_private_attempt_scoped_exchange",
+        "runner::relay::tests::wait_ready_binds_fragmented_bulk_hello_to_advertised_capability",
+        "runner::relay::tests::wait_ready_falls_back_when_agent_does_not_bind_bulk_port",
+        "runner::relay::tests::wait_ready_installs_init_map_before_ready",
+        "runner::relay::tests::wait_ready_preserves_guest_failure_before_acknowledging_exit",
+        "runner::relay::tests::wait_ready_rejects_ready_before_init_when_maps_are_pending",
+        "runner::relay::tests::wait_ready_skips_init_requirement_when_no_bind_map_pending",
+        "runner::relay::tests::workload_bulk_gate_finishes_current_fragmented_record",
+        "runner::relay::tests::workload_canceled_frozen_and_recovery_thawed_share_one_input_batch",
+        "runner::relay::tests::workload_class_reservations_bound_pending_bytes_and_frames",
+        "runner::relay::tests::workload_clock_credit_uses_actual_cbor_width_not_reserved_maximum",
+        "runner::relay::tests::workload_clock_refreshes_after_full_ring_and_pause_without_charging_stale_bytes",
+        "runner::relay::tests::workload_combined_tcp_credit_never_crosses_control_or_owner_fences",
+        "runner::relay::tests::workload_combined_tcp_credit_passes_blocked_input_and_finish_only",
+        "runner::relay::tests::workload_gate_keeps_source_fifo_until_confirmed_continue",
+        "runner::relay::tests::workload_maintenance_clock_and_cleanup_do_not_fence_unrelated_clients",
+        "runner::relay::tests::workload_maintenance_clock_stays_behind_global_lifecycle_fence",
+        "runner::relay::tests::workload_metadata_scheduler_preserves_client_and_global_fences",
+        "runner::relay::tests::workload_post_ready_shutdown_respects_gate_and_deadline",
+        "runner::relay::tests::workload_post_ready_shutdown_uses_counted_fifo",
+        "runner::relay::tests::workload_private_freeze_bypasses_both_full_admission_classes",
+        "runner::relay::tests::workload_private_reply_bypasses_sdk_output_admission",
+        "runner::relay::tests::workload_ready_without_writer_never_falls_back_to_direct_input",
+        "runner::relay::tests::workload_reservation_waiters_cancel_and_wake_on_receiver_close",
+        "runner::relay::tests::workload_restored_payload_debt_allows_fresh_lease_and_exec",
+        "runner::relay::tests::workload_writer_abort_wakes_pending_lifecycle_request"
+      ]
+    },
+    {
+      "command": "SDK test executable --exact sandbox::exit::tests::live_idle_timeout_retains_exit_until_explicit_cleanup --ignored --nocapture; MSB_TEST_RUNTIME_DIR points to official 0.7.9 runtime pair",
+      "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1241 filtered out; finished in 14.15s",
+      "log_sha256": "d742273bb43a66b05181eebfe7360bcad1ed07b231a4a0165a236e6de978f74e",
+      "passed_tests": [
+        "sandbox::exit::tests::live_idle_timeout_retains_exit_until_explicit_cleanup"
+      ]
+    }
+  ],
+  "live_checks": [
+    {
+      "name": "official_release_boot",
+      "status": "PASS",
+      "image_digest": "sha256:dc92f017beea8e7f43263073d717f7bc011228c95d5312e440deb4d035bb4eec",
+      "kernel": "6.12.113"
+    },
+    {
+      "name": "64MiB_bulk_roundtrip_and_concurrent_exec",
+      "status": "PASS",
+      "bytes": 67108864,
+      "sha256": "281e519df3077b557c6b03f5da83c4e8d397219259615dd7c3308f89cae8f2a6"
+    },
+    {
+      "name": "8MiB_bidirectional_exec",
+      "status": "PASS",
+      "bytes": 8388608
+    },
+    {
+      "name": "bulk_client_cancellation_reconnect",
+      "status": "PASS",
+      "attempts": 3
+    },
+    {
+      "name": "detached_job_survives_launch_client_exit",
+      "status": "PASS"
+    },
+    {
+      "name": "pause_resume_and_stop_start_preserve_disk",
+      "status": "PASS"
+    },
+    {
+      "name": "stale_unrelated_pid_blocks_terminal_start_REPRODUCED",
+      "status": "PASS",
+      "elapsed_seconds": 5.029,
+      "error": "error: sandbox still running: cannot start sandbox \"probe\": previous runtime pid [fixture] is still alive",
+      "fixture": "synthetic catalog PID; no real PID reuse"
+    },
+    {
+      "name": "fixture_restored_original_disk_readable",
+      "status": "PASS"
+    }
+  ],
+  "live_ports": {
+    "status": "PASS",
+    "actual_vm_executable_sha256": "ec9ccdefa4b63ae6417cb5e496e46f0eedc8c1e6f702d975728ce877d9a09bbb",
+    "published_port_add_restart_http_remove_restart": true
+  },
+  "compatibility": {
+    "status": "PASS",
+    "scope": "Isolated copy of existing Runcove workspace; all three manifests pin MSB/agent-client 0.7.9; MSB vendor overrides removed; application Rust source unchanged. Dependency resolution followed by locked check.",
+    "command": "cargo check --workspace --locked",
+    "cargo_lock_sha256": "9eae7780d72c65486d90179268b19f659a55940f00ef32df2064d6c7aebca13b",
+    "log_sha256": "c080fabeaf2e08e3afea0f4e1cacbcc5ec9d22d5846281a469c16eb83e9eef4c"
+  },
+  "upstream_cargo_lock_sha256": "843bb16c3c824304e18fcc7afc4a666fe2ed7d05d9a24a80fc28ad66547a0284",
+  "cleanup": {
+    "official_cli_probe_sandboxes_remaining": [],
+    "port_probe_removed": true,
+    "live_idle_test_passed_including_explicit_cleanup": true,
+    "test_artifacts_retained_in_ignored_target": true
+  },
+  "limitations": [
+    "No Runcove 0.7.9 candidate image was built or deployed.",
+    "No Runcove DAV 4 GiB/Range, old-image migration, full cold-backup rollback, desktop/browser qualification was executed with 0.7.9.",
+    "Bulk cancellation uses timed CLI termination, not a deterministic late-BulkFinish trigger; deterministic relay tests cover those orderings.",
+    "Stale PID failure was reproduced by test-only catalog injection, not actual kernel PID reuse.",
+    "Unit-test ignored helpers/legacy-runtime fixtures are not reported as passed; the live idle-exit test was separately executed.",
+    "HTTP CONNECT authentication and paused-VM CPU improvements were inspected upstream, not measured end-to-end here."
+  ],
+  "setup_adjustments": [
+    "SDK local-only unit-test build fails because a test calls the net-gated network method; local,net configuration succeeds.",
+    "Compatibility fixture initially retained webdav dev-dependency 0.7.2; updating all three manifests resolved the selection conflict.",
+    "Long test home exceeded Unix socket path limit; live tests used a separate short temporary home.",
+    "Alpine lacks BusyBox httpd; the successful port test used a detached netcat HTTP response."
+  ]
+}

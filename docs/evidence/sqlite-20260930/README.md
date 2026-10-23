@@ -20,7 +20,6 @@ JSON 保留当时镜像、二进制哈希、测试次数与结果。临时目录
 
 ```bash
 python3 docker/verify-sqlite-runtime.py --image YOUR_VALIDATED_IMAGE --label release --rounds 10
-python3 docker/verify-runtime-repair.py --help
 ```
 
-测试使用自己创建的数据卷与账号。不要把生产数据卷挂到验证容器，也不要将冷备份或 Docker 环境变量附到公开 issue。当前规避通过这些有限测试，不是所有损坏路径均已消除的证明。
+旧版 SQLite-only 修复脚本已随 0.7.9 升级撤销，历史结果不变；现行升级/回滚走完整镜像流程。测试使用自己创建的数据卷与账号。不要把生产数据卷挂到验证容器，也不要将冷备份或 Docker 环境变量附到公开 issue。当前规避通过这些有限测试，不是所有损坏路径均已消除的证明。

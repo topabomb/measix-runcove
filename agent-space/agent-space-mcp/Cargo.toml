@@ -18,7 +18,7 @@ path = "src/bin/runcove-standalone.rs"
 
 [dependencies]
 agent-engine = { path = "..", default-features = false }
-microsandbox = { version = "=0.7.2", optional = true }
+microsandbox = { version = "=0.7.9", optional = true }
 rmcp = { version = "1.7", features = [
     "server",
     "transport-streamable-http-server",

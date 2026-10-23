@@ -26,6 +26,7 @@ use microsandbox_metrics::{ActivateSlot, MetricsRegistry, ReleaseMode};
 #[cfg(feature = "net")]
 use microsandbox_network::{ResolvedNetworkConfig, network::SmoltcpNetwork};
 use microsandbox_protocol::{
+    FS_STATE_LIMIT_MAX_MIB, FS_STATE_LIMIT_MIN_MIB,
     bootstrap::{BootstrapBlockRoot, GuestBootstrap},
     codec,
     message::{Message, MessageType},
@@ -47,6 +48,7 @@ use crate::bootstrap_fs::AgentBootstrapFs;
 use crate::console::AgentConsolePipeBridge;
 use crate::console::{AgentConsoleBackend, ConsoleSharedState};
 use crate::heartbeat::{self, HeartbeatDecision, HeartbeatReader};
+use crate::ipc::RuntimeSocketPaths;
 use crate::launch::FileMountConfig;
 #[cfg(unix)]
 pub use crate::launch::LIFECYCLE_LOCK_FD;
@@ -284,6 +286,9 @@ pub struct VmConfig {
     /// Guest transparent huge-page policy selected at boot.
     pub thp: microsandbox_types::TransparentHugePagePolicy,
 
+    /// Host control over the guest wall clock during boot, restore, and resume.
+    pub guest_clock: microsandbox_types::GuestClockPolicy,
+
     /// Protected memory cache resolved by the sandbox's owning local backend.
     pub memory_cache_dir: Option<PathBuf>,
 
@@ -307,6 +312,9 @@ pub struct VmConfig {
 
     /// Host-resolved placement behavior.
     pub placement_profile: Option<microsandbox_types::PlacementProfile>,
+
+    /// Virtio-fs backend state budget in bytes; the msb_krun default when unset.
+    pub fs_state_limit_bytes: Option<u64>,
 
     /// Per-writable-raw-disk hard budget for buffered host dirty data.
     pub block_writeback_limit_bytes: Option<u64>,
@@ -457,7 +465,7 @@ type VmBuildOutput = (
 /// Public runtime endpoints held back until a restored guest is activated.
 struct RestoreEndpointPublication {
     agent_sock_path: PathBuf,
-    run_dir: PathBuf,
+    socket_paths: RuntimeSocketPaths,
     sandbox_name: String,
     control: super::control::ControlContext,
 }
@@ -465,6 +473,30 @@ struct RestoreEndpointPublication {
 //--------------------------------------------------------------------------------------------------
 // Methods
 //--------------------------------------------------------------------------------------------------
+
+impl VmConfig {
+    /// Virtio-fs backend state budget in bytes.
+    pub fn fs_state_limit(&self) -> usize {
+        self.fs_state_limit_bytes
+            .map_or(msb_krun::DEFAULT_MAX_FS_BACKEND_STATE_BYTES, |bytes| {
+                bytes as usize
+            })
+    }
+
+    /// Check a launch-supplied virtio-fs state budget, which the SDK configures in whole MiB.
+    pub fn validate_fs_state_limit(bytes: Option<u64>) -> Result<(), String> {
+        const MIB: u64 = 1024 * 1024;
+        let range =
+            u64::from(FS_STATE_LIMIT_MIN_MIB) * MIB..=u64::from(FS_STATE_LIMIT_MAX_MIB) * MIB;
+        match bytes {
+            Some(bytes) if !range.contains(&bytes) => Err(format!(
+                "filesystem state budget must be between {FS_STATE_LIMIT_MIN_MIB} MiB and \
+                 {FS_STATE_LIMIT_MAX_MIB} MiB, got {bytes} bytes"
+            )),
+            _ => Ok(()),
+        }
+    }
+}
 
 impl AgentTransportProfile {
     /// Whether this boot should provision the optional bulk port and advertise its kernel hint.
@@ -492,24 +524,21 @@ impl RestoreEndpointPublication {
         relay.bind_public_endpoint()?;
 
         #[cfg(unix)]
-        if let Err(error) = crate::ipc::publish_legacy_agent_link(
-            &self.run_dir,
-            &self.sandbox_name,
-            &self.agent_sock_path,
-        ) {
-            let _ =
-                crate::ipc::remove_canonical_socket_artifacts(&self.run_dir, &self.sandbox_name);
+        if let Err(error) = self
+            .socket_paths
+            .publish_legacy_agent_link(&self.agent_sock_path)
+        {
+            let _ = self.socket_paths.remove_canonical_artifacts();
             return Err(error.into());
         }
 
         if let Err(error) = publish_control_endpoint(
             crate::control::control_socket_path_for(&self.agent_sock_path),
             self.control,
-            &self.run_dir,
+            &self.socket_paths,
             &self.sandbox_name,
         ) {
-            let _ =
-                crate::ipc::remove_canonical_socket_artifacts(&self.run_dir, &self.sandbox_name);
+            let _ = self.socket_paths.remove_canonical_artifacts();
             return Err(error);
         }
         Ok(())
@@ -526,11 +555,13 @@ impl std::fmt::Debug for VmConfig {
         debug
             .field("libkrunfw_path", &self.libkrunfw_path)
             .field("thp", &self.thp)
+            .field("guest_clock", &self.guest_clock)
             .field("vcpus", &self.vcpus)
             .field("memory_mib", &self.memory_mib)
             .field("max_cpus", &self.max_cpus)
             .field("max_memory_mib", &self.max_memory_mib)
             .field("placement_profile_name", &self.placement_profile_name)
+            .field("fs_state_limit_bytes", &self.fs_state_limit_bytes)
             .field(
                 "block_writeback_limit_bytes",
                 &self.block_writeback_limit_bytes,
@@ -683,12 +714,9 @@ fn run(
         prepare_runtime_restore_namespace(&config.runtime_dir, config.vm.rootfs_vmdk.is_some())?;
     }
 
+    let socket_paths = RuntimeSocketPaths::new(&config.run_dir, &config.sandbox_name);
     #[cfg(unix)]
-    crate::ipc::prepare_canonical_socket_dir(
-        &config.run_dir,
-        &config.sandbox_name,
-        &config.agent_sock_path,
-    )?;
+    socket_paths.prepare_canonical_directory(&config.agent_sock_path)?;
 
     // Create the relay and persist the run record with a single runtime hop.
     let (mut relay, db, run_db_id) = tokio_rt.block_on(async {
@@ -716,6 +744,8 @@ fn run(
         let run_db_id = insert_run(&db, config.sandbox_id, pid).await?;
         Ok::<_, RuntimeError>((relay, db, run_db_id))
     })?;
+
+    relay = relay.with_boot_error_log_dir(config.log_dir.clone());
 
     let writeback_disk_paths = match writeback_limited_disk_paths(&config.vm) {
         Ok(disk_paths) => disk_paths,
@@ -773,11 +803,7 @@ fn run(
 
     #[cfg(unix)]
     if config.vm.checkpoint_restore.is_none()
-        && let Err(error) = crate::ipc::publish_legacy_agent_link(
-            &config.run_dir,
-            &config.sandbox_name,
-            &config.agent_sock_path,
-        )
+        && let Err(error) = socket_paths.publish_legacy_agent_link(&config.agent_sock_path)
     {
         if let Err(release_error) = tokio_rt.block_on(writeback_guard.release(&db)) {
             tracing::warn!(%release_error, "release writeback admission after legacy endpoint publication failure");
@@ -788,10 +814,11 @@ fn run(
         let _ = tokio_rt.block_on(mark_run_failed(&db, run_db_id));
         // Publication is no-replace. If it collided with another legacy
         // endpoint, clean only this runtime's canonical namespace.
-        let _ =
-            crate::ipc::remove_canonical_socket_artifacts(&config.run_dir, &config.sandbox_name);
+        let _ = socket_paths.remove_canonical_artifacts();
         return Err(error.into());
     }
+
+    relay = relay.with_guest_clock(config.vm.guest_clock);
 
     // Attach the exec.log writer so the ring reader can capture the
     // primary session's stdout/stderr. Failure to open the file is
@@ -844,6 +871,7 @@ fn run(
     let exit_reason_for_observer = Arc::clone(&exit_reason);
     let exit_sock_path = config.agent_sock_path.clone();
     let exit_run_dir = config.run_dir.clone();
+    let exit_socket_paths = socket_paths.clone();
     let exit_sandbox_name = config.sandbox_name.clone();
     let exit_sandboxes_dir = config.sandboxes_dir.clone();
     let exit_log_writer = exec_log_writer.clone();
@@ -919,8 +947,7 @@ fn run(
                 // restartable terminal state; on failure, leave the active row
                 // for dead-PID maintenance to retry after the process exits.
                 let bound_result = crate::ipc::remove_socket_pair(&exit_sock_path);
-                let owned_result =
-                    crate::ipc::remove_sandbox_socket_artifacts(&exit_run_dir, &exit_sandbox_name);
+                let owned_result = exit_socket_paths.remove_artifacts();
                 if let Err(error) = bound_result.and(owned_result) {
                     tracing::warn!(
                         sandbox = %exit_sandbox_name,
@@ -1060,8 +1087,7 @@ fn run(
                 release_reserved_metrics_slot(config.metrics_slot.as_ref());
             }
             let _ = crate::ipc::remove_socket_pair(&config.agent_sock_path);
-            let _ =
-                crate::ipc::remove_sandbox_socket_artifacts(&config.run_dir, &config.sandbox_name);
+            let _ = socket_paths.remove_artifacts();
             return Err(e);
         }
     };
@@ -1135,7 +1161,7 @@ fn run(
         if restored_agent.is_some() {
             Some(RestoreEndpointPublication {
                 agent_sock_path: config.agent_sock_path.clone(),
-                run_dir: config.run_dir.clone(),
+                socket_paths: socket_paths.clone(),
                 sandbox_name: config.sandbox_name.clone(),
                 control: context,
             })
@@ -1143,16 +1169,13 @@ fn run(
             if let Err(error) = publish_control_endpoint(
                 control_sock_path,
                 context,
-                &config.run_dir,
+                &socket_paths,
                 &config.sandbox_name,
             ) {
                 let _ = tokio_rt.block_on(mark_run_failed(&db, run_db_id));
                 // Preserve the colliding compatibility entry. It may belong
                 // to a still-live older runtime.
-                let _ = crate::ipc::remove_canonical_socket_artifacts(
-                    &config.run_dir,
-                    &config.sandbox_name,
-                );
+                let _ = socket_paths.remove_canonical_artifacts();
                 return Err(error);
             }
             None
@@ -1178,8 +1201,7 @@ fn run(
                 release_reserved_metrics_slot(config.metrics_slot.as_ref());
             }
             let _ = crate::ipc::remove_socket_pair(&config.agent_sock_path);
-            let _ =
-                crate::ipc::remove_sandbox_socket_artifacts(&config.run_dir, &config.sandbox_name);
+            let _ = socket_paths.remove_artifacts();
             return Err(e);
         }
     }
@@ -1265,6 +1287,7 @@ fn run(
     let relay_exit_handle = exit_handle.clone();
     let relay_exit_reason = Arc::clone(&exit_reason);
     let restore_control = restored_agent.as_ref().map(|_| vm.control_handle());
+    let metrics_vm_control = vm.control_handle();
     let restore_runtime_dir = config.runtime_dir.clone();
     let relay_boot_log_dir = config.log_dir.clone();
     let restore_startup_progress = startup_progress.clone();
@@ -1328,6 +1351,7 @@ fn run(
                         interval_ms,
                         max_cpus: metrics_max_cpus,
                         krun_metrics: krun_metrics_handle,
+                        vm_control: metrics_vm_control,
                         network_metrics: network_metrics_handle,
                         upper_host_path,
                     }));
@@ -1843,11 +1867,13 @@ fn build_vm(
                     restore.closure.clone(),
                     &restore.checkpoint_id,
                     restore.memory_descriptor,
+                    vm.fs_state_limit(),
                 )
             } else {
                 crate::checkpoint::PreparedCheckpointRestore::open(
                     restore.closure.clone(),
                     &restore.checkpoint_root,
+                    vm.fs_state_limit(),
                 )
             }
             .map_err(|error| {
@@ -1860,6 +1886,7 @@ fn build_vm(
         })
         .transpose()?;
     let mut bootstrap = vm.bootstrap.clone();
+    bootstrap.init_failure_ack = true;
     let balloon_stats_interval = config
         .metrics_sample_interval_ms
         .map(|interval_ms| Duration::from_millis(interval_ms.get()));
@@ -1869,7 +1896,10 @@ fn build_vm(
     let bind_identity_map = BindIdentityMapRegistration::new();
 
     let kernel_cmdline = agent_kernel_cmdline(vm.thp, config.agent_transport);
+    let device_state_limits =
+        msb_krun::DeviceStateLimits::default().with_fs_state_limit(vm.fs_state_limit());
     let mut builder = VmBuilder::new()
+        .device_state_limits(device_state_limits)
         .machine(|m| {
             let mut m = m
                 .vcpus(vm.vcpus)
@@ -1915,18 +1945,23 @@ fn build_vm(
 
     // Root filesystem.
     if let Some(ref rootfs_path) = vm.rootfs_path {
-        let backend = bind_rootfs_backend(rootfs_path, vm.rootfs_follow_root_symlinks)?;
+        let backend = bind_rootfs_backend(
+            rootfs_path,
+            vm.rootfs_follow_root_symlinks,
+            vm.fs_state_limit(),
+        )?;
         builder = builder.fs(move |fs| fs.tag("/dev/root").custom(Box::new(backend)));
     } else if let Some(ref vmdk_path) = vm.rootfs_vmdk {
         // EROFS fsmerge OCI rootfs: VMDK (read-only) + upper.ext4 (writable).
         #[cfg(unix)]
         {
-            let backend = bootstrap_trampoline_backend()?;
+            let backend = bootstrap_trampoline_backend(vm.fs_state_limit())?;
             builder = builder.fs(move |fs| fs.tag("/dev/root").custom(Box::new(backend)));
         }
         #[cfg(windows)]
         {
             let backend = AgentBootstrapFs::new()
+                .map(|fs| fs.with_state_limit(vm.fs_state_limit()))
                 .map_err(|e| RuntimeError::Custom(format!("bootstrap rootfs: {e}")))?;
             builder = builder.fs(move |fs| fs.tag("/dev/root").custom(Box::new(backend)));
         }
@@ -1969,12 +2004,13 @@ fn build_vm(
     } else if vm.rootfs_disk_spec.is_some() || vm.rootfs_disk.is_some() {
         #[cfg(unix)]
         {
-            let backend = bootstrap_trampoline_backend()?;
+            let backend = bootstrap_trampoline_backend(vm.fs_state_limit())?;
             builder = builder.fs(move |fs| fs.tag("/dev/root").custom(Box::new(backend)));
         }
         #[cfg(windows)]
         {
             let backend = AgentBootstrapFs::new()
+                .map(|fs| fs.with_state_limit(vm.fs_state_limit()))
                 .map_err(|e| RuntimeError::Custom(format!("bootstrap rootfs: {e}")))?;
             builder = builder.fs(move |fs| fs.tag("/dev/root").custom(Box::new(backend)));
         }
@@ -2022,6 +2058,7 @@ fn build_vm(
     {
         let runtime_tag = microsandbox_protocol::RUNTIME_FS_TAG.to_string();
         let cfg = PassthroughConfig {
+            max_state_bytes: vm.fs_state_limit(),
             root_dir: canonicalize_owned_mount_root(&config.runtime_dir)?,
             inject_init: false,
             quota_bytes: Some(microsandbox_protocol::RUNTIME_FS_QUOTA_BYTES),
@@ -2085,8 +2122,10 @@ fn build_vm(
             // failing strict validation. Keep its guest device but grant no host access.
             let tag = binding.mount.tag.clone();
             builder = builder.fs(move |fs| {
-                fs.tag(&tag)
-                    .custom(Box::new(microsandbox_filesystem::UnavailableFs::default()))
+                fs.tag(&tag).custom(Box::new(
+                    microsandbox_filesystem::UnavailableFs::default()
+                        .with_state_limit(vm.fs_state_limit()),
+                ))
             });
             external_mount_reports.push(crate::checkpoint::ExternalMountReport {
                 guest_path: binding.mount.guest_path.clone(),
@@ -2125,6 +2164,7 @@ fn build_vm(
             });
         }
         let cfg = PassthroughConfig {
+            max_state_bytes: vm.fs_state_limit(),
             external_checkpoint: Some(external_options),
             stat_virtualization: parsed.stat_virtualization,
             host_permissions: parsed.host_permissions,
@@ -2156,8 +2196,10 @@ fn build_vm(
                         "external file cannot be opened: {error}; filesystem operations return EIO"
                     ));
                     builder = builder.fs(move |fs| {
-                        fs.tag(&tag)
-                            .custom(Box::new(microsandbox_filesystem::UnavailableFs::default()))
+                        fs.tag(&tag).custom(Box::new(
+                            microsandbox_filesystem::UnavailableFs::default()
+                                .with_state_limit(vm.fs_state_limit()),
+                        ))
                     });
                     continue;
                 }
@@ -2221,8 +2263,10 @@ fn build_vm(
             {
                 let tag = binding.mount.tag.clone();
                 builder = builder.fs(move |fs| {
-                    fs.tag(&tag)
-                        .custom(Box::new(microsandbox_filesystem::UnavailableFs::default()))
+                    fs.tag(&tag).custom(Box::new(
+                        microsandbox_filesystem::UnavailableFs::default()
+                            .with_state_limit(vm.fs_state_limit()),
+                    ))
                 });
                 external_mount_reports.push(crate::checkpoint::ExternalMountReport {
                     guest_path: binding.mount.guest_path.clone(),
@@ -2288,6 +2332,7 @@ fn build_vm(
             });
         }
         let cfg = PassthroughConfig {
+            max_state_bytes: vm.fs_state_limit(),
             root_dir: host_path.clone(),
             external_checkpoint: owned_checkpoint.is_none().then_some(external_options),
             owned_checkpoint,
@@ -2309,7 +2354,7 @@ fn build_vm(
             Err(error) if owned_mount.is_none() && relaxed && restore_binding.is_some_and(|binding| !binding.require_backing)
                 && matches!(error.kind(), std::io::ErrorKind::NotFound | std::io::ErrorKind::PermissionDenied | std::io::ErrorKind::NotADirectory) => {
                 external_mount_reports.last_mut().expect("restore report").unavailable = Some(format!("external export cannot be opened: {error}; filesystem operations return EIO"));
-                builder = builder.fs(move |fs| fs.tag(&tag).custom(Box::new(microsandbox_filesystem::UnavailableFs::default())));
+                builder = builder.fs(move |fs| fs.tag(&tag).custom(Box::new(microsandbox_filesystem::UnavailableFs::default().with_state_limit(vm.fs_state_limit()))));
                 continue;
             }
             result => result,
@@ -2728,37 +2773,33 @@ fn encode_bootstrap_frame(bootstrap: &GuestBootstrap) -> RuntimeResult<Vec<u8>> 
 fn publish_control_endpoint(
     control_sock_path: PathBuf,
     context: super::control::ControlContext,
-    run_dir: &Path,
+    socket_paths: &RuntimeSocketPaths,
     sandbox_name: &str,
 ) -> RuntimeResult<()> {
     // Windows uses named pipes and has no legacy Unix socket link to publish.
     #[cfg(not(unix))]
-    let _ = (run_dir, sandbox_name);
+    let _ = (socket_paths, sandbox_name);
 
-    match super::control::spawn_control_listener(control_sock_path.clone(), context) {
-        Ok(()) => {
-            #[cfg(unix)]
-            if let Err(error) =
-                crate::ipc::publish_legacy_control_link(run_dir, sandbox_name, &control_sock_path)
-            {
-                if error.kind() == std::io::ErrorKind::InvalidInput {
-                    tracing::warn!(
-                        "legacy runtime control endpoint is unavailable for {sandbox_name}: {error}"
-                    );
-                } else {
-                    return Err(error.into());
-                }
-            }
-        }
-        Err(error) => {
-            // Live control has historically been an optional capability. Keep
-            // ordinary launches running when the listener itself is unavailable.
-            tracing::warn!(
-                "failed to start runtime control listener at {}: {error}",
-                control_sock_path.display()
-            );
-        }
+    // Live control has historically been an optional capability. Keep ordinary
+    // launches running when the listener itself is unavailable.
+    if let Err(error) = super::control::spawn_control_listener(control_sock_path.clone(), context) {
+        tracing::warn!(
+            "failed to start runtime control listener at {}: {error}",
+            control_sock_path.display()
+        );
+        return Ok(());
     }
+
+    #[cfg(unix)]
+    if let Err(error) = socket_paths.publish_legacy_control_link(&control_sock_path) {
+        if error.kind() != std::io::ErrorKind::InvalidInput {
+            return Err(error.into());
+        }
+        tracing::warn!(
+            "legacy runtime control endpoint is unavailable for {sandbox_name}: {error}"
+        );
+    }
+
     Ok(())
 }
 
@@ -2891,7 +2932,7 @@ fn macos_maxfilesperproc() -> Option<libc::rlim_t> {
 /// A restored virtio-fs session retains their inode numbers, so the destination
 /// provider must recreate the same pathname namespace before backend restore.
 #[cfg(unix)]
-fn bootstrap_trampoline_backend() -> RuntimeResult<PassthroughFs> {
+fn bootstrap_trampoline_backend(limit: usize) -> RuntimeResult<PassthroughFs> {
     let trampoline = tempfile::tempdir()?;
     for directory in ["dev", "sys", "proc", ".msb", "newroot"] {
         std::fs::create_dir(trampoline.path().join(directory)).map_err(|error| {
@@ -2899,6 +2940,7 @@ fn bootstrap_trampoline_backend() -> RuntimeResult<PassthroughFs> {
         })?;
     }
     let cfg = PassthroughConfig {
+        max_state_bytes: limit,
         root_dir: canonicalize_owned_mount_root(trampoline.path())?,
         no_symlink_root: true,
         ..Default::default()
@@ -2950,8 +2992,10 @@ fn prepare_runtime_restore_namespace(runtime_dir: &Path, oci_root: bool) -> Runt
 fn bind_rootfs_backend(
     rootfs_path: &Path,
     follow_root_symlinks: bool,
+    limit: usize,
 ) -> RuntimeResult<PassthroughFs> {
     let cfg = PassthroughConfig {
+        max_state_bytes: limit,
         root_dir: rootfs_path.to_path_buf(),
         no_symlink_root: !follow_root_symlinks,
         ..Default::default()
@@ -3697,6 +3741,7 @@ fn agent_kernel_cmdline(
 
 #[cfg(test)]
 mod tests {
+    use super::VmConfig;
     #[cfg(feature = "net")]
     use super::to_krun_network_rate_limiters;
     use super::{
@@ -3744,6 +3789,33 @@ mod tests {
             readonly,
             snapshot_owned: true,
             lifecycle_owned: true,
+        }
+    }
+
+    #[test]
+    fn fs_state_limit_accepts_only_the_configurable_range() {
+        const MIB: u64 = 1024 * 1024;
+        assert_eq!(
+            u64::from(microsandbox_protocol::FS_STATE_LIMIT_DEFAULT_MIB) * MIB,
+            msb_krun::DEFAULT_MAX_FS_BACKEND_STATE_BYTES as u64
+        );
+        for bytes in [
+            None,
+            Some(MIB),
+            Some(4 * MIB),
+            Some(64 * MIB),
+            Some(4095 * MIB),
+        ] {
+            assert!(
+                VmConfig::validate_fs_state_limit(bytes).is_ok(),
+                "{bytes:?}"
+            );
+        }
+        for bytes in [0, MIB - 1, 4096 * MIB] {
+            assert!(
+                VmConfig::validate_fs_state_limit(Some(bytes)).is_err(),
+                "{bytes}"
+            );
         }
     }
 
@@ -3993,7 +4065,12 @@ mod tests {
 
         // follow=true: the tempdir path may traverse a symlinked prefix (macOS
         // `/var`); this test exercises backend behavior, not root protection.
-        let fs = bind_rootfs_backend(rootfs.path(), true).unwrap();
+        let fs = bind_rootfs_backend(
+            rootfs.path(),
+            true,
+            msb_krun::DEFAULT_MAX_FS_BACKEND_STATE_BYTES,
+        )
+        .unwrap();
         fs.init(FsOptions::empty()).unwrap();
 
         let host = fs.lookup(fs_context(), 1, c"host.txt").unwrap();
@@ -4006,7 +4083,8 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn bootstrap_trampoline_recreates_agent_mountpoints() {
-        let fs = bootstrap_trampoline_backend().unwrap();
+        let fs =
+            bootstrap_trampoline_backend(msb_krun::DEFAULT_MAX_FS_BACKEND_STATE_BYTES).unwrap();
         fs.init(FsOptions::empty()).unwrap();
         for directory in ["dev", "sys", "proc", ".msb", "newroot"] {
             fs.lookup(fs_context(), 1, &std::ffi::CString::new(directory).unwrap())

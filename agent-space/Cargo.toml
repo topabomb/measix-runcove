@@ -14,8 +14,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-microsandbox = { version = "=0.7.2", optional = true }
-microsandbox-agent-client = { version = "=0.7.2", optional = true }
+microsandbox = { version = "=0.7.9", optional = true }
+microsandbox-agent-client = { version = "=0.7.9", optional = true }
 tokio = { version = "1", features = ["full"] }
 async-trait = "0.1"
 async-stream = "0.3"

@@ -2,6 +2,7 @@ mod common;
 
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::net::TcpListener;
 
 use agent_engine::engine::msb::MsbEngine;
 use agent_engine::engine::{AgentEngine, NetworkAccess, VolumeSpec, WorkspaceOpts};
@@ -67,15 +68,40 @@ async fn test_np01_public_only() {
         public
     );
 
-    // Host/gateway should be blocked
-    let host = exec_str(&handle, "curl -sS -m 5 -o /dev/null -w '%{http_code}' http://host.microsandbox.internal/ 2>&1 || echo 'BLOCKED'").await;
-    assert!(
-        host.contains("BLOCKED") || host.contains("000") || host.contains("Could not connect"),
-        "NP-01: host should be blocked, got: {}",
-        host
-    );
-
+    // MSB 0.7.9 rejects denied HTTP with a structured gateway response.
+    // A listening host fixture proves no connection reaches the destination.
+    let listener = TcpListener::bind("0.0.0.0:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let host = exec_str(
+        &handle,
+        "curl --noproxy '*' -sS -m 5 -w '\n%{http_code}' http://host.microsandbox.internal/",
+    )
+    .await;
+    // Non-HTTP ports can be rejected before the gateway reads the request.
+    let blocked_port = exec_str(
+        &handle,
+        &format!("curl --noproxy '*' -sS -m 5 -o /dev/null -w '%{{http_code}}' http://host.microsandbox.internal:{port}/"),
+    )
+    .await;
+    let reached_host = tokio::time::timeout(Duration::from_millis(200), listener.accept()).await;
     common::cleanup_sandbox(&engine, &name, &opts_with(NetworkAccess::PublicOnly)).await;
+
+    let (body, status) = host
+        .trim()
+        .rsplit_once('\n')
+        .unwrap_or_else(|| panic!("HTTP status and body: {host:?}"));
+    assert_eq!(status, "403", "NP-01: expected policy denial, got: {host}");
+    let denial: serde_json::Value = serde_json::from_str(body).unwrap();
+    assert_eq!(denial["code"], "network_policy_denied");
+    assert_eq!(denial["domain"], "host.microsandbox.internal");
+    assert!(
+        matches!(blocked_port.trim(), "000" | "403"),
+        "unexpected host response: {blocked_port}"
+    );
+    assert!(
+        reached_host.is_err(),
+        "NP-01: denied request reached the host"
+    );
 }
 
 // ─── NP-02: none — no egress at all ─────────────────────────────────────────

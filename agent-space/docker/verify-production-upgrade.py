@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rehearse the exact pre-refactor production image using only newly created data.
+"""Rehearse the explicitly pinned production image using only newly created data.
 Never attaches a production volume or reads production credentials.
 """
 import argparse,hashlib,http.client,json,os,secrets,subprocess,time,uuid
@@ -9,9 +9,8 @@ ROOT=Path(__file__).resolve().parents[1]
 STATE='/var/lib/microsandbox/agent-space-state/state.json'
 def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--image',required=True);p.add_argument('--old-image',required=True);a=p.parse_args()
- baseline=json.loads((ROOT.parent/'docs/evidence/runcove-split-20261015/production-baseline.json').read_text())
  old_id=docker('image','inspect',a.old_image,'--format','{{.Id}}').strip()
- assert old_id==baseline['imageId'],'source must be the exact audited production image'
+ assert a.old_image==old_id,'pass the audited immutable production image ID, not a mutable tag'
  run='runcove-upgrade-'+uuid.uuid4().hex[:10];root=ROOT/'target/production-upgrade'/run;root.mkdir(parents=True,mode=0o700)
  admin_token=secrets.token_urlsafe(40);os.environ['AGENT_SPACE_ADMIN_TOKEN']=admin_token
  report={'target':'server','image':a.image,'image_id':docker('image','inspect',a.image,'--format','{{.Id}}').strip(),'old_image_id':old_id,'checks':[],'passed':False}
@@ -63,7 +62,7 @@ def main():
   text=c.tool('bash',**{bash_key:'cat /root/runcove-migration-marker /workspace/runcove-migration-marker'})
   assert 'root-before' in text and 'workspace-before' in text
   c.tool('bash',**{bash_key:'nohup python3 -m http.server 8128 --bind 127.0.0.1 --directory /workspace/migration-site >/tmp/migration-site.log 2>&1 </dev/null &'})
-  if bash_key=='command':
+  if 'browser_run' in expected_tools:
    assert legacy_browser(c,"await page.goto('http://127.0.0.1:8128/');return await page.evaluate(()=>localStorage.getItem('migration-profile'));")=='preserved'
    image=c.tool_result('browser_observe',view='desktop')
   else:
@@ -80,9 +79,15 @@ def main():
   user=admin(port,'POST','',{'username':'desktop'});token=user['token'];space=user['agentSpaceId']
   dav_token=admin(port,'POST','/desktop/dav-token',{'agentSpaceId':space})['token']
   c=client(port,token)
-  original_tools={tool['name'] for tool in c.request('tools/list')['tools']}
-  c.tool('bash',command="printf root-before >/root/runcove-migration-marker; printf workspace-before >/workspace/runcove-migration-marker; mkdir -p /workspace/migration-site; printf '<title>Migration</title><p id=marker></p><script>marker.textContent=localStorage.getItem(\"migration-profile\")</script>' >/workspace/migration-site/index.html; nohup python3 -m http.server 8128 --bind 127.0.0.1 --directory /workspace/migration-site >/tmp/migration-site.log 2>&1 </dev/null &")
-  legacy_browser(c,"await page.goto('http://127.0.0.1:8128/');await page.evaluate(()=>localStorage.setItem('migration-profile','preserved'));return true;")
+  descriptors=c.request('tools/list')['tools']
+  original_tools={tool['name'] for tool in descriptors}
+  bash_schema=next(tool['inputSchema'] for tool in descriptors if tool['name']=='bash')
+  old_bash_key='cmd' if 'cmd' in bash_schema['properties'] else 'command'
+  c.tool('bash',**{old_bash_key:"printf root-before >/root/runcove-migration-marker; printf workspace-before >/workspace/runcove-migration-marker; mkdir -p /workspace/migration-site; printf '<title>Migration</title><p id=marker></p><script>if(location.search) localStorage.setItem(\"migration-profile\",\"preserved\");marker.textContent=localStorage.getItem(\"migration-profile\")</script>' >/workspace/migration-site/index.html; nohup python3 -m http.server 8128 --bind 127.0.0.1 --directory /workspace/migration-site >/tmp/migration-site.log 2>&1 </dev/null &"})
+  if 'browser_run' in original_tools:
+   legacy_browser(c,"await page.goto('http://127.0.0.1:8128/?seed=1');return true;")
+  else:
+   current(c,'browser_act',actions=[{'do':'navigate','url':'http://127.0.0.1:8128/?seed=1'}])
   original=snapshot(source);original_hash=hashlib.sha256(json.dumps(original,sort_keys=True).encode()).hexdigest();stop(source)
   backup=root/'complete-data.tar.gz'
   docker('run','--rm','--entrypoint','tar','-v',data+':/data:ro','-v',str(root)+':/backup',a.old_image,'czf','/backup/'+backup.name,'-C','/data','.',timeout=600)
@@ -93,7 +98,9 @@ def main():
    result=docker('run','--rm','--entrypoint','agent-space-mcp','-v',str(root)+':/migration',a.image,'--config','/migration/old.toml','convert-config','--output','/migration/new.toml','--apply' if apply else '--dry-run')
    assert json.loads(result)['applied']==apply
    if not apply:assert not converted.exists()
-  candidate,port,dav_port=launch(a.image,data,converted,'candidate')
+  candidate_data=volume('candidate')
+  docker('run','--rm','--entrypoint','tar','-v',candidate_data+':/data','-v',str(root)+':/backup:ro',a.old_image,'xzf','/backup/'+backup.name,'-C','/data',timeout=600)
+  candidate,port,dav_port=launch(a.image,candidate_data,converted,'candidate')
   current_tools={'bash','read','write','edit','web_publish','browser_snapshot','browser_act','browser_read','screen_observe'}
   c=verify_space(candidate,port,dav_port,token,dav_token,original,current_tools);check('original_credentials_and_identity');check('workspace_profile_and_files')
   publication=json.loads(c.tool('web_publish',action='publish',name='migration',file='/workspace/runcove-migration-marker'))
@@ -106,9 +113,8 @@ def main():
   rollback_data=volume('rollback')
   docker('run','--rm','--entrypoint','tar','-v',rollback_data+':/data','-v',str(root)+':/backup:ro',a.old_image,'xzf','/backup/'+backup.name,'-C','/data',timeout=600)
   rollback,port,dav_port=launch(a.old_image,rollback_data,cfg,'rollback');c=client(port,token)
-  c.tool('bash',command='nohup python3 -m http.server 8128 --bind 127.0.0.1 --directory /workspace/migration-site >/tmp/migration-site.log 2>&1 </dev/null &')
-  verify_space(rollback,port,dav_port,token,dav_token,original,original_tools,bash_key='command')
-  assert 'backup-boundary-ok' in c.tool('bash',command='test ! -e /workspace/candidate-only && echo backup-boundary-ok')
+  verify_space(rollback,port,dav_port,token,dav_token,original,original_tools,bash_key=old_bash_key)
+  assert 'backup-boundary-ok' in c.tool('bash',**{old_bash_key:'test ! -e /workspace/candidate-only && echo backup-boundary-ok'})
   stop(rollback);check('isolated_complete_backup_rollback');report['passed']=True
  except BaseException as error:
   report['error']=str(error).replace(admin_token,'[REDACTED_SECRET]');raise

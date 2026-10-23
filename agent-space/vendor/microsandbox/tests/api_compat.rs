@@ -1,4 +1,19 @@
 #[test]
+fn creation_futures_remain_small_for_concurrent_callers() {
+    let future = microsandbox::Sandbox::builder("stack-probe").create();
+    let detached = microsandbox::Sandbox::builder("stack-probe").create_detached();
+    for bytes in [
+        std::mem::size_of_val(&future),
+        std::mem::size_of_val(&detached),
+    ] {
+        assert!(
+            bytes < 16 * 1024,
+            "create state must not inflate every caller's async stack: {bytes} bytes"
+        );
+    }
+}
+
+#[test]
 #[cfg(feature = "local")]
 fn rust_root_compat_exports_stay_available() {
     // Compile-time tripwire for public root exports restored after the
@@ -49,8 +64,10 @@ fn rust_identity_and_generated_patch_surface_is_backend_neutral() {
     let _ = SandboxHandle::restart;
     let _ = SandboxHandle::destroy;
     let _ = (RestartOptions::default(), DestroyOptions::default());
-    let _ = microsandbox::SandboxConfigPatch::new()
-        .resources(microsandbox::SandboxResourcesPatch::new().cpus(2));
+    let _ = microsandbox::SandboxConfigPatch::new().spec(
+        microsandbox::SandboxSpecPatch::new()
+            .resources(microsandbox::SandboxResourcesPatch::new().cpus(2)),
+    );
 }
 
 #[allow(dead_code)]
@@ -90,4 +107,40 @@ async fn rust_sandbox_fs_handle_api_stays_available(
     let _ = (metadata.uid, metadata.gid, metadata.accessed);
 
     Ok(())
+}
+
+#[test]
+fn boot_error_reason_is_preserved_in_every_backend_build() {
+    use microsandbox::logs::{BootError, InitFailureReason};
+
+    for (wire, expected) in [
+        (
+            Some("user_not_found"),
+            Some(InitFailureReason::UserNotFound),
+        ),
+        (
+            Some("group_not_found"),
+            Some(InitFailureReason::GroupNotFound),
+        ),
+        (Some("future_reason"), Some(InitFailureReason::Unknown)),
+        (None, None),
+    ] {
+        let mut record = serde_json::json!({
+            "t": "2026-10-03T00:00:00Z",
+            "stage": "config",
+            "errno": null,
+            "message": "guest initialization failed",
+        });
+        if let Some(wire) = wire {
+            record["reason"] = wire.into();
+        }
+        let error: BootError = serde_json::from_value(record).unwrap();
+        assert_eq!(error.reason, expected);
+        let encoded = serde_json::to_value(&error).unwrap();
+        if wire.is_none() {
+            assert!(encoded.get("reason").is_none());
+        } else {
+            assert_eq!(encoded["reason"], serde_json::to_value(expected).unwrap());
+        }
+    }
 }

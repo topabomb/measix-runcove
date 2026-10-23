@@ -263,8 +263,18 @@ with open('/workspace/small.bin', 'wb') as f: f.write(b'new')
             passed('full 4 GiB HTTP read checked byte-for-byte with bounded client memory')
 
         if args.stress:
-            identity_code = "import glob,json; print('IDENTITY='+json.dumps([json.load(open(p))['instance'] for p in glob.glob('/tmp/agent-space/*/instance.json')],sort_keys=True))"
-            identity_before = guest(identity_code)
+            identity_code = "import glob,json;from pathlib import Path;print('IDENTITY='+json.dumps({'boot_id':Path('/proc/sys/kernel/random/boot_id').read_text().strip(),'instances':{p:json.load(open(p))['instance'] for p in glob.glob('/tmp/agent-space/*/instance.json')}},sort_keys=True))"
+
+            def identity():
+                # Bash also appends timing metadata; compare only process identity.
+                lines = [line.removeprefix('IDENTITY=') for line in guest(identity_code).splitlines() if line.startswith('IDENTITY=')]
+                assert len(lines) == 1, 'missing or ambiguous identity output'
+                value = json.loads(lines[0])
+                assert value['boot_id'] and value['instances'], 'empty runtime identity'
+                return value
+
+            identity_before = identity()
+            evidence['cancellation_identity'] = {'before': identity_before}
             guest("open('/workspace/upload-cancel.bin','wb').write(b'original')")
             retries = 0
             recovery_delays = []
@@ -338,7 +348,9 @@ with open('/workspace/small.bin', 'wb') as f: f.write(b'new')
             conn, response = recovered_request(path='upload-cancel.bin')
             assert response.status == 200 and response.read() == b'original'
             conn.close()
-            assert guest(identity_code) == identity_before, 'VM or owned helper restarted during cancellation stress'
+            identity_after = identity()
+            evidence['cancellation_identity']['after'] = identity_after
+            assert identity_after == identity_before, 'VM or owned helper restarted during cancellation stress'
             assert 'MCP_HEALTHY' in guest("print('MCP_HEALTHY')")
             evidence['mixed_cancellation'] = {'upload_cancellations': 60, 'download_cancellations': 60,
                                             'early_rejected_uploads': rejected,

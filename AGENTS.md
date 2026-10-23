@@ -29,10 +29,10 @@ python3 tests/test_exec_owner.py # 有界输出及前台后代清理
 ## Runtime Tool
 
 - Python 3.12: `/usr/bin/python3`（venv: `.venv`）
-- microsandbox SDK / CLI: `0.7.2`；CLI `msb`（通过 PATH 查找）
+- microsandbox SDK / CLI: `0.7.9`；CLI `msb`（通过 PATH 查找）
 - `Cargo.toml` 精确锁定 SDK，`Cargo.lock` 入库；构建使用 `--locked`。SDK 默认 `prebuilt` 构建会同步 `$MSB_HOME`（默认 `~/.microsandbox`）内 CLI / libkrunfw。
 - Linux x86_64 发布运行时校验：`agent-space/msb-runtime.sha256`。
-- 上述校验是官方种子 CLI/libkrunfw 输入；SDK 以官方 0.7.2 crate 为基础，通过 Cargo vendor 覆盖应用 Linux 生命周期临时补丁；Agent Space 不直接写 MSB 数据库。Docker 内实际 VM msb 从锁定源码应用 `agent-space/docker/patches/` 的 relay 补丁（迟到 BulkFinish 与部分帧读取取消安全）及生命周期补丁后重编译，与服务均使用 SQLite 3.51.3；发布 crate、源码副本、补丁与文件结果摘要均经 manifest 校验；来源、补丁和最终哈希见镜像 `/opt/agent-space/runtime.json`。升级前先核对 `docs/runtime.md` 的逐项补丁撤销条件。
+- 上述校验是官方种子 CLI/libkrunfw 输入；SDK 以官方 0.7.9 crate 为基础，通过 Cargo vendor 覆盖应用 Linux 生命周期临时补丁；Agent Space 不直接写 MSB 数据库。Docker 内实际 VM msb 从锁定源码应用 `agent-space/docker/patches/` 的生命周期补丁（relay 修复已由上游 0.7.9 覆盖）后重编译，与服务均使用 SQLite 3.51.3；发布 crate、源码副本、补丁与文件结果摘要均经 manifest 校验；来源、补丁和最终哈希见镜像 `/opt/agent-space/runtime.json`。升级前先核对 `docs/runtime.md` 的逐项补丁撤销条件。
 - 先构建当前 helper，再串行运行真实 VM 测试：`cargo build -p agent-space-static-http -p agent-space-webdav -p agent-space-desktop --locked`、`cargo test --workspace --locked -- --test-threads=1`，避免各测试清理相互干扰。
 - WSL 构建资源紧张时可设置 `CARGO_BUILD_JOBS=2 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_INCREMENTAL=0`，避免测试链接产物耗尽 Windows 宿主磁盘；不要同时跑多个完整构建。
 - 镜像: `nikolaik/python-nodejs:python3.12-nodejs22-slim`

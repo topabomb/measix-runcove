@@ -162,8 +162,10 @@ class MediaQualification(unittest.TestCase):
   with urllib.request.urlopen(urllib.request.Request(base+'login',data=json.dumps({'token':self.client.token}).encode(),headers={'Content-Type':'application/json','Origin':BASE}),timeout=10) as response:
    cookie=response.headers['Set-Cookie'].split(';',1)[0];nonce=json.load(response)['nonce']
   headers={'Cookie':cookie,'X-Desktop-Nonce':nonce,'Origin':BASE}
+  disk=self.client.fixture_js("const fs=await import('node:fs'),crypto=await import('node:crypto');const b=fs.readFileSync("+json.dumps(file['path'])+");return {bytes:b.length,sha256:crypto.createHash('sha256').update(b).digest('hex')};")
   with urllib.request.urlopen(urllib.request.Request(base+'files'+file['path'].removeprefix('/workspace'),headers=headers),timeout=10) as response:
-   original=response.read();self.assertEqual(len(original),file['bytes']);self.assertTrue(original.startswith(bytes.fromhex('89504e470d0a1a0a')))
+   original=response.read();self.assertEqual(len(original),disk['bytes']);self.assertTrue(original.startswith(bytes.fromhex('89504e470d0a1a0a')))
+   self.assertEqual(hashlib.sha256(original).hexdigest(),disk['sha256'])
   # Traverse the same private parent when listing artifacts. Standalone also
   # verifies separately that a root-private target remains inaccessible.
   artifacts='/workspace/agent-space/artifacts'

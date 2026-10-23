@@ -239,7 +239,8 @@ public_base_url = "http://127.0.0.1:{dav_port}"
         command(args.image, volume, importing, 'import-users', '--apply')
         assert snapshot(volume)['schemaVersion'] == 3
         upgraded, port = launch(args.image, volume, upgraded_cfg, mode + '-upgraded')
-        assert docker('exec', upgraded, 'cat', '/var/lib/microsandbox/.microsandbox/lib/.libkrunfw.version').strip() == '0.7.2'
+        runtime = json.loads(docker('exec', upgraded, 'cat', '/opt/agent-space/runtime.json'))
+        assert docker('exec', upgraded, 'cat', '/var/lib/microsandbox/.microsandbox/lib/.libkrunfw.version').strip() == runtime['microsandbox']
         user = admin(port, 'GET', '/verify')
         space = user['agentSpaceId']
         assert not user['hasCredential']

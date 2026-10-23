@@ -170,7 +170,7 @@ print(json.dumps({'sandbox_id':s['id'],'name':s['name'],'status':s['status'],'co
         # Restart immediately: identity recovery must not require an old run
         # to age before recognizing a different live executable at its PID.
         self.docker("kill", self.name)
-        self.docker("rm", self.name)
+        self.docker("rm", "-v", self.name)
         self.boot(self.args.image)
         crashed = self.catalog()
         assert crashed["status"] == "Crashed", "restart must exercise a real crashed sandbox"
@@ -206,7 +206,7 @@ print(json.dumps({'sandbox_id':s['id'],'name':s['name'],'status':s['status'],'co
 
         self.cli("pause", self.sandbox)
         self.docker("kill", self.name)
-        self.docker("rm", self.name)
+        self.docker("rm", "-v", self.name)
         self.boot(self.args.image)
         assert self.dav(timeout=15)[0] == 207
         self.assert_preserved(original)
@@ -215,6 +215,14 @@ print(json.dumps({'sandbox_id':s['id'],'name':s['name'],'status':s['status'],'co
 
         pid = self.catalog()["run"]["pid"]
         self.docker("exec", self.name, "kill", "-9", str(pid))
+        # Signal delivery is not process exit: observe the kernel state without
+        # asking MSB to reconcile metadata or replacing the cached Host handle.
+        self.docker("exec", self.name, "sh", "-c",
+                    'i=0; while [ "$i" -lt 100 ]; do '
+                    '[ -r "/proc/$1/stat" ] || exit 0; '
+                    'read -r p comm state rest < "/proc/$1/stat" || exit 0; '
+                    'case "$state" in Z|X) exit 0;; esac; '
+                    'i=$((i+1)); sleep .05; done; exit 1', "sh", str(pid))
         assert self.dav()[0] == 207
         self.assert_preserved(original)
         self.check("cached_runtime_recovers_after_unexpected_vm_process_exit")
@@ -299,7 +307,7 @@ print(json.dumps({'sandbox_id':s['id'],'name':s['name'],'status':s['status'],'co
         }, indent=2) + "\n")
 
     def cleanup(self):
-        subprocess.run(["docker", "rm", "-f", self.name], capture_output=True)
+        subprocess.run(["docker", "rm", "-f", "-v", self.name], capture_output=True)
         for holder in self.holders:
             try:
                 holder.communicate(timeout=5)
@@ -307,6 +315,15 @@ print(json.dumps({'sandbox_id':s['id'],'name':s['name'],'status':s['status'],'co
                 holder.kill()
                 holder.communicate(timeout=5)
         subprocess.run(["docker", "volume", "rm", self.volume], capture_output=True)
+        containers = self.docker("ps", "-a", "--format", "{{.Names}}").splitlines()
+        volumes = self.docker("volume", "ls", "--format", "{{.Name}}").splitlines()
+        clean = self.name not in containers and self.volume not in volumes
+        result_path = self.output / "result.json"
+        if result_path.exists():
+            result = json.loads(result_path.read_text())
+            result["cleanup_passed"] = clean
+            result_path.write_text(json.dumps(result, indent=2) + "\n")
+        assert clean, "DAV restart qualification resources remain"
 
 
 def main():

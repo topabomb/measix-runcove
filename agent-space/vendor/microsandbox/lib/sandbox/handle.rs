@@ -158,6 +158,37 @@ impl SandboxHandle {
         &self.name
     }
 
+    /// Observe files in this sandbox's managed directory using its captured backend.
+    ///
+    /// Host bind mounts and shared runtime-memory caches are excluded. Ownership and physical
+    /// reclamation cannot be inferred from these file lengths.
+    pub async fn storage_usage(&self) -> MicrosandboxResult<crate::StorageItemUsage> {
+        #[cfg(feature = "local")]
+        {
+            let local = self
+                .backend
+                .as_local()
+                .ok_or_else(|| MicrosandboxError::local_only(Operation::StorageUsage))?;
+            super::validate_sandbox_name(&self.name)?;
+            // Fence cooperative removal/recreation while checking this handle's identity and
+            // scanning its path. A pre-scan refresh alone can measure a replacement sandbox.
+            let _transition = crate::LocalBackend::acquire_sandbox_transition_guard(
+                &local.config().run_dir(),
+                &self.name,
+            )
+            .await?;
+            self.refresh().await?;
+            crate::Storage::directory_usage(
+                self.name.clone(),
+                local.sandboxes_dir().join(&self.name),
+                local.sandboxes_dir(),
+                "Persisted sandbox data is retained, including stopped and crashed sandboxes. Host bind mounts and shared runtime-memory caches are excluded.",
+            ).await
+        }
+        #[cfg(not(feature = "local"))]
+        Err(MicrosandboxError::local_only(Operation::StorageUsage))
+    }
+
     /// Stable identity of this persisted sandbox.
     ///
     /// Unlike [`name`](Self::name), this value changes when a sandbox is
@@ -264,7 +295,9 @@ impl SandboxHandle {
     /// raw JSON, or [`cloud`](Self::cloud) to access the typed cloud state.
     pub fn config(&self) -> MicrosandboxResult<SandboxConfig> {
         match &self.inner {
-            SandboxHandleInner::Local(s) => Ok(crate::db::config::decode(&s.config_json)?),
+            SandboxHandleInner::Local(s) => {
+                Ok(serde_json::from_str::<SandboxConfig>(&s.config_json)?)
+            }
             SandboxHandleInner::Cloud(_) => Err(MicrosandboxError::local_only(
                 Operation::SandboxHandleConfig,
             )),
@@ -273,9 +306,10 @@ impl SandboxHandle {
 
     /// Parse the active configuration snapshot, when one is available.
     pub fn active_config(&self) -> MicrosandboxResult<Option<SandboxConfig>> {
-        self.active_config_json()
-            .map(crate::db::config::decode)
-            .transpose()
+        Ok(self
+            .active_config_json()
+            .map(serde_json::from_str::<SandboxConfig>)
+            .transpose()?)
     }
 
     /// Start planning a sandbox modification from this handle.
@@ -579,9 +613,7 @@ impl SandboxHandle {
                 // handshake so concurrent name reuse cannot silently rebind
                 // this receiver to the replacement.
                 self.refresh().await?;
-                // A current SQL schema can still contain historical JSON.
-                // Use the same lossless decoder as config inspection/start.
-                let config = crate::db::config::decode(&local.config_json)?;
+                let config = serde_json::from_str::<SandboxConfig>(&local.config_json)?;
 
                 Ok(Sandbox::from_local(
                     self.backend.clone(),
@@ -952,7 +984,7 @@ fn is_local_ephemeral_handle(inner: &SandboxHandleInner) -> bool {
         return false;
     };
 
-    crate::db::config::decode(&state.config_json)
+    serde_json::from_str::<SandboxConfig>(&state.config_json)
         .map(|config| config.spec.lifecycle.ephemeral)
         .unwrap_or(false)
 }
@@ -1021,10 +1053,102 @@ impl std::fmt::Debug for SandboxHandle {
 // Tests
 //--------------------------------------------------------------------------------------------------
 
+#[cfg(all(test, feature = "local"))]
+mod storage_tests {
+    use std::time::Duration;
+
+    use sea_orm::{EntityTrait, Set};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn storage_observation_waits_for_transition_and_rejects_a_replaced_name() {
+        let home = tempfile::tempdir().unwrap();
+        let local = Arc::new(
+            crate::test_support::local_backend_builder(home.path())
+                .build()
+                .await
+                .unwrap(),
+        );
+        let backend: Arc<dyn Backend> = local.clone();
+        let db = local.db().await.unwrap();
+        let original = sandbox_entity::Entity::insert(sandbox_entity::ActiveModel {
+            name: Set("storage-owner".into()),
+            config: Set("{}".into()),
+            status: Set(SandboxStatus::Stopped),
+            ephemeral: Set(false),
+            ..Default::default()
+        })
+        .exec(db.write())
+        .await
+        .unwrap()
+        .last_insert_id;
+        let model = sandbox_entity::Entity::find_by_id(original)
+            .one(db.read())
+            .await
+            .unwrap()
+            .unwrap();
+        let stale = SandboxHandle::from_local_model(backend.clone(), model, None);
+        let directory = local.sandboxes_dir().join("storage-owner");
+        std::fs::create_dir_all(&directory).unwrap();
+        std::fs::write(directory.join("disk"), [7; 11]).unwrap();
+
+        // Simulate a cooperative replacement that already owns the name transition.
+        let transition = crate::LocalBackend::acquire_sandbox_transition_guard(
+            &local.config().run_dir(),
+            "storage-owner",
+        )
+        .await
+        .unwrap();
+        let mut observation = Box::pin(stale.storage_usage());
+        assert!(
+            tokio::time::timeout(Duration::from_millis(50), observation.as_mut())
+                .await
+                .is_err(),
+            "storage inspection crossed an active namespace transition"
+        );
+        sandbox_entity::Entity::delete_by_id(original)
+            .exec(db.write())
+            .await
+            .unwrap();
+        sandbox_entity::Entity::insert(sandbox_entity::ActiveModel {
+            id: Set(original + 1),
+            name: Set("storage-owner".into()),
+            config: Set("{}".into()),
+            status: Set(SandboxStatus::Stopped),
+            ephemeral: Set(false),
+            ..Default::default()
+        })
+        .exec(db.write())
+        .await
+        .unwrap();
+        std::fs::write(directory.join("disk"), [9; 23]).unwrap();
+        drop(transition);
+
+        let result = tokio::time::timeout(Duration::from_secs(2), observation)
+            .await
+            .unwrap();
+        assert!(matches!(
+            result,
+            Err(MicrosandboxError::SandboxReplaced { .. })
+        ));
+        let current = backend
+            .sandboxes()
+            .get(backend.clone(), "storage-owner")
+            .await
+            .unwrap();
+        let usage = tokio::time::timeout(Duration::from_secs(2), current.storage_usage())
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(usage.logical_bytes, Some(23));
+    }
+}
+
 #[cfg(all(test, feature = "cloud"))]
 mod tests {
     use super::*;
-    use crate::backend::{BackendKind, CloudBackend, CloudSandboxStatus};
+    use crate::backend::{BackendKind, CloudSandboxStatus};
 
     #[tokio::test]
     async fn cloud_connect_rebuilds_live_sandbox_without_http_request() {
@@ -1048,6 +1172,20 @@ mod tests {
             result,
             Err(MicrosandboxError::SandboxNotRunning(_))
         ));
+    }
+
+    #[test]
+    #[allow(deprecated)]
+    fn fork_builders_keep_legacy_branch_aliases() {
+        let source = cloud_handle(CloudSandboxStatus::Running);
+        let canonical: crate::sandbox::ForkBuilder = source.fork("child");
+        let legacy: crate::sandbox::BranchBuilder = source.branch("child");
+        assert_eq!(
+            serde_json::to_value(canonical.inner.config.into_config()).unwrap(),
+            serde_json::to_value(legacy.inner.config.into_config()).unwrap(),
+        );
+        let _: crate::sandbox::ForkManyBuilder = source.branch_many(["a", "b"]);
+        let _: crate::sandbox::BranchManyBuilder = source.fork_many(["a", "b"]);
     }
 
     #[test]
@@ -1128,8 +1266,10 @@ mod tests {
     }
 
     fn cloud_handle_with_id(status: CloudSandboxStatus, id: &str) -> SandboxHandle {
-        let backend: Arc<dyn Backend> =
-            Arc::new(CloudBackend::new("https://unused.invalid", "msb_test_connect").unwrap());
+        let backend: Arc<dyn Backend> = Arc::new(
+            crate::test_support::cloud_backend("https://unused.invalid", "msb_test_connect")
+                .unwrap(),
+        );
         SandboxHandle::from_cloud(
             backend,
             CloudCreateSandboxResponse {

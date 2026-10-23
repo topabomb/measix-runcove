@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-23",
+  "passed": true,
+  "image_id": "sha256:932d905bdc34f99160776980d7b9d3ca470c5903af26600649f33dcf86cc4e5a",
+  "source_sha256": "38ddc5f7700bf5d2ae8b7e64e74e1f30d24222640151180d3b30cb06bccb9019",
+  "transport": "LAN first",
+  "attempt_notes": [
+    "Initial preflight rejected before production stop because Windows PowerShell wrapped the decoded container array. Corrected enumeration, independently reviewed, and removed the temporary user before retry; no source volume was shared.",
+    "Production PROPFIND verifier omitted Depth and stopped the candidate; corrected to Depth 1 and resumed after restoring service.",
+    "Public SSE verifier did not ignore empty data and DONE frames; corrected parsing and full public/restart verification passed."
+  ],
+  "microsandbox": "0.7.9",
+  "sqlite": "3.51.3",
+  "verification_limitation": "First post-switch MCP call passed with pre-upgrade temporary credentials and workspace file. PROPFIND omitted Depth and stopped verification; plaintext credentials were memory-only and lost. Remaining production checks rotate only the temporary account credentials. Full pre-upgrade DAV credential preservation is proven by isolated migration qualification, not this production read.",
+  "checks": [
+    "temporary_space_original_credentials_and_disks_created",
+    "cold_backup_restored_and_identity_preserved",
+    "temporary_rotated_credentials_mcp_dav_disks_and_desktop",
+    "public_https_mcp_and_dav_rotated_temporary_credentials",
+    "production_restart_preserves_identity_rotated_temporary_credentials_and_both_disks",
+    "actual_vm_executable_matches_qualified_runtime",
+    "temporary_user_and_resources_cleaned",
+    "production_healthy_neighbor_container_unchanged_and_running"
+  ],
+  "backup_strategy": "Stopped source with restart disabled; complete data/log/config/proxy backup; verified restoration to separate new volumes; retained original container and volumes for rollback.",
+  "neighbor_observation": "Neighbor container uptime changed during backup; deployment did not operate it. Final checks cover unchanged container/image identity and running state, not uninterrupted uptime or restart causation.",
+  "privacy": "Host addresses, production paths, usernames, credentials, state digests and resource identifiers omitted."
+}

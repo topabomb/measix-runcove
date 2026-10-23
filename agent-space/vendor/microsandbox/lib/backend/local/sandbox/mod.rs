@@ -23,6 +23,8 @@ use futures::{StreamExt, future::BoxFuture, stream};
 use microsandbox_db::pool::DbPools;
 use microsandbox_db::{DbReadConnection, DbWriteConnection};
 use microsandbox_image::{Digest, GlobalCache};
+#[cfg(unix)]
+use microsandbox_runtime::ipc::SandboxSocketPaths;
 use sea_orm::{
     ColumnTrait, Condition, EntityTrait, ExprTrait, QueryFilter, QueryOrder, QuerySelect,
     sea_query::Expr,
@@ -191,7 +193,7 @@ impl LocalBackend {
             }
         }
 
-        let mut config: SandboxConfig = crate::db::config::decode(&model.config)?;
+        let mut config: SandboxConfig = serde_json::from_str::<SandboxConfig>(&model.config)?;
         // Also cover starts after crashes or a stop performed by an older SDK. Lifecycle
         // ownership alone can become available during Linux's deferred disk/KVM teardown.
         // Observe only this sandbox's owned markers; actual shared-disk conflicts still fail
@@ -205,7 +207,8 @@ impl LocalBackend {
         // A failed or interrupted first restore is not a stopped ordinary VM. In particular,
         // its sealed base may be hard-linked to a snapshot and must never become a boot disk.
         Self::validate_completed_restore(&config)?;
-        self.apply_deployment_profile(&mut config);
+        config.spec.deployment_profile =
+            self.resolve_deployment_profile(&config.spec.name, config.spec.deployment_profile);
         config.apply_runtime_defaults();
         validate_hostname(config.spec.runtime.hostname.as_deref())?;
         self.validate_sandbox_name_for_runtime(&config.spec.name)?;
@@ -270,7 +273,6 @@ impl LocalBackend {
                     write_db,
                     model.id,
                     &sandbox.config().clone_for_persistence(),
-                    Some(self.config()),
                 )
                 .await
                 {
@@ -812,10 +814,21 @@ impl LocalBackend {
         #[cfg(not(windows))]
         let run = Self::load_active_run(pools.read(), sandbox.id).await?;
 
-        // An unowned Starting claim with no run is an abandoned launcher. Both guards above
-        // prove there is no creator in the Windows lock handoff gap and no resident runtime.
+        // Both guards exclude current launchers and runtimes, including the Windows
+        // handoff gap. Old Unix runtimes may own only a socket, so probe before reaping.
         // Without filesystem ownership information, retain the conservative observation.
         let Some(run) = run else {
+            #[cfg(unix)]
+            if sandbox.status == SandboxStatus::Starting
+                && let Some((run_dir, sandboxes_dir)) = socket_roots
+            {
+                let socket_paths =
+                    SandboxSocketPaths::in_sandboxes_dir(run_dir, sandboxes_dir, &sandbox.name);
+                if socket_paths.may_be_live().await? {
+                    return Ok(sandbox);
+                }
+            }
+
             if sandbox.status == SandboxStatus::Draining
                 || (sandbox.status == SandboxStatus::Starting && socket_roots.is_some())
             {
@@ -1078,24 +1091,12 @@ impl LocalBackend {
         db: &DbWriteConnection,
         sandbox_id: i32,
         config: &SandboxConfig,
-        runtime: Option<&crate::config::GlobalConfig>,
     ) -> MicrosandboxResult<()> {
         if !microsandbox_db::catalog::has_column(db, "sandbox", "active_config").await? {
             return Ok(());
         }
-        let original = microsandbox_db::catalog::sandbox_query(db)
-            .await?
-            .filter(sandbox_entity::Column::Id.eq(sandbox_id))
-            .one(db)
-            .await?
-            .ok_or_else(|| {
-                crate::MicrosandboxError::Runtime(
-                    "sandbox disappeared before recording its active configuration".into(),
-                )
-            })?;
-        let config_json =
-            crate::db::writing::encode_existing(db, config, &original.config, runtime).await?;
-        sandbox_entity::Entity::update_many()
+        let config_json = serde_json::to_string(config)?;
+        let result = sandbox_entity::Entity::update_many()
             .col_expr(
                 sandbox_entity::Column::ActiveConfig,
                 Expr::value(Some(config_json)),
@@ -1107,6 +1108,12 @@ impl LocalBackend {
             .filter(sandbox_entity::Column::Id.eq(sandbox_id))
             .exec(db)
             .await?;
+
+        if result.rows_affected == 0 {
+            return Err(crate::MicrosandboxError::Runtime(
+                "sandbox disappeared before recording its active configuration".into(),
+            ));
+        }
 
         Ok(())
     }
@@ -1224,7 +1231,6 @@ impl SandboxBackend for LocalBackend {
         _start: bool,
     ) -> BoxFuture<'a, MicrosandboxResult<Sandbox>> {
         Box::pin(async move {
-            self.warn_cloud_only(&config);
             // Local backend always boots immediately — `start` only differs
             // for cloud where create-without-start is a distinct state.
             self.create_sandbox(backend, config, SpawnMode::Attached, None)
@@ -1238,7 +1244,6 @@ impl SandboxBackend for LocalBackend {
         config: SandboxConfig,
     ) -> BoxFuture<'a, MicrosandboxResult<Sandbox>> {
         Box::pin(async move {
-            self.warn_cloud_only(&config);
             self.create_sandbox(backend, config, SpawnMode::Detached, None)
                 .await
         })
@@ -1602,6 +1607,8 @@ mod tests {
     use std::fs;
     use std::io::Write;
     #[cfg(unix)]
+    use std::os::unix::net::UnixListener;
+    #[cfg(unix)]
     use std::process::Command;
     use std::sync::Arc;
     #[cfg(unix)]
@@ -1615,16 +1622,19 @@ mod tests {
     use tempfile::tempdir;
 
     use super::{SpawnMode, sandbox_entity};
-    use crate::backend::{Backend, LocalBackend, SandboxBackend};
+    use crate::backend::{Backend, BackendSelectionSource, LocalBackend, SandboxBackend};
+    use crate::config::layers::BackendConfig;
     use crate::logs::{LogOptions, LogSource};
     use crate::sandbox::{
         DEFAULT_STOP_TIMEOUT, OciRootfsSource, RootfsSource, SandboxConfig, SandboxListBuilder,
         SandboxStatus,
     };
+    #[cfg(unix)]
+    use microsandbox_runtime::ipc::RuntimeSocketPaths;
 
     #[test]
     fn local_stop_policy_preserves_existing_escalation() {
-        let backend = LocalBackend::lazy();
+        let backend = crate::test_support::local_backend(Default::default());
 
         assert_eq!(backend.default_stop_timeout(), DEFAULT_STOP_TIMEOUT);
         assert!(backend.should_force_kill_after_stop_timeout());
@@ -1683,8 +1693,7 @@ mod tests {
 
         let home = tempfile::tempdir_in("/tmp").unwrap();
         let backend = Arc::new(
-            LocalBackend::builder()
-                .home(home.path())
+            crate::test_support::local_backend_builder(home.path())
                 .build()
                 .await
                 .unwrap(),
@@ -1713,20 +1722,22 @@ mod tests {
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         let listener = tokio::net::UnixListener::bind(path).unwrap();
         let server = tokio::spawn(async move {
-            // The mutation arrives first. Ordinary observational APIs retain their projection.
-            for operation in ["pause", "pause_state", "pause_state"] {
+            // Capability discovery is read-only and precedes the mutation. Ordinary
+            // observational APIs retain their projection after the selected session is cached.
+            for operation in ["capabilities", "pause", "pause_state", "pause_state"] {
                 let (stream, _) = listener.accept().await.unwrap();
                 let mut stream = BufReader::new(stream);
                 let mut line = String::new();
                 stream.read_line(&mut line).await.unwrap();
                 assert_eq!(line, format!("{{\"op\":\"{operation}\"}}\n"));
-                stream
-                    .get_mut()
-                    .write_all(
-                        b"{\"ok\":true,\"pause\":{\"paused\":true,\"recovery_required\":false}}\n",
-                    )
-                    .await
-                    .unwrap();
+                let response = if operation == "capabilities" {
+                    b"{\"ok\":true,\"capabilities\":{\"root_disk_grow\":false,\"cpu_resize\":true,\"memory_resize\":true,\"secrets_update\":false}}\n"
+                        .as_slice()
+                } else {
+                    b"{\"ok\":true,\"pause\":{\"paused\":true,\"recovery_required\":false}}\n"
+                        .as_slice()
+                };
+                stream.get_mut().write_all(response).await.unwrap();
             }
         });
         let backend_dyn: Arc<dyn Backend> = backend;
@@ -1750,6 +1761,8 @@ mod tests {
         let temp = tempdir().unwrap();
         let backend = Arc::new(
             LocalBackend::builder()
+                .config_path(temp.path().join("config.json"))
+                .managed_config_path(temp.path().join("managed.json"))
                 .home(temp.path())
                 .build()
                 .await
@@ -1818,6 +1831,8 @@ mod tests {
     async fn list_pages_after_filtering_by_labels() {
         let temp = tempdir().unwrap();
         let backend = LocalBackend::builder()
+            .config_path(temp.path().join("config.json"))
+            .managed_config_path(temp.path().join("managed.json"))
             .home(temp.path())
             .build()
             .await
@@ -1869,6 +1884,8 @@ mod tests {
         let temp = tempdir().unwrap();
         let backend = Arc::new(
             LocalBackend::builder()
+                .config_path(temp.path().join("config.json"))
+                .managed_config_path(temp.path().join("managed.json"))
                 .home(temp.path())
                 .build()
                 .await
@@ -1991,8 +2008,7 @@ mod tests {
         let home = tempfile::tempdir_in("/tmp").unwrap();
         #[cfg(not(unix))]
         let home = tempdir().unwrap();
-        let backend = LocalBackend::builder()
-            .home(home.path())
+        let backend = crate::test_support::local_backend_builder(home.path())
             .build()
             .await
             .unwrap();
@@ -2033,6 +2049,30 @@ mod tests {
             SandboxStatus::Starting
         );
         drop(transition);
+        #[cfg(unix)]
+        {
+            let socket =
+                RuntimeSocketPaths::new(&backend.config().run_dir(), "abandoned").legacy_agent;
+            std::fs::create_dir_all(socket.parent().unwrap()).unwrap();
+            let listener = UnixListener::bind(&socket).unwrap();
+            assert_eq!(
+                backend
+                    .sandbox_handle_state("abandoned", Some(id))
+                    .await
+                    .unwrap()
+                    .0
+                    .status,
+                SandboxStatus::Starting
+            );
+            assert!(
+                socket.exists(),
+                "reconciliation must preserve the live legacy endpoint"
+            );
+            drop(listener);
+            // macOS may defer teardown while a probe connection is queued.
+            std::fs::remove_file(&socket).unwrap();
+        }
+
         let (recovered, _) = backend
             .sandbox_handle_state("abandoned", Some(id))
             .await
@@ -2047,8 +2087,7 @@ mod tests {
     async fn kill_waits_for_start_publication_and_terminates_the_created_run() {
         let home = tempfile::tempdir_in("/tmp").unwrap();
         let backend = Arc::new(
-            LocalBackend::builder()
-                .home(home.path())
+            crate::test_support::local_backend_builder(home.path())
                 .build()
                 .await
                 .unwrap(),
@@ -2155,22 +2194,18 @@ mod tests {
             .unwrap();
         let run_dir = temp.path().join("run");
         let sandboxes_dir = temp.path().join("sandboxes");
+
         #[cfg(unix)]
         let socket_paths = {
-            let paths = microsandbox_runtime::ipc::sandbox_socket_paths(&run_dir, "stale");
+            let paths = RuntimeSocketPaths::new(&run_dir, "stale");
             std::fs::create_dir_all(&paths.canonical_dir).unwrap();
             std::fs::write(&paths.agent, b"stale").unwrap();
             std::fs::write(&paths.control, b"stale").unwrap();
-            microsandbox_runtime::ipc::publish_legacy_agent_link(&run_dir, "stale", &paths.agent)
-                .unwrap();
-            microsandbox_runtime::ipc::publish_legacy_control_link(
-                &run_dir,
-                "stale",
-                &paths.control,
-            )
-            .unwrap();
+            paths.publish_legacy_agent_link(&paths.agent).unwrap();
+            paths.publish_legacy_control_link(&paths.control).unwrap();
             paths
         };
+
         let reconciled = LocalBackend::reconcile_sandbox_runtime_state_with_paths(
             &pools,
             sandbox,
@@ -2319,7 +2354,13 @@ mod tests {
         let sandbox_dir = temp.path().join("missing");
         let config = test_config("missing");
 
-        let backend = LocalBackend::lazy();
+        let backend = LocalBackend::from_backend_config(
+            BackendConfig::new(Default::default(), Default::default())
+                .prepare_for_local_backend(Default::default())
+                .unwrap(),
+            BackendSelectionSource::Programmatic,
+            None,
+        );
         let err = backend
             .validate_start_state(&config, &sandbox_dir)
             .unwrap_err();
@@ -2345,15 +2386,20 @@ mod tests {
         // which depends on the global config. In unit tests without a real
         // config, it succeeds because the cache init may fail gracefully.
         // The key thing is it doesn't panic.
-        let backend = LocalBackend::lazy();
+        let backend = LocalBackend::from_backend_config(
+            BackendConfig::new(Default::default(), Default::default())
+                .prepare_for_local_backend(Default::default())
+                .unwrap(),
+            BackendSelectionSource::Programmatic,
+            None,
+        );
         let _ = backend.validate_start_state(&config, &sandbox_dir);
     }
 
     #[tokio::test]
     async fn flat_restart_does_not_require_layered_image_artifacts() {
         let temp = tempdir().unwrap();
-        let backend = LocalBackend::builder()
-            .home(temp.path())
+        let backend = crate::test_support::local_backend_builder(temp.path())
             .build()
             .await
             .unwrap();

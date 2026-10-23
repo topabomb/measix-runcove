@@ -250,7 +250,7 @@ workspace_name = "dockerverify-workspace"
         passed('image/version, helper, and five-tool contract are exact; metadata does not wake VM')
 
         client.tool('bash', cmd='mkdir -p /workspace/report && printf "<p>published-site</p>" > /workspace/report/index.html && printf "selected-file" > /workspace/report/data.txt')
-        published = json.loads(client.tool('web_publish', action='publish', name='site', directory='/workspace/report', keep_alive_minutes=1))
+        published = json.loads(client.tool('web_publish', action='publish', name='site', directory='/workspace/report', keep_alive_secs=60))
         published_at = time.monotonic()
         assert set(published) == {'name', 'type', 'url', 'username', 'password'}
         assert published['type']=='directory' and re.fullmatch(r'web[0-9]{2}', published['username'])
@@ -284,9 +284,9 @@ workspace_name = "dockerverify-workspace"
         passed('finite keepalive protects idle VM, get does not extend it, expiry reclaims VM and invalidates URL')
         client.tool('bash', cmd='echo runtime-restarted')
         old=published
-        published=json.loads(client.tool('web_publish',action='publish',name='site',directory='/workspace/report',keep_alive_minutes=1))
+        published=json.loads(client.tool('web_publish',action='publish',name='site',directory='/workspace/report',keep_alive_secs=60))
         assert published['url']==old['url'] and published_get(old,{'X-Publish-Key':old['password']})[0]==401
-        file=json.loads(client.tool('web_publish',action='publish',name='file',file='/workspace/report/data.txt',keep_alive_minutes=1))
+        file=json.loads(client.tool('web_publish',action='publish',name='file',file='/workspace/report/data.txt',keep_alive_secs=60))
         assert published_get(file,{'X-Publish-Key':file['password']})[:2]==(200,b'selected-file')
         assert published_get(file,{'X-Publish-Key':file['password'],'Range':'bytes=2-5'})[:2]==(206,b'lect')
         status,body,headers=published_get(file,{'X-Publish-Key':file['password']},method='HEAD')
@@ -328,7 +328,7 @@ ThreadingHTTPServer(('127.0.0.1',38080),functools.partial(App,directory='/worksp
         client.tool('bash',cmd='python3 /workspace/api.py >/tmp/agent-port-http.log 2>&1 < /dev/null & echo port-server-started')
         for attempt in range(20):
             try:
-                port_publication=json.loads(client.tool('web_publish',action='publish',name='api',port=38080,keep_alive_minutes=1))
+                port_publication=json.loads(client.tool('web_publish',action='publish',name='api',port=38080,keep_alive_secs=60))
                 break
             except AssertionError:
                 if attempt==19: raise
@@ -352,19 +352,19 @@ ThreadingHTTPServer(('127.0.0.1',38080),functools.partial(App,directory='/worksp
         response=connection.getresponse(); upload=json.loads(response.read()); assert response.status==200; connection.close()
         assert upload=={'sha256':__import__('hashlib').sha256(payload).hexdigest(),'length':len(payload),'path':'/upload?from=android','authorization':'Bearer application-test-token','publish_key_present':False}
         client.tool('bash',cmd="python3 -c \"open('/workspace/report/blob.bin','wb').write(bytes(range(256))*16384)\"")
-        large=json.loads(client.tool('web_publish',action='publish',name='large',file='/workspace/report/blob.bin',keep_alive_minutes=1))
+        large=json.loads(client.tool('web_publish',action='publish',name='large',file='/workspace/report/blob.bin',keep_alive_secs=60))
         status,download,_=published_get(large,{'X-Publish-Key':large['password']})
         assert status==200 and __import__('hashlib').sha256(download).digest()==__import__('hashlib').sha256(payload).digest()
         client.tool('web_publish',action='unpublish',name='large')
         passed('real VM 4 MiB upload/download hashes match; app Authorization and query survive, publication key stays on Host')
         listed=json.loads(client.tool('web_publish',action='list'))
         assert {item['name'] for item in listed}=={'site','file','api'} and all('password' not in item for item in listed)
-        same=json.loads(client.tool('web_publish',action='publish',name='api',port=38080,keep_alive_minutes=1))
+        same=json.loads(client.tool('web_publish',action='publish',name='api',port=38080,keep_alive_secs=60))
         assert same['url']==port_publication['url'] and same['password']==port_publication['password']
         # Same name is a stable authenticated slot; prepare first, then switch.
         original_realm=next(v for k,v in published_get(port_publication)[2].items() if k.lower()=='www-authenticate')
         for target,kind,content in [({'file':'/workspace/report/data.txt'},'file',b'selected-file'),({'directory':'/workspace/report'},'directory',b'published-site'),({'port':38080},'port',b'published-site')]:
-            updated=json.loads(client.tool('web_publish',action='publish',name='api',keep_alive_minutes=1,**target))
+            updated=json.loads(client.tool('web_publish',action='publish',name='api',keep_alive_secs=60,**target))
             assert all(updated[k]==port_publication[k] for k in ('url','username','password'))
             assert updated['type']==kind
             assert content in published_get(updated,{'X-Publish-Key':updated['password']})[1]
@@ -389,7 +389,9 @@ ThreadingHTTPServer(('127.0.0.1',38080),functools.partial(App,directory='/worksp
         passed('file/directory/port coexist with independent paths and credentials, automatic auth, ranges, stable retry and scoped close; app survives')
 
         started = time.monotonic()
-        timeout_text = client.tool_error('bash', cmd='sleep 4')
+        timeout_reply = client.tool_result('bash', cmd='sleep 4')
+        assert timeout_reply.get('isError'), timeout_reply
+        timeout_text = timeout_reply['content'][0]['text']
         timeout_result = json.loads(timeout_text)
         assert time.monotonic() - started < 5, timeout_text
         assert timeout_result['error'] == 'EXECUTION_TIMEOUT' and timeout_result['cleanup_confirmed'], timeout_text
@@ -402,7 +404,7 @@ ThreadingHTTPServer(('127.0.0.1',38080),functools.partial(App,directory='/worksp
         assert 'Wrote' in client.tool(
             'write', path='/workspace/a.txt', content='old'
         )
-        paused_publication=json.loads(client.tool('web_publish',action='publish',name='paused',file='/workspace/a.txt',keep_alive_minutes=1))
+        paused_publication=json.loads(client.tool('web_publish',action='publish',name='paused',file='/workspace/a.txt',keep_alive_secs=60))
         docker('exec',name,'msb','pause','-q','dockerverify-workspace')
         wait_workspace_status(name,'paused')
         assert published_get(paused_publication,{'X-Publish-Key':paused_publication['password']})[:2]==(200,b'old')
@@ -456,7 +458,7 @@ ThreadingHTTPServer(('127.0.0.1',38080),functools.partial(App,directory='/worksp
         assert client.session == original_session
         passed(f'original MCP session still executes after {args.idle_seconds}s idle')
 
-        restart_publication=json.loads(client.tool('web_publish',action='publish',name='restart',file='/workspace/docker-marker',keep_alive_minutes=1))
+        restart_publication=json.loads(client.tool('web_publish',action='publish',name='restart',file='/workspace/docker-marker',keep_alive_secs=60))
         stop(name)
         docker('start', name)
         client = wait_ready(name)

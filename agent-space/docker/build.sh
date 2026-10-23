@@ -46,7 +46,8 @@ if [ ! -x "$MSB_BIN" ]; then
 fi
 
 info "msb version: $MSB_VERSION (from $MSB_BIN)"
-[ "$MSB_VERSION" = "0.7.2" ] || error "Docker VM source is pinned to 0.7.2; review and update the runtime source before changing the SDK"
+AUDITED_MSB_VERSION="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$SCRIPT_DIR/patches/manifest.json")"
+[ "$MSB_VERSION" = "$AUDITED_MSB_VERSION" ] || error "SDK differs from the audited runtime manifest; review the source and patches before upgrading"
 ACTUAL_MSB_VERSION="$("$MSB_BIN" --version | awk '{print $2}')"
 [ "$ACTUAL_MSB_VERSION" = "$MSB_VERSION" ] || error "SDK requires msb $MSB_VERSION, found $ACTUAL_MSB_VERSION; run cargo check --locked first"
 (cd "$MSB_HOME" && sha256sum -c "$PROJECT_DIR/msb-runtime.sha256") || error "runtime does not match the verified release artifacts"
@@ -78,7 +79,7 @@ is_stamp_fresh() {
 }
 
 # The verified upstream msb is a seed used for image export only. The Dockerfile
-# rebuilds the actual VM executable from pinned source with the checked relay
+# rebuilds the actual VM executable from pinned source with the checked lifecycle
 # patch in docker/patches and SQLite
 # 3.51.3; copying this prebuilt seed into the final image would undo the fix.
 

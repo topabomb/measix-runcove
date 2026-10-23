@@ -12,9 +12,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl patch python3 pkg-config libcap-ng-dev libdbus-1-dev libgcc-s1 && \
     rm -rf /var/lib/apt/lists/*
 
-# microsandbox 0.7.2 locks libsqlite3-sys 0.30.1, whose bundled SQLite is
+# microsandbox 0.7.9 locks libsqlite3-sys 0.30.1, whose bundled SQLite is
 # 3.46.0. It predates the WAL-reset corruption fix in 3.51.3. Build the
-# patched amalgamation with the same options as libsqlite3-sys and link it
+# fixed amalgamation with the same options as libsqlite3-sys and link it
 # statically, so the running binary cannot fall back to the older system lib.
 ARG SQLITE_VERSION=3510300
 ARG SQLITE_SHA256=81f5be397049b0cae1b167f2225af7646fc0f82e4a9b3c48c9ea3a533e21d77a
@@ -78,11 +78,11 @@ RUN python3 /build/docker/verify-sqlite-link.py /out/agent-space-mcp && \
     cc -O2 -I/opt/sqlite/include /build/docker/sqlite-check.c \
       /opt/sqlite/lib/libsqlite3.a -ldl -lpthread -lm -o /build/sqlite-check
 
-# ---- Stage 2: Rebuild the pinned VM executable with audited relay and lifecycle patches ----
+# ---- Stage 2: Rebuild the pinned VM executable with audited lifecycle patch ----
 # SQLite defenses must be present in every writer, including `msb machine`.
 FROM builder AS runtime-builder
-ARG MSB_SOURCE_REVISION=60d4dc8a436fb9365491567ec21d073e924e3c6d
-ARG MSB_SOURCE_SHA256=fecd277ccfddbb4a131e4c9dfe056a87a014926c78dd705776d738158c483828
+ARG MSB_SOURCE_REVISION=ec5c6ecf0065bacaffc1b3752f3580ba20e1d179
+ARG MSB_SOURCE_SHA256=2f72dc50692c6e89585874ae38162ae4d3e589b0a7e6eea908e7669293d3ecb6
 RUN curl --fail --location --retry 3 --silent --show-error \
       "https://github.com/superradcompany/microsandbox/archive/${MSB_SOURCE_REVISION}.tar.gz" -o /tmp/msb-source.tar.gz && \
     echo "${MSB_SOURCE_SHA256}  /tmp/msb-source.tar.gz" | sha256sum -c - && \
@@ -108,22 +108,21 @@ RUN --mount=type=cache,id=runcove-server-registry,target=/usr/local/cargo/regist
     CARGO_BUILD_JOBS=2 CARGO_PROFILE_TEST_DEBUG=0 SQLITE3_NO_PKG_CONFIG=1 \
       cargo test --locked -p microsandbox --lib backend::local::sandbox -- --test-threads=1 && \
     MSB_HOME=/opt/msb-build-home CARGO_TARGET_DIR=/build/target \
+    CARGO_BUILD_JOBS=2 CARGO_PROFILE_TEST_DEBUG=0 SQLITE3_NO_PKG_CONFIG=1 \
+      cargo test --locked -p microsandbox --lib backend::local::control -- --test-threads=1 && \
+    MSB_HOME=/opt/msb-build-home CARGO_TARGET_DIR=/build/target \
+    CARGO_BUILD_JOBS=2 CARGO_PROFILE_TEST_DEBUG=0 SQLITE3_NO_PKG_CONFIG=1 \
+      cargo test --locked -p microsandbox --lib sandbox::exec::session -- --test-threads=1 && \
+    MSB_HOME=/opt/msb-build-home CARGO_TARGET_DIR=/build/target \
     CARGO_BUILD_JOBS=2 CARGO_PROFILE_RELEASE_STRIP=none SQLITE3_NO_PKG_CONFIG=1 \
       cargo build --release --locked -p microsandbox-cli --bin msb && \
     cp /build/target/release/msb /out/msb && \
     python3 /build/docker/verify-sqlite-link.py /out/msb && \
     ! ldd /out/msb | grep -q libsqlite3 && \
     strip /out/msb && \
-    /out/msb --version | grep -Fx 'msb 0.7.2'
-RUN python3 -c 'import hashlib,json,os,pathlib; p=pathlib.Path("/out/msb"); m=json.loads(pathlib.Path("/build/docker/patches/manifest.json").read_text()); pathlib.Path("/build/runtime.json").write_text(json.dumps({"microsandbox":"0.7.2","sqlite":"3.51.3","source_revision":os.environ["MSB_SOURCE_REVISION"],"source_archive_sha256":os.environ["MSB_SOURCE_SHA256"],"sdk_source_modified":True,"runtime_source_modified":True,"runtime_patch":m,"profile":"release","msb_sha256":hashlib.file_digest(p.open("rb"),"sha256").hexdigest()},indent=2)+"\n")'
+    /out/msb --version | grep -Fx 'msb 0.7.9'
+RUN python3 -c 'import hashlib,json,os,pathlib; p=pathlib.Path("/out/msb"); m=json.loads(pathlib.Path("/build/docker/patches/manifest.json").read_text()); pathlib.Path("/build/runtime.json").write_text(json.dumps({"microsandbox":"0.7.9","sqlite":"3.51.3","source_revision":os.environ["MSB_SOURCE_REVISION"],"source_archive_sha256":os.environ["MSB_SOURCE_SHA256"],"sdk_source_modified":True,"runtime_source_modified":True,"runtime_patch":m,"profile":"release","msb_sha256":hashlib.file_digest(p.open("rb"),"sha256").hexdigest()},indent=2)+"\n")'
 RUN printf '%s  bin/msb\n' "$(sha256sum /out/msb | cut -d' ' -f1)" > /build/msb.sha256
-
-# Export only the rebuilt runtime/checker for repairing an older application.
-FROM scratch AS runtime-assets
-COPY --from=runtime-builder /out/msb /msb
-COPY --from=runtime-builder /build/sqlite-check /sqlite-check
-COPY --from=runtime-builder /build/runtime.json /runtime.json
-COPY --from=runtime-builder /build/msb.sha256 /msb.sha256
 
 # Record the matched desktop helper, embedded workers and UI release assets.
 FROM runtime-builder AS release-metadata
@@ -138,7 +137,7 @@ RUN python3 /build/docker/release-metadata.py --target server --bins /out --ui /
     --output /build/release.json
 
 # ---- Stage 3: Runtime ----
-# Keep the deployment base stable; the bundled msb 0.7.2 runtime supports it.
+# Keep the deployment base stable; the bundled msb 0.7.9 runtime supports it.
 FROM ubuntu:24.04
 
 # Version stamp for the bundled microsandbox libkrunfw. The entrypoint uses

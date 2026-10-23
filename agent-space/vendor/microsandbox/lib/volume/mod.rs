@@ -688,13 +688,19 @@ pub(crate) async fn list_local(backend: Arc<dyn Backend>) -> MicrosandboxResult<
         .collect())
 }
 
-/// Local remove path. Deletes the DB record first, then the directory.
+/// Local remove path. Keeps the DB record until the directory is removed.
 #[cfg(feature = "local")]
 pub(crate) async fn remove_local(backend: Arc<dyn Backend>, name: &str) -> MicrosandboxResult<()> {
     let local_backend = backend
         .as_local()
         .ok_or_else(|| MicrosandboxError::local_only(Operation::VolumeRemove))?;
+    // The name now reaches the lock-file path before a DB lookup. Preserve the
+    // previous not-found result for names that could never be stored as volumes.
+    if validate_volume_name(name).is_err() {
+        return Err(MicrosandboxError::VolumeNotFound(name.into()));
+    }
     let pools = local_backend.db().await?;
+    let _name_lock = lock_volume_name(local_backend, name).await?;
 
     let model = volume_entity::Entity::find()
         .filter(volume_entity::Column::Name.eq(name))
@@ -702,18 +708,17 @@ pub(crate) async fn remove_local(backend: Arc<dyn Backend>, name: &str) -> Micro
         .await?
         .ok_or_else(|| MicrosandboxError::VolumeNotFound(name.into()))?;
     let handle = VolumeHandle::from_local_model(backend.clone(), model);
-    let _name_lock = lock_volume_name(local_backend, name).await?;
     let _disk_lock = lock_disk_volume_for_remove(&handle)?;
     ensure_volume_not_referenced_by_active_sandbox(pools.read(), name).await?;
-
-    volume_entity::Entity::delete_by_id(handle.local().expect("local handle").db_id)
-        .exec(pools.write())
-        .await?;
 
     let path = local_backend.volume_path(name);
     if path.exists() {
         tokio::fs::remove_dir_all(&path).await?;
     }
+
+    volume_entity::Entity::delete_by_id(handle.local().expect("local handle").db_id)
+        .exec(pools.write())
+        .await?;
 
     Ok(())
 }
@@ -872,7 +877,7 @@ where
         .await?;
 
     for sandbox in sandboxes {
-        let config: SandboxConfig = crate::db::config::decode(&sandbox.config)?;
+        let config: SandboxConfig = serde_json::from_str::<SandboxConfig>(&sandbox.config)?;
         if config.spec.mounts.iter().any(|mount| {
             matches!(
                 mount,
@@ -962,19 +967,116 @@ mod tests {
     #[cfg(feature = "local")]
     use crate::backend::LocalBackend;
     #[cfg(feature = "cloud")]
-    use crate::backend::{
-        Backend, CloudBackend, CloudVolumeKind, CloudVolumeStatus, VolumeHandleCloudState,
-    };
+    use crate::backend::{Backend, CloudVolumeKind, CloudVolumeStatus, VolumeHandleCloudState};
     #[cfg(feature = "local")]
     use crate::sandbox::{HostPermissions, MountOptions, SandboxStatus, StatVirtualization};
 
     use super::*;
 
+    #[cfg(feature = "local")]
+    #[tokio::test]
+    async fn failed_directory_removal_keeps_volume_available_for_retry() {
+        let temp = tempfile::tempdir().unwrap();
+        let local = Arc::new(
+            crate::test_support::local_backend_builder(temp.path().join("home"))
+                .build()
+                .await
+                .unwrap(),
+        );
+        let backend: Arc<dyn Backend> = local.clone();
+        create_local(
+            backend.clone(),
+            VolumeConfig {
+                name: "retryable".into(),
+                kind: VolumeKind::Directory,
+                quota_mib: None,
+                capacity_mib: None,
+                labels: Vec::new(),
+            },
+        )
+        .await
+        .unwrap();
+
+        let path = local.volume_path("retryable");
+        let parked = temp.path().join("parked-volume");
+        std::fs::write(path.join("marker"), b"volume data").unwrap();
+        std::fs::rename(&path, &parked).unwrap();
+        // A regular file at the volume path makes remove_dir_all fail on every OS.
+        std::fs::write(&path, b"blocked").unwrap();
+
+        assert!(remove_local(backend.clone(), "retryable").await.is_err());
+        assert!(get_local(backend.clone(), "retryable").await.is_ok());
+        assert_eq!(
+            std::fs::read(parked.join("marker")).unwrap(),
+            b"volume data"
+        );
+
+        std::fs::remove_file(&path).unwrap();
+        std::fs::rename(&parked, &path).unwrap();
+        remove_local(backend.clone(), "retryable").await.unwrap();
+        assert!(!path.exists());
+        assert!(matches!(
+            get_local(backend, "retryable").await,
+            Err(MicrosandboxError::VolumeNotFound(_))
+        ));
+    }
+
+    #[cfg(feature = "local")]
+    #[tokio::test(flavor = "current_thread")]
+    async fn named_volume_lock_contention_yields_to_executor() {
+        use std::sync::mpsc;
+        use std::time::Duration;
+
+        use microsandbox_utils::process_lock::unlock;
+
+        let directory = tempfile::tempdir().unwrap();
+        let local = crate::test_support::local_backend_builder(directory.path().join("home"))
+            .build()
+            .await
+            .unwrap();
+        let winner = lock_volume_name(&local, "shared").await.unwrap();
+        let (release_tx, release_rx) = mpsc::channel();
+        let holder = std::thread::spawn(move || {
+            // Release even if a blocking acquisition stalls the executor, so the
+            // regression fails an assertion instead of hanging the test suite.
+            let released_by_test = release_rx.recv_timeout(Duration::from_secs(5)).is_ok();
+            // Closing alone can leave a lock held by an unrelated parallel test's
+            // pre-exec child. Explicit unlock releases it across inherited copies.
+            unlock(&winner).unwrap();
+            released_by_test
+        });
+
+        let mut waiter = Box::pin(lock_volume_name(&local, "shared"));
+        let stayed_pending = tokio::time::timeout(Duration::from_millis(20), waiter.as_mut())
+            .await
+            .is_err();
+
+        // Reaching this point while the holder is still locked proves the timer
+        // could run on the same executor as the contended acquisition.
+        let _ = release_tx.send(());
+        let released_by_test = holder.join().unwrap();
+        assert!(
+            released_by_test,
+            "lock acquisition blocked the executor until the watchdog fired"
+        );
+        assert!(
+            stayed_pending,
+            "contended acquisition returned before the holder unlocked"
+        );
+
+        let acquired = tokio::time::timeout(Duration::from_secs(1), waiter)
+            .await
+            .expect("waiter did not acquire the released lock")
+            .unwrap();
+        unlock(&acquired).unwrap();
+    }
+
     #[test]
     #[cfg(feature = "cloud")]
     fn cloud_managed_volume_reports_directory_storage_kind() {
-        let backend: Arc<dyn Backend> =
-            Arc::new(CloudBackend::new("https://msb.example.com", "msb_test_abc").unwrap());
+        let backend: Arc<dyn Backend> = Arc::new(
+            crate::test_support::cloud_backend("https://msb.example.com", "msb_test_abc").unwrap(),
+        );
         let now = chrono::Utc::now();
         let handle = VolumeHandle::from_cloud(
             backend,
@@ -999,8 +1101,9 @@ mod tests {
     #[tokio::test]
     #[cfg(feature = "cloud")]
     async fn cloud_default_volume_is_identified_and_cannot_be_removed() {
-        let backend: Arc<dyn Backend> =
-            Arc::new(CloudBackend::new("https://msb.example.com", "msb_test_abc").unwrap());
+        let backend: Arc<dyn Backend> = Arc::new(
+            crate::test_support::cloud_backend("https://msb.example.com", "msb_test_abc").unwrap(),
+        );
         let now = chrono::Utc::now();
         let handle = VolumeHandle::from_cloud(
             backend,
@@ -1030,6 +1133,8 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let local = Arc::new(
             LocalBackend::builder()
+                .config_path(temp.path().join("home").join("config.json"))
+                .managed_config_path(temp.path().join("home").join("managed.json"))
                 .home(temp.path().join("home"))
                 .build()
                 .await

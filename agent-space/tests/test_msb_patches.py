@@ -18,7 +18,7 @@ MANIFEST = json.loads((PATCHES / 'manifest.json').read_text())
 class AuditedPatches(unittest.TestCase):
     def source(self, directory):
         source = Path(directory)
-        (source / 'Cargo.toml').write_text('[workspace.package]\nversion = "0.7.2"\n')
+        (source / 'Cargo.toml').write_text('[workspace.package]\nversion = "0.7.9"\n')
         for patch in MANIFEST['patches']:
             for entry in patch['files']:
                 official = Path(entry['file'])

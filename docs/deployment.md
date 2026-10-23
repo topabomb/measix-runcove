@@ -8,7 +8,7 @@
 | Runcove Workspace | MSB VM 使用的空间 rootfs，自身不包含 MSB；可由 Server 离线携带 |
 | Runcove Standalone | 一个容器直接运行一个使用者的一个空间，无 MSB/KVM 依赖；不支持配置多个空间 |
 
-镜像资格平台为 Linux/amd64；Server 锁定 microsandbox 0.7.2 并需要宿主 `/dev/kvm`。管理与外部集成合同见[接入参考](server-api.md)。
+镜像资格平台为 Linux/amd64；Server 锁定 microsandbox 0.7.9 并需要宿主 `/dev/kvm`。管理与外部集成合同见[接入参考](server-api.md)。
 
 每次部署只有一个生效的 TOML 文件；示例是模板，环境变量只提供凭据值。配置不热加载，未知字段、错误类型和冲突的新旧名称在启动前拒绝。
 
@@ -36,7 +36,7 @@ cargo check --workspace --all-targets --locked
 bash docker/build.sh
 ```
 
-脚本按 `Cargo.lock` 校验 SDK/运行时，按源码内容构建 `runcove-server:runcove-<摘要前16位>`；不再覆盖 `0.7.2` 或 `latest`。应用版本与 SDK 版本分开记录，镜像 ID 是验收依据。下文 `NEW_IMAGE` 须替换为本次验证通过的标签。镜像包含服务端、三个受管helper、中英文桌面前端、msb CLI、libkrunfw、默认自定义及锁定桌面沙盒镜像，不包含用户配置或数据。
+脚本按 `Cargo.lock` 校验 SDK/运行时，按源码内容构建 `runcove-server:runcove-<摘要前16位>`；不覆盖旧 SDK 版本标签或 `latest`。应用版本与 SDK 版本分开记录，镜像 ID 是验收依据。下文 `NEW_IMAGE` 须替换为本次验证通过的标签。镜像包含服务端、三个受管helper、中英文桌面前端、msb CLI、libkrunfw、默认自定义及锁定桌面沙盒镜像，不包含用户配置或数据。
 
 Server 的服务与实际 VM CLI 使用配对的 MSB 生命周期补丁和双端 SQLite 3.51.3，构建及启动核验固定输入、补丁和最终程序身份。来源、上游状态与逐项撤销门槛集中在[运行时维护](runtime.md)，升级前核查；Agent Space 不直接修改 MSB 表，生产运行期间不要另用 CLI 修改同一数据库。
 

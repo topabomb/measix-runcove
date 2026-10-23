@@ -10,11 +10,14 @@
 
 use std::path::PathBuf;
 
+use super::compat;
+
 use microsandbox_protocol::bootstrap::GuestBootstrap;
+use microsandbox_protocol::{FS_STATE_LIMIT_MAX_MIB, FS_STATE_LIMIT_MIN_MIB};
 use microsandbox_types::{CpuPlacement, PlacementProfile, VsockRouteSpec};
 use serde::{Deserialize, Serialize};
 
-use microsandbox_types::TransparentHugePagePolicy;
+use microsandbox_types::{GuestClockPolicy, TransparentHugePagePolicy};
 
 #[cfg(feature = "net")]
 use microsandbox_network::ResolvedNetworkConfig;
@@ -43,14 +46,62 @@ pub const LIFECYCLE_LOCK_FD: i32 = 99;
 /// Control byte sent by the owner to stop parent-watch monitoring without stopping the sandbox.
 pub const PARENT_WATCH_DETACH: u8 = 1;
 
-mod compatibility;
-#[cfg(test)]
-#[path = "launch/tests.rs"]
-mod compatibility_tests;
-
 //--------------------------------------------------------------------------------------------------
 // Types
 //--------------------------------------------------------------------------------------------------
+
+/// Side-effect-free response to `msb __launch-protocol`.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LaunchCapabilities {
+    /// Supported wire generations: 1 is the v0.6.17 boot contract; 2 adds explicit intent.
+    pub protocols: Vec<u32>,
+
+    /// Relaxed captured-object checks can independently require destination backing.
+    /// Older probes omit this feature; ordinary protocol-2 launches are unchanged.
+    #[serde(default)]
+    pub required_restore_backing: bool,
+
+    /// Published-port listeners honor `network.tcp_accept_queue_size`. Older runtimes omit this
+    /// feature and would silently ignore the field, so the SDK refuses to send it to them.
+    #[serde(default)]
+    pub tcp_accept_queue_size: bool,
+
+    /// Inbound TCP connection limits are supported. Older runtimes omit this capability.
+    #[serde(default)]
+    pub max_inbound_tcp_connections: bool,
+
+    /// Legacy plain-text HTTP denials are supported.
+    #[serde(default)]
+    pub http_deny_message: bool,
+
+    /// JSON HTTP denials with separate network and secret messages are supported.
+    /// Older runtimes omit this capability.
+    #[serde(default)]
+    pub http_deny_json: bool,
+
+    /// HTTP CONNECT outbound proxies are supported. Older runtimes omit this capability.
+    #[serde(default)]
+    pub http_connect_proxy: bool,
+
+    /// HTTP CONNECT outbound proxy credentials are supported. Older runtimes omit
+    /// this capability and would silently connect without authentication.
+    #[serde(default)]
+    pub http_connect_proxy_auth: bool,
+
+    /// The launch field `guest_clock` is honored by the runtime.
+    /// Older runtimes omit this capability.
+    #[serde(default)]
+    pub guest_clock: bool,
+
+    /// The launch field `fs_state_limit_bytes` is honored by the runtime.
+    /// Older runtimes omit this capability.
+    #[serde(default)]
+    pub fs_state_limit: bool,
+
+    /// Sandbox-owned execution policy is installed and enforced by the runtime.
+    #[serde(default)]
+    pub exec_limits: bool,
+}
 
 /// Hidden CLI handoff describing the metrics slot the host reserved for this sandbox.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -135,9 +186,19 @@ pub struct LaunchConfig {
     #[serde(default)]
     pub thp: TransparentHugePagePolicy,
 
+    /// Host control over the guest wall clock. Omitted when it is the default host sync, so
+    /// runtimes that predate the field keep accepting ordinary launches.
+    #[serde(default, skip_serializing_if = "GuestClockPolicy::is_sync")]
+    pub guest_clock: GuestClockPolicy,
+
     /// Backend-resolved protected cache for explicit memory captures and restores.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memory_cache_dir: Option<PathBuf>,
+
+    /// Virtio-fs backend state budget in bytes. Omitted at the default, so runtimes that predate
+    /// the field keep accepting ordinary launches.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fs_state_limit_bytes: Option<u64>,
 
     /// Per-writable-raw-disk hard budget for buffered host dirty data.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -379,6 +440,25 @@ impl LaunchConfig {
     pub fn decode(bytes: &[u8]) -> Result<Self, String> {
         let config: Self = serde_json::from_slice(bytes)
             .map_err(|error| format!("invalid launch config: {error}"))?;
+        if let Some(bytes) = config.fs_state_limit_bytes {
+            const MIB: u64 = 1024 * 1024;
+            let range =
+                u64::from(FS_STATE_LIMIT_MIN_MIB) * MIB..=u64::from(FS_STATE_LIMIT_MAX_MIB) * MIB;
+            if !range.contains(&bytes) {
+                return Err(format!(
+                    "filesystem state budget must be between {FS_STATE_LIMIT_MIN_MIB} MiB and \
+                     {FS_STATE_LIMIT_MAX_MIB} MiB, got {bytes} bytes"
+                ));
+            }
+        }
+        #[cfg(feature = "net")]
+        if let Some(network) = &config.network {
+            network
+                .config()
+                .secrets
+                .validate()
+                .map_err(|error| format!("invalid secret configuration: {error}"))?;
+        }
         match (config.execution, config.checkpoint_restore.as_ref()) {
             (ExecutionIntent::Boot, None) => {}
             (ExecutionIntent::Restore, Some(restore)) => {
@@ -407,6 +487,17 @@ impl LaunchConfig {
             _ => return Err("execution intent and checkpoint restore source disagree".into()),
         }
         Ok(config)
+    }
+
+    /// Decode current or previous v0.6.x process-launch JSON.
+    ///
+    /// Older environment-based bootstrap is translated at this boundary. An
+    /// explicit typed bootstrap remains authoritative, including empty values.
+    /// Missing previous lease policies inherit the process CPU placement and
+    /// use lease directories derived from the caller's runtime artifact root.
+    pub fn from_json(bytes: &[u8]) -> Result<Self, String> {
+        let config = compat::decode(bytes)?;
+        Self::decode(&serde_json::to_vec(&config).map_err(|e| e.to_string())?)
     }
 }
 
@@ -561,6 +652,72 @@ mod tests {
         assert!(decoded.file_mounts.is_empty());
     }
 
+    #[test]
+    fn guest_clock_is_omitted_by_default_and_survives_the_handoff() {
+        // Default launches stay byte-compatible with runtimes that predate the field.
+        let default = serde_json::to_value(LaunchConfig::default()).unwrap();
+        assert!(default.get("guest_clock").is_none());
+        assert_eq!(decode(default).unwrap().guest_clock, GuestClockPolicy::Sync);
+
+        let mut off = restore_request();
+        off["guest_clock"] = "off".into();
+        assert_eq!(
+            decode(off.clone()).unwrap().guest_clock,
+            GuestClockPolicy::Off
+        );
+        let config = LaunchConfig {
+            guest_clock: GuestClockPolicy::Off,
+            ..Default::default()
+        };
+        assert_eq!(serde_json::to_value(config).unwrap()["guest_clock"], "off");
+
+        off["guest_clock"] = "host".into();
+        assert!(decode(off).is_err());
+    }
+
+    #[test]
+    fn fs_state_limit_is_omitted_by_default_and_survives_the_handoff() {
+        let default = serde_json::to_value(LaunchConfig::default()).unwrap();
+        assert!(default.get("fs_state_limit_bytes").is_none());
+        assert_eq!(decode(default).unwrap().fs_state_limit_bytes, None);
+
+        let config = LaunchConfig {
+            fs_state_limit_bytes: Some(64 * 1024 * 1024),
+            ..Default::default()
+        };
+        let encoded = serde_json::to_value(config).unwrap();
+        assert_eq!(encoded["fs_state_limit_bytes"], 64 * 1024 * 1024);
+        assert_eq!(
+            decode(encoded).unwrap().fs_state_limit_bytes,
+            Some(64 * 1024 * 1024)
+        );
+    }
+
+    #[test]
+    fn fs_state_limit_is_range_checked_when_decoded() {
+        const MIB: u64 = 1024 * 1024;
+        for bytes in [0, MIB - 1, 4096 * MIB, u64::MAX] {
+            let config = LaunchConfig {
+                fs_state_limit_bytes: Some(bytes),
+                ..Default::default()
+            };
+            let error = decode(serde_json::to_value(config).unwrap()).unwrap_err();
+            assert!(error.contains("filesystem state budget"), "{error}");
+        }
+        for bytes in [MIB, 4 * MIB, 4095 * MIB] {
+            let config = LaunchConfig {
+                fs_state_limit_bytes: Some(bytes),
+                ..Default::default()
+            };
+            assert_eq!(
+                decode(serde_json::to_value(config).unwrap())
+                    .unwrap()
+                    .fs_state_limit_bytes,
+                Some(bytes)
+            );
+        }
+    }
+
     #[cfg(feature = "net")]
     #[test]
     fn network_slot_handoff_rejects_out_of_range_values() {
@@ -573,22 +730,5 @@ mod tests {
         assert_eq!(decoded.sandbox_slot, u16::MAX);
         encoded["sandbox_slot"] = serde_json::json!(u32::from(u16::MAX) + 1);
         assert!(serde_json::from_value::<LaunchConfig>(encoded).is_err());
-    }
-}
-
-//--------------------------------------------------------------------------------------------------
-// Methods
-//--------------------------------------------------------------------------------------------------
-
-impl LaunchConfig {
-    /// Decode current or historical v0.6.x process-launch JSON.
-    ///
-    /// Older environment-based bootstrap is translated at this boundary. An
-    /// explicit typed bootstrap remains authoritative, including empty values.
-    /// Missing historical lease policies inherit the process CPU placement and
-    /// use lease directories derived from the caller's runtime artifact root.
-    pub fn from_json(bytes: &[u8]) -> Result<Self, String> {
-        let config = compatibility::decode(bytes)?;
-        Self::decode(&serde_json::to_vec(&config).map_err(|e| e.to_string())?)
     }
 }

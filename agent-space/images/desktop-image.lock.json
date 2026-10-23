@@ -1,6 +1,6 @@
 {
   "kind": "desktop",
   "preset": "runcove-desktop",
-  "reference": "runcove/runcove-workspace@sha256:7521b27905d226123ec8355de46dd3744bfdd843d4fd68f23b5203ebe1b3a9e3",
+  "reference": "runcove/runcove-workspace@sha256:c69285f71d590f6a03e472a181a77207b9cee2ee704a9c5eb038885c4a596400",
   "workerContract": 1
 }
