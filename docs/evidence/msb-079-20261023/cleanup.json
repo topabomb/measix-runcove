@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-23",
+  "local_cleanup_complete": true,
+  "removed_scratch_paths": 20,
+  "removed_one_off_scripts_and_configs": 17,
+  "removed_logical_bytes_at_least": 6131947169,
+  "retained": [
+    "qualification reports and logs",
+    "normal build cache",
+    "current production data and configuration"
+  ],
+  "production_cleanup_complete": false,
+  "production_cleanup_status": "Automatic approval policy rejected deletion before execution; old container, old named volumes and cold backup remain. No alternative deletion was attempted.",
+  "production_health_after_check": "healthy",
+  "rollback_backup_retained": true
+}
