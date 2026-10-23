@@ -9,8 +9,24 @@
     "normal build cache",
     "current production data and configuration"
   ],
-  "production_cleanup_complete": false,
-  "production_cleanup_status": "Automatic approval policy rejected deletion before execution; old container, old named volumes and cold backup remain. No alternative deletion was attempted.",
+  "production_cleanup_complete": true,
+  "production_cleanup_status": "After the automated deletion was rejected, the user manually executed the provided PowerShell cleanup. Subsequent read-only checks over LAN verified the listed old resources and backup paths are absent.",
   "production_health_after_check": "healthy",
-  "rollback_backup_retained": true
+  "rollback_backup_retained": false,
+  "production_checks": {
+    "old_container_absent": true,
+    "old_named_volumes_absent": 2,
+    "old_image_tag_absent": true,
+    "backup_and_staging_paths_absent": 6,
+    "stage_contains_only_active_config": true,
+    "current_data_and_log_mounts_retained": true,
+    "mounted_config_matches_host_file": true,
+    "health_http_status": 200,
+    "runtime_msb": "0.7.9",
+    "runtime_sqlite": "3.51.3"
+  },
+  "limits": [
+    "Checks cover the explicitly named upgrade resources, not unrelated containers or anonymous volumes.",
+    "No new business-operation or restart qualification was run for this cleanup check."
+  ]
 }
