@@ -1,0 +1,31 @@
+{
+  "request": {
+    "actions": [
+      {
+        "do": "click",
+        "ref": "eDB51cNTX_X"
+      },
+      {
+        "do": "wait",
+        "text": "Choose item"
+      }
+    ]
+  },
+  "response": {
+    "completed_steps": 2,
+    "control": {
+      "mode": "AI"
+    },
+    "duration_secs": 3.1,
+    "observation_diff": "  main \"Upload\"\n-   eDB51cNTX_X button \"Add files\"\n+   eDB51cNTX_X button \"Add files\" [expanded]\n+   etEKcsD8jmb menu \"Add content\"\n+     e3-r1XiNUu4 menuitem \"Choose item\"",
+    "page": {
+      "page_id": "A383918936F90FCEED882F222348F7D3",
+      "title": "Feedback verification",
+      "url": "file:///workspace/feedback.html"
+    },
+    "started_at": "2026-10-24T08:29:15Z",
+    "state": "succeeded",
+    "task_id": "f698dba9-4966-4277-979c-6074b04a27a3",
+    "total_steps": 2
+  }
+}

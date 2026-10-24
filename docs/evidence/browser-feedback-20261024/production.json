@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-24",
+  "source_revision": "c855de2fdc01d2df4e72f80f285c8d363ae9a7ce",
+  "source_sha256": "36fb4b2c8a1708f37a21bd5df1b1e2f96d484935f38a1a08648673407eb76745",
+  "binary_sha256": {
+    "agent-space-mcp": "6ffa2dd196aa2aa5faa8bf39f13451f43e54d01f7263319b69b3374828cb58fd",
+    "agent-space-desktop": "8e1d3fbeae3c7785e973064e7dfc667d19b190bd65199f2dfb262fdc98c64d8c"
+  },
+  "replaced_binaries": [
+    "agent-space-mcp",
+    "agent-space-desktop"
+  ],
+  "image_rebuilt": false,
+  "test_containers_created": false,
+  "backup": false,
+  "migration": false,
+  "snapshot": false,
+  "passed": true,
+  "checks": [
+    "running_binaries_metadata_accounts_config_mounts_and_ports_verified",
+    "actual_batch_diff_deduplicated_context_and_connection_baselines",
+    "removed_old_description_stays_in_its_region_before_other_changes",
+    "partial_failure_preserves_completed_steps_field_value_and_side_effects",
+    "async_wait_images_replay_and_running_guest_helper_verified"
+  ],
+  "deployed": true,
+  "temporary_space_cleanup_confirmed": true,
+  "upload_staging_removed": true,
+  "peer_restart_observed": false,
+  "original_accounts_config_mounts_preserved": true,
+  "production_and_peer_healthy": true,
+  "deployment_kind": "existing container writable-layer binary replacement and restart",
+  "base_image_id": "sha256:932d905bdc34f99160776980d7b9d3ca470c5903af26600649f33dcf86cc4e5a",
+  "runtime_version": "0.7.9",
+  "sqlite": "3.51.3",
+  "static_http_and_webdav_unchanged": true,
+  "production_log_sha256": "9555c07479f272b626c69b9ca46572ddc78b2b6e576e98e81aec8044ca117797",
+  "deployment_script_sha256": "42098e05e55e93e384989a66c144c3efdfbc33412ff48a07a2ac910b36f2139c",
+  "boundary": "No release image or offline package was produced. Recreating the container from the unchanged base image does not retain these binary overrides."
+}

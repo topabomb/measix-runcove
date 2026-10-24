@@ -28,6 +28,14 @@
 
 上方两入口完整tools-only记录保留原源码身份，不冒充本次复审修正后的整套重跑；本次以针对性复验及后续实际生产工具检查覆盖新增修正。见[复审及候选证据](evidence/browser-feedback-20261024/review.json)。
 
+### 工具定向生产更新
+
+代码提交 `c855de2fdc01d2df4e72f80f285c8d363ae9a7ce` 后，按用户要求不做备份、快照或迁移，通过局域网仅更新现有生产容器的 MCP、desktop helper 与对应 release/runtime 摘要并重启。MSB 0.7.9、SQLite 3.51.3、static-http/webdav、配置、账号、端口和挂载保持；运行中 PID1、安装程序和实际 guest helper 摘要与候选一致。
+
+新建临时桌面空间验证真实两步动作差异及去重、独立连接各自基准、跨连接取回快照、旧任务重放不倒退基准、跨区域移除旧描述、失败后的完成数量/步骤/输入值/副作用、异步等待与稳定历史耗时、标注页面截图和桌面两帧重取。全部通过，临时空间及上传文件已清理，生产与相邻服务健康；相邻服务未观察到重启。
+
+本次为现有容器可写层程序更新，未构建新发布镜像或离线包；按原镜像重建不会保留程序覆盖，需重新应用或纳入后续镜像构建。见[生产更新与现场验证](evidence/browser-feedback-20261024/production.json)和[生产实际返回样本](evidence/browser-feedback-20261024/production-act-example.json)。
+
 ## MSB 0.7.9 升级交付（2026-10-23）
 
 SDK、CLI、agent-client 统一锁定 0.7.9，两个 vendor 副本以官方 crate 为基础，仅保留配对的 Linux 生命周期临时补丁。上游已覆盖的 relay 回补、0.7.2 专用 CLI 修复工具及对应 Docker stage 已删除。SQLite 3.51.3 仍保留：上游内置 3.46.0 尚未修复独立的 WAL-reset 问题；来源、价值及逐项撤销条件统一见[运行时维护](runtime.md)。
