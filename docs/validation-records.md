@@ -6,6 +6,42 @@
 
 公开 Git 历史从整理后的首次提交开始，未保留此前的私有开发历史。下列旧报告及其证据中的 Git SHA 是当时输入的标识，不能在公开仓库中检出，也不能据此复现旧构建；源码摘要和镜像 ID 继续标识原始验证对象。首次提交包含之后的修复和文档整理，不能直接沿用旧镜像的资格结论；发布前仍须按当前源码重新构建并验证。
 
+## 浏览器工具最终审查与生产热更新（2026-10-24）
+
+完整审查本轮未提交的 act/snapshot/read 合同、任务列表与摘要、后端时间预算、实现、测试和文档。修复坐标摘要过早截断图像ID与终点坐标、tabs/tasks无关参数在类型校验前未忽略、helper前置页面观察仍受旧5秒限制的问题；同步Standalone任务归属回归的等待时长。单张成功截图本来省略帧计时，修正遗漏的媒体测试断言及文档字段表述，不改变该时间合同。
+
+验证包含Rust工作区lib/bin、MCP HTTP/会话/管理及代理回归、Standalone no-default-features合同与依赖检查、两种构建的Clippy、Python清理/执行归属/协议回归、真实Chromium Node套件及DPR=2专项。Server与Standalone独立资格环境完成browser 11项、structured 15项、pages 4项、media 10项覆盖、真实300秒多资料恢复及降低页面上限后的重启检查；Standalone的browser有1项Server专属跳过，另完成驱动的执行身份、文件权限、owner-loss和优雅关闭/重启检查。媒体初轮各9项通过，1项旧断言修正后单独复验通过，未把续跑冒充完整单次通过。
+
+最早的资格尝试误用旧debug helper，导致新版主程序将diff退回snapshot；重建全部helper并逐文件核对内嵌七份worker源码后，重新完成上述覆盖，未放宽diff断言。后续Cargo HTTP测试重建了入口程序，续跑与初轮源码摘要相同、helper摘要相同，但入口二进制摘要不同，均分别记录；no-default构建性质由独立合同/依赖验证证明，续跑仅证明同源码行为。这是工具变更的双目标源码回归，不是完整持久发布镜像资格。见[最终审查验证证据](evidence/browser-task-final-review-20261024/verification.json)。
+
+生产按源码摘要 `c53bb7b22f392cd3dbb16ec2cdd03eb12356be5d67446745039414d79b18bb72` 更新原容器的MCP与desktop helper，压缩更新载荷33,324,498字节，无迁移、备份或完整镜像重建。现场验证公开schema、无任务副作用的列表、旧参数忽略、完整快照、read上下文、act差异、30秒返回窗口、任务取回、坐标摘要完整图像ID、四类来源和截图通过。坐标现场断言最初只接受整数文本，改为接受等值浮点文本后复验通过，未再次上传或重启。运行程序摘要、元数据、原有账户/配置/挂载/端口及相邻服务核对通过，临时空间和上传暂存清理完成。此次为容器可写层热更新，不等于持久镜像发布。见[生产验证证据](evidence/browser-task-final-review-20261024/production.json)。
+
+## 浏览器任务列表与摘要（2026-10-24）
+
+snapshot公开四参数view/page_id/ref/image，新增view=tasks直接列出空间内浏览器与桌面任务，不读取页面或创建任务；移除recent_tasks_limit及附加历史，旧参数静默忽略。列表运行中优先、组内新建优先、最多10条，截断明确标记；返回task_id/tool/description/state/started_at。后端创建时保存有界摘要，覆盖四类来源和act的16种动作；目标使用确定的ref/page ID，不为名称额外观察。任务仍由act wait/cancel查询，沿用结束后30分钟保留和内存生命周期。
+
+本地快速验证：MCP单元43项、HTTP协议5项、摘要覆盖1项、列表排序/截断/过期/查询不创建任务1项通过；MCP/desktop helper all-targets Clippy、格式、Python语法和差异检查通过。上轮已完成的17项语义/worker和6项真实Chromium回归覆盖未再修改的worker逻辑。此次一起发布此前本地完成的act后端时间预算、snapshot/read精简和旧参数静默忽略；非完整VM/桌面资格验证。复用已验证的本地构建基底，只重编MCP和desktop helper，两份二进制及SQLite 3.51.3链接校验通过。见[快速验证](evidence/browser-task-list-20261024/verification.json)。
+
+已通过Tailscale更新原生产容器的两份程序，压缩传输33,339,036字节，无迁移或备份、未重建完整发布镜像。运行进程/程序摘要、账号、配置、挂载及相邻服务核对通过；临时空间实测公开schema、空列表不创建任务、旧参数忽略、完整快照、read上下文、act差异、35秒任务的running与取回、四类任务摘要和截图通过。首轮测试夹具在Chromium内部页写HTML被TrustedHTML策略拒绝，改为显式导航到测试页后复验通过，未因此再次替换程序或重启。临时空间与上传暂存已清理。源码保留本地未提交状态，生产按工作树源码摘要21e6de2145df69748df1b9e26b2aa15e805d220fa63deda10978ffa4d9295ec8标识；此次仍为容器可写层更新，不等于持久镜像发布。见[生产证据](evidence/browser-task-list-20261024/production.json)及[临时资格空间返回示例（ID已替换的脱敏投影）](evidence/browser-task-list-20261024/live-examples.json)。
+
+## 已退役参数静默忽略与浏览器归属（本地快速验证，2026-10-24）
+
+按最新约定，在MCP入口静默移除 snapshot.diff/text、act顶层timeout_secs/action_timeout_secs、wait/download步骤timeout_secs，不恢复公开schema、不提示兼容警告，其他参数校验保持。此前“移除参数拒绝”的记录仅代表当时行为，已由此调整替代。snapshot/read描述首句明确当前连接Runcove空间的内置浏览器。MCP单元42项和HTTP协议5项通过（含任意旧值忽略、schema不重新公开、其他未知字段仍拒绝）；格式及差异检查通过。未提交、推送或更新生产。
+
+## Snapshot / Read 职责精简（本地快速验证，2026-10-24）
+
+snapshot 移除 diff/text 参数及实现分支，固定返回当前有界语义树；保留 view/page_id/ref/image/recent_tasks_limit，任务历史仍仅在显式请求时附带。read 保持五个参数和正文/查询/提取模式，query 增加有界的具名语义祖先 context，同名候选不猜测归属。整页快照更新本连接的 act 基线，read 和子树快照不更新。文档纠正了旧的“跨连接共享基线”表述。
+
+对照修改前的工具定义审查 act/snapshot/read：沿用原术语，只补无法从字段名推导的规则；不暴露后端时间预算，不添加常规成功指导；保留异常诊断、空结果、真实字段值和截断标记，内部基线与 worker 日志不输出。act 的 then 明确同页、本连接、无 ref 快照或动作反馈的基线；wait_secs 仅适用于 wait/cancel。
+
+快速验证通过：MCP单元41项、HTTP工具协议5项（含公开 schema 和移除参数拒绝）、语义树10项、worker故障与预算7项、真实Chromium6项（完整快照、批末差异、同名控件上下文与子树范围、read不改基线、Unicode、同源/嵌套/跨域iframe）；MCP/desktop helper all-targets Clippy、Rust格式、Python语法及 git diff --check 通过。隔离验证容器已清理；未运行完整VM/桌面资格或外部客户端长等待测试，未提交、推送或更新生产。
+
+## Act 后端统一时间预算（本地快速验证，2026-10-24）
+
+删除模型侧顶层 timeout_secs/action_timeout_secs 和条件等待/下载的步骤 timeout_secs，保留主动等待 secs 与仅供任务查询/取消的 wait_secs。后端整批120秒、普通交互30秒、导航/条件等待/下载60秒、观察30秒，阶段共享剩余预算；首次返回窗口由8秒调为30秒。固定延时只受整批期限约束，避免60秒等待与同长保护定时器竞争。硬期限到达终止当前 worker，保留完成步骤、副作用及原始失败；观察失败不启动第二次观察。
+
+仅做本地快速检查：MCP单元41项、HTTP协议5项、worker故障与预算7项、真实Chromium批末差异1项通过；MCP/desktop helper all-targets Clippy、格式、Python语法和差异检查通过。完整VM资格、长时间端到端超时以及外部客户端/网关30秒等待兼容性未验证。没有构建发布镜像、提交、推送或更新生产。
+
 ## 移除动作无观察选项（2026-10-24）
 
 公开 then 只接受 diff（默认）和 snapshot，显式 none 在参数解析阶段拒绝；删除 worker 跳过观察分支。无可观察页面的纯延时、超时与取消保留原有行为。同步更新合同和旧测试调用，审查全部变更；MCP单元41项、HTTP合同5项、Clippy、格式/语法检查及真实Chromium批末差异回归通过。回归覆盖新变化、无变化的空差异及导航快照回退；完整资格套件本次未重复。复用已验证本地构建基底，只编译变更涉及的MCP和desktop helper，SQLite链接检查通过。见[验证记录](evidence/remove-none-20261024/verification.json)。

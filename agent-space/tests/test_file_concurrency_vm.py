@@ -81,7 +81,7 @@ Path('__ROOT__/release').touch()
 
     def test_03_browser_work_does_not_block_basic_tools(self):
         browser=Client("desktop");browser.initialize()
-        started=text(browser.tool("browser_act",{"actions":[{"do":"wait","secs":10},{"do":"wait","secs":5}],"timeout_secs":30}))
+        started=text(browser.tool("browser_act",{"actions":[{"do":"wait","secs":60}]}))
         self.assertEqual(started["state"],"running",started)
         before=time.monotonic()
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:

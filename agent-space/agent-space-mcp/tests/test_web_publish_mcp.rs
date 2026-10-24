@@ -380,26 +380,43 @@ async fn desktop_catalog_and_structured_arguments_reach_the_mcp_handlers() {
         json!(["execute", "wait", "cancel"])
     );
     assert_eq!(
-        schema("browser_act")["properties"]["timeout_secs"]["minimum"],
-        1
-    );
-    assert_eq!(
-        schema("browser_act")["properties"]["timeout_secs"]["maximum"],
-        600
-    );
-    assert_eq!(
-        schema("browser_snapshot")["properties"]["recent_tasks_limit"]["maximum"],
-        10
-    );
-    assert_eq!(
         schema("browser_read")["properties"]["max_chars"]["maximum"],
         20000
     );
+    let snapshot = schema("browser_snapshot");
+    let keys: Vec<_> = snapshot["properties"]
+        .as_object()
+        .unwrap()
+        .keys()
+        .map(String::as_str)
+        .collect();
+    assert_eq!(keys, vec!["image", "page_id", "ref", "view"]);
+    assert_eq!(
+        snapshot["$defs"]["SnapshotView"]["enum"],
+        json!(["page", "tabs", "tasks"])
+    );
+    for _ in 0..2 {
+        let reply = h.client.call_tool(CallToolRequestParams::new("browser_snapshot").with_arguments(
+            json!({"view":" tasks ","page_id":false,"ref":{},"image":"unused","recent_tasks_limit":false,"diff":true,"text":null}).as_object().unwrap().clone()
+        )).await.unwrap();
+        assert_ne!(reply.is_error, Some(true));
+        let body: serde_json::Value = serde_json::from_str(
+            serde_json::to_value(&reply).unwrap()["content"][0]["text"]
+                .as_str()
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(body["tasks"], json!([]));
+        assert!(body.get("task_id").is_none());
+        assert!(body.get("observation").is_none());
+    }
     // Advertised constraints must match the existing pre-execution validator.
     let act = schema("browser_act");
     assert_eq!(act["properties"]["actions"]["minItems"], 1);
     assert_eq!(act["properties"]["actions"]["maxItems"], 20);
-    assert_eq!(act["properties"]["action_timeout_secs"]["maximum"], 30);
+    assert!(!serde_json::to_string(&act)
+        .unwrap()
+        .contains("timeout_secs"));
     assert!(!serde_json::to_string(&act).unwrap().contains("timeout_ms"));
     let steps = act["$defs"]["ActStep"]["oneOf"].as_array().unwrap();
     let step = |name: &str| {
@@ -409,11 +426,9 @@ async fn desktop_catalog_and_structured_arguments_reach_the_mcp_handlers() {
             .unwrap()["properties"]
     };
     for (name, param, min, max) in [
-        ("download", "timeout_secs", 1, 60),
         ("scroll", "dy", -20000, 20000),
         ("scroll", "max", 1, 30),
         ("wait", "secs", 0, 60),
-        ("wait", "timeout_secs", 1, 60),
         ("scroll", "delta", -30, 30),
     ] {
         let p = &step(name)[param];
@@ -499,7 +514,7 @@ async fn desktop_catalog_and_structured_arguments_reach_the_mcp_handlers() {
     );
     for action in ["wait", "cancel"] {
         for wait in [None, Some(30), Some(31)] {
-            let mut args = json!({"op": action, "task_id": "missing"});
+            let mut args = json!({"op": action, "task_id": "missing", "timeout_secs":false,"action_timeout_secs":null});
             if let Some(wait) = wait {
                 args["wait_secs"] = json!(wait);
             }
@@ -552,7 +567,7 @@ async fn desktop_catalog_and_structured_arguments_reach_the_mcp_handlers() {
         ),
         (
             "browser_act",
-            json!({"task_id":"missing","op":"wait","wait_secs":0,"actions":[],"page_id":"old","then":"snapshot","action_timeout_secs":0,"timeout_secs":0}),
+            json!({"task_id":"missing","op":"wait","wait_secs":0,"actions":[],"page_id":"old","then":"snapshot"}),
             Some("TASK_NOT_FOUND"),
         ),
     ] {
@@ -582,8 +597,6 @@ async fn desktop_catalog_and_structured_arguments_reach_the_mcp_handlers() {
             json!({"path":"/workspace/a", "content":null,"extra":true}),
         ),
         ("browser_snapshot", json!({"view":"unknown"})),
-        ("browser_snapshot", json!({"recent_tasks_limit":11})),
-        ("browser_snapshot", json!({"ref":"eabcdefghij","diff":true})),
         (
             "browser_act",
             json!({"code":"","page_id":null,"timeout_secs":null,"extra":{}}),

@@ -24,18 +24,37 @@ class StructuredBrowser(unittest.TestCase):
   first=a.snapshot();b.snapshot();target=first['page']['page_id']
   self.assertNotIn('value',first);self.assertNotIn('_observation',json.dumps(first))
   self.client.fixture_js("await page.evaluate(()=>document.querySelector('#b').setAttribute('aria-expanded','true'));return true;",target)
-  av=a.snapshot(diff=True);bv=b.snapshot(diff=True)
+  def observe_diff(client):
+   return client.act([{'do':'wait','gone':'absent-observation-marker'}])[0]
+  av=observe_diff(a);bv=observe_diff(b)
   for observed in [av,bv]:
    self.assertIn('observation_diff',observed);self.assertIn('[expanded]',observed['observation_diff'])
    self.assertIn('- ',observed['observation_diff']);self.assertNotIn('layers',observed)
   a.tool('browser_act',{'op':'wait','task_id':first['task_id'],'wait_secs':0})
-  self.assertEqual(a.snapshot(diff=True)['observation_diff'],'')
+  self.assertEqual(observe_diff(a)['observation_diff'],'')
   c=Client('desktop');c.initialize()
   c.tool('browser_act',{'op':'wait','task_id':av['task_id'],'wait_secs':0})
-  self.assertIn('observation',c.snapshot(diff=True))
+  self.assertIn('observation',observe_diff(c))
   self.client.fixture_js("await page.evaluate(()=>document.querySelector('[role=status]').textContent='Selected');return true;",target)
   a.read_browser()
-  delta=a.snapshot(diff=True)['observation_diff'];self.assertIn('Ready',delta);self.assertIn('Selected',delta)
+  delta=observe_diff(a)['observation_diff'];self.assertIn('Ready',delta);self.assertIn('Selected',delta)
+ def test_task_list_is_space_scoped_bounded_and_queryable(self):
+  for _ in range(11):self.act([{'do':'wait','secs':0}])
+  first=self.client.snapshot(view='tasks',page_id=False,ref={},image='ignored',recent_tasks_limit=100)
+  self.assertEqual(len(first['tasks']),10);self.assertTrue(first['truncated']);self.assertNotIn('task_id',first)
+  self.assertEqual(first,self.client.snapshot(view='tasks'))
+  for task in first['tasks']:
+   self.assertEqual(set(task),{'task_id','tool','description','state','started_at'})
+   self.assertLessEqual(len(task['description']),120)
+   self.assertRegex(task['started_at'],r'^\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z$')
+  response=self.client.tool('browser_act',{'actions':[{'do':'wait','secs':60}]})
+  pending=text(response);self.assertEqual(pending['state'],'running')
+  other=Client('desktop');other.initialize()
+  listed=other.snapshot(view='tasks');self.assertEqual(listed['tasks'][0]['task_id'],pending['task_id'])
+  self.assertEqual(listed['tasks'][0]['description'],'Wait 60s')
+  cancelled,reply=other.finish(other.tool('browser_act',{'op':'cancel','task_id':pending['task_id']}))
+  self.assertEqual(cancelled['state'],'cancelled');self.assertTrue(reply.get('isError'))
+  self.assertNotIn('recent_tasks',self.client.snapshot(recent_tasks_limit=10))
  def test_parameter_normalization_and_semantic_wait(self):
   initial=self.client.snapshot();email=element(initial,'textbox','Email')
   value,reply=self.client.act([{'do':'fill','ref':email,'text':'kept@example.com'}],wait_secs=999)
@@ -43,19 +62,19 @@ class StructuredBrowser(unittest.TestCase):
   self.assertIn('control',value)
   for action in ['wait','cancel']:
    response=self.client.tool('browser_act',{'op':action,'task_id':value['task_id'],'actions':[],
-    'page_id':'irrelevant','then':'snapshot','action_timeout_secs':0,'timeout_secs':0,'wait_secs':0})
+    'page_id':'irrelevant','then':'snapshot','wait_secs':0})
    self.assertFalse(response.get('isError'),text(response))
   self.assertEqual(self.client.read_browser(extract='fields',max_chars=0)['fields'][0]['value'],'kept@example.com')
   view=self.client.navigate('http://127.0.0.1:8125/scope')
   matches=self.client.read_browser(ref=element(view,'region','First form'),query='NAME',max_chars=999999)['matches']
   self.assertEqual([m['name'] for m in matches],['First name'])
-  self.act([{'do':'fill','ref':matches[0]['ref'],'text':''},{'do':'wait','text':'FIRST NAME','timeout_secs':1}])
+  self.act([{'do':'fill','ref':matches[0]['ref'],'text':''},{'do':'wait','text':'FIRST NAME'}])
   with self.assertRaises(RuntimeError):self.client.tool('browser_read',{'query':'name','extract':'fields'})
   with self.assertRaises(RuntimeError):self.client.tool('browser_act',{'op':'wait','task_id':value['task_id'],'actions':[{'do':'navigate','mode':'reload'}]})
   with self.assertRaises(RuntimeError):self.client.tool('browser_act',{'task_id':value['task_id'],'actions':[{'do':'navigate','mode':'reload'}]})
   self.client.fixture_js("await page.evaluate(()=>document.body.innerHTML='<input aria-label=Prompt><img alt=Generated><p hidden>Hidden</p>');return true;")
-  self.act([{'do':'wait','text':'prompt','timeout_secs':1},{'do':'wait','text':'GENERATED','timeout_secs':1},{'do':'wait','gone':'Hidden','timeout_secs':1}])
-  failed,reply=self.client.act([{'do':'wait','gone':'prompt','timeout_secs':1}])
+  self.act([{'do':'wait','text':'prompt'},{'do':'wait','text':'GENERATED'},{'do':'wait','gone':'Hidden'}])
+  failed,reply=self.client.act([{'do':'wait','gone':'prompt'}])
   self.assertTrue(reply.get('isError'));self.assertEqual(failed['error']['code'],'TIMEOUT');self.assertIn('page_id',failed['page']);self.assertNotIn('stderr',failed.get('logs',{}))
  def test_compact_snapshot_list_and_stable_task_timing(self):
   value,reply=self.client.finish(self.client.tool('browser_snapshot',{}))
@@ -65,7 +84,7 @@ class StructuredBrowser(unittest.TestCase):
   for key in ['tabs','health','layers','truncated']:self.assertNotIn(key,value)
   again=text(self.client.tool('browser_act',{'op':'wait','task_id':value['task_id'],'wait_secs':0}))
   self.assertNotIn('started_at',again);self.assertNotIn('duration_secs',again)
-  listed=self.client.good('browser_snapshot',{'view':'tabs','page_id':'irrelevant','ref':'invalid','diff':True,'image':True,'text':True})
+  listed=self.client.good('browser_snapshot',{'view':'tabs','page_id':'irrelevant','ref':'invalid','image':True})
   self.assertTrue(listed['tabs']);self.assertNotIn('observation',listed);self.assertNotIn('image',listed)
   self.assertTrue(self.client.good('browser_snapshot',{'view':' '})['page']['page_id'])
   for tool,args,has_start in [('browser_read',{},False),('screen_observe',{'view':'page'},False),('screen_observe',{'view':'page','count':2,'interval_secs':0},True),('browser_act',{'actions':[{'do':'wait','secs':0}]},True)]:
@@ -83,9 +102,9 @@ class StructuredBrowser(unittest.TestCase):
   (Q/'compact-feedback.json').write_text(json.dumps({'task':value,'current_page':current,'pages':pages,'query':query},ensure_ascii=False,indent=2)+'\n')
 
  def test_sixty_second_wait_and_default_condition_deadline(self):
-  # Exercise the 8-second initial response and repeated 30-second task waits.
+  # Exercise the 30-second initial response and repeated 30-second task waits.
   began=time.monotonic()
-  response=self.client.tool('browser_act',{'actions':[{'do':'wait','secs':60,'timeout_secs':0}], 'then':'diff'})
+  response=self.client.tool('browser_act',{'actions':[{'do':'wait','secs':60}], 'then':'diff'})
   initial=text(response);self.assertEqual(initial['state'],'running')
   value,reply=self.client.finish(response)
   fixed=time.monotonic()-began
@@ -183,7 +202,7 @@ class StructuredBrowser(unittest.TestCase):
  def test_unicode_text_limits_are_valid_in_the_rust_task_owner(self):
   self.client.fixture_js("await page.evaluate(()=>{document.title='😀'.repeat(201);document.body.innerHTML='<main>'+ '😀'.repeat(5000)+'</main>';});return true;")
   read=self.client.read_browser(max_chars=1);self.assertEqual(read['text'],'😀');self.assertEqual(read['chars'],5000);self.assertTrue(read['truncated'])
-  self.assertTrue(self.client.snapshot(text=True)['observation'])
+  self.assertTrue(self.client.snapshot()['observation'])
   self.client.fixture_js("await page.evaluate(()=>document.body.innerHTML='<textarea aria-label=Multiline></textarea>');return true;")
   field=self.client.read_browser(extract='fields')['fields'][0];multiline='中文\nhello "quoted" \\ 🙂'
   self.act([{'do':'fill','ref':field['ref'],'text':multiline}])

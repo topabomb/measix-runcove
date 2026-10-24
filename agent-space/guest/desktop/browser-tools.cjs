@@ -6,6 +6,7 @@ const fs = require("node:fs"),
   crypto = require("node:crypto");
 const { pageCapture, clipText } = require("./observation.cjs");
 const semantic = require("./semantic-observation.cjs");
+const timing = require("./timing.cjs");
 const PIN = "runcove.browser.ref.v1",
   DOC = "runcove.browser.document.v1";
 const INTERACTIVE = new Set([
@@ -62,9 +63,9 @@ const STEP_FIELDS = {
   fill: ["ref", "text", "submit"], select: ["ref", "value"], check: ["ref", "checked"],
   press: ["target", "key", "ref"], hover: ["ref"],
   drag: ["ref", "to_ref", "image_id", "x", "y", "to_x", "to_y"],
-  upload: ["ref", "paths"], download: ["ref", "timeout_secs"],
+  upload: ["ref", "paths"], download: ["ref"],
   scroll: ["target", "image_id", "x", "y", "delta", "ref", "until_text", "dy", "exact", "max"],
-  wait: ["text", "gone", "secs", "timeout_secs"], navigate: ["mode", "url"],
+  wait: ["text", "gone", "secs"], navigate: ["mode", "url"],
   tab: ["action", "page_id", "url"], dialog: ["accept", "text"],
   desktop_type: ["text"], window: ["mode"],
 };
@@ -89,7 +90,6 @@ function validate(args) {
         ignored = a.target === "desktop" ? ["ref", "until_text", "dy", "exact", "max"] :
           ["image_id", "x", "y", "delta", ...(a.ref != null ? ["until_text", "dy", "exact", "max"] : a.until_text == null ? ["exact", "max"] : [])];
       }
-      if (a.do === "wait" && a.secs != null) ignored = ["timeout_secs"];
       if (a.do === "tab") ignored = a.action === "new" ? ["page_id"] : ["url"];
       if (a.do === "navigate" && a.mode != null && a.mode !== "open") ignored = ["url"];
       for (const key of ignored) delete a[key];
@@ -100,7 +100,7 @@ function validate(args) {
         else if (["x", "y", "to_x", "to_y"].includes(k)) good &&= Number.isFinite(v) && v >= 0;
         else if (["double", "submit", "checked", "accept", "exact"].includes(k)) good &&= typeof v === "boolean";
         else if (k === "paths") good &&= Array.isArray(v) && v.length > 0 && v.length <= 20 && v.every(p => typeof p === "string" && p.startsWith("/") && !p.includes("\0"));
-        else if (["secs", "timeout_secs", "dy", "max", "delta"].includes(k)) good &&= Number.isInteger(v);
+        else if (["secs", "dy", "max", "delta"].includes(k)) good &&= Number.isInteger(v);
         else good &&= typeof v === "string";
       }
     }
@@ -112,8 +112,7 @@ function validate(args) {
       good = required.every(k => a[k] != null) && !(a.ref == null && a.to_ref != null);
     }
     if (good && a.do === "wait") good = ["text", "gone", "secs"].filter(k => a[k] != null).length === 1 &&
-      (a.secs == null || (a.secs >= 0 && a.secs <= 60)) &&
-      (a.timeout_secs == null || (a.timeout_secs >= 1 && a.timeout_secs <= 60));
+      (a.secs == null || (a.secs >= 0 && a.secs <= 60));
     if (good && a.do === "scroll") good = a.target === "desktop" ?
       ["image_id", "x", "y", "delta"].every(k => a[k] != null) && Math.abs(a.delta) <= 30 :
       (a.dy == null || Math.abs(a.dy) <= 20000) && (a.max == null || (a.max >= 1 && a.max <= 30));
@@ -124,7 +123,6 @@ function validate(args) {
     if (good && a.do === "navigate") good = ["open", "back", "forward", "reload"].includes(a.mode ?? "open") &&
       ((a.mode != null && a.mode !== "open") || typeof a.url === "string");
     if (good && a.do === "window") good = ["normal", "maximized", "fullscreen"].includes(a.mode);
-    if (good && a.do === "download" && a.timeout_secs != null) good = a.timeout_secs >= 1 && a.timeout_secs <= 60;
     if (good && a.do === "press") good = a.target === "desktop" ? /^[A-Za-z0-9_+ -]{1,80}$/.test(a.key) : a.key.length > 0;
     if (good && a.do === "desktop_type") good = Buffer.byteLength(a.text) <= 65536;
     if (good && a.image_id != null) good = a.image_id.length > 0;
@@ -259,11 +257,11 @@ async function documentId(page) {
     3000,
   );
 }
-async function view(page, boxes = false) {
+async function view(page, boxes = false, timeout = timing.OBSERVATION_MS) {
   const nodes = parse(
     await bounded(
-      page.ariaSnapshot({ mode: "ai", boxes, timeout: 10000 }),
-      12000,
+      page.ariaSnapshot({ mode: "ai", boxes, timeout }),
+      timeout,
     ),
   );
   const candidates = nodes.filter(
@@ -702,6 +700,7 @@ async function read(page, args) {
         ref: n.ref,
         role: n.role,
         name: clipText(n.name, 120),
+        ...semantic.queryContext(n),
         text: n.text ? clipText(n.text, 300) : undefined,
         iframe: framePath(n).length > 0,
         frame_path: framePath(n),
@@ -926,8 +925,6 @@ async function run(task, env) {
     started = false,
     mutated = false;
   if (task.operation === "act") validate(args);
-  if (task.operation === "snapshot" && args.ref && args.diff)
-    throw fault("INVALID_ARGUMENT", "ref cannot be combined with diff=true.");
   let observeTab = false, failure = null;
   const begin = () => {
     started = true;
@@ -944,6 +941,7 @@ async function run(task, env) {
   const getPage = async () => {
     page = await env.page(current);
     current = await pageId(page);
+    if (task.operation === "act") env.checkpoint({ value: { completed: done, of: args.actions.length, page_id: current } });
     if (task.operation === "act" && !hooks.has(page.context()))
       hooks.set(
         page.context(),
@@ -962,25 +960,28 @@ async function run(task, env) {
     };
   };
   const observe = async (mode, scope) => {
-    const p = await getPage(), beforeDocument = await documentId(p),
-      v = await view(p);
-    const selected = scope ? subtree(v, scope) : v;
-    const panels = scope ? {} : await layers(p);
-    const tree = semantic.build(selected.nodes, INTERACTIVE, panels.layers || [], selected.truncated || panels.layers_truncated, args.text === true);
-    const document = await documentId(p), url = p.url();
-    if (beforeDocument !== document) throw fault("STALE_OBSERVATION", "Document changed during observation.");
-    const identity = { document, url, mode: args.text ? "text" : "compact" };
-    const previous = args._baselines?.[current];
-    const feedback = semantic.present(tree, previous, mode, identity);
-    return compactObservation({
-      ...(await metadata()),
-      url: p.url(),
-      title: await bounded(p.title(), 3000).catch(() => ""),
-      ...feedback,
-      ...(!scope ? { _observation: { ...identity, ...tree, page_id: current,
-        order: args._observation_order || 0, base_order: previous?.order || 0, scope: args._observation_scope } } : {}),
-      ...(args.image ? { image: await capture(p, env.output, selected) } : {}),
-    });
+    const stop = env.armDeadline?.(timing.OBSERVATION_MS, { observation: true, failure });
+    try {
+      const p = await getPage(), beforeDocument = await documentId(p),
+        v = await view(p, false, env.remaining?.() ?? timing.OBSERVATION_MS);
+      const selected = scope ? subtree(v, scope) : v;
+      const panels = scope ? {} : await layers(p);
+      const tree = semantic.build(selected.nodes, INTERACTIVE, panels.layers || [], selected.truncated || panels.layers_truncated);
+      const document = await documentId(p), url = p.url();
+      if (beforeDocument !== document) throw fault("STALE_OBSERVATION", "Document changed during observation.");
+      const identity = { document, url, mode: "compact" };
+      const previous = args._baselines?.[current];
+      const feedback = semantic.present(tree, previous, mode, identity);
+      return compactObservation({
+        ...(await metadata()),
+        url: p.url(),
+        title: await bounded(p.title(), 3000).catch(() => ""),
+        ...feedback,
+        ...(!scope ? { _observation: { ...identity, ...tree, page_id: current,
+          order: args._observation_order || 0, base_order: previous?.order || 0, scope: args._observation_scope } } : {}),
+        ...(args.image ? { image: await capture(p, env.output, selected) } : {}),
+      });
+    } finally { stop?.(); }
   };
   if (task.operation === "snapshot") {
     if (args.view === "tabs") return { value: await env.observe(null, "tabs") };
@@ -1013,7 +1014,7 @@ async function run(task, env) {
           profilePicker: undefined,
         },
       };
-    return { value: await observe(args.diff ? "diff" : "snapshot", args.ref) };
+    return { value: await observe("snapshot", args.ref) };
   }
   if (task.operation === "read") {
     const p = await getPage();
@@ -1023,8 +1024,10 @@ async function run(task, env) {
   }
   for (const [index, a] of args.actions.entries()) {
     started = false;
+    const stop = env.armDeadline?.(timing.stepLimit(a), { step_number: index + 1, do: a.do, ...(a.ref ? { ref: a.ref } : {}) });
+    const until = performance.now() + timing.stepLimit(a);
+    const timeout = () => Math.max(1, Math.min(until - performance.now(), env.remaining?.() ?? Infinity));
     try {
-      const timeout = (args.action_timeout_secs ?? 5) * 1000;
       if (a.do === "wait" && a.secs != null) {
         await new Promise(r => setTimeout(r, a.secs * 1000));
       } else if (a.do === "dialog") {
@@ -1039,7 +1042,7 @@ async function run(task, env) {
             const p = await getPage();
             await p.goto(a.url, {
               waitUntil: "domcontentloaded",
-              timeout: 20000,
+              timeout: timeout(),
             });
           }
         } else {
@@ -1097,7 +1100,7 @@ async function run(task, env) {
           begin();
           await p.goto(a.url, {
             waitUntil: "domcontentloaded",
-            timeout: 20000,
+            timeout: timeout(),
           });
         } else if (a.do === "navigate" && ["back", "forward"].includes(a.mode)) {
           const s = await p.context().newCDPSession(p);
@@ -1113,23 +1116,23 @@ async function run(task, env) {
           begin();
           await p[a.mode === "back" ? "goBack" : "goForward"]({
             waitUntil: "commit",
-            timeout: 20000,
+            timeout: timeout(),
           });
           await bounded(
             p.waitForFunction(() => document.readyState !== "loading", null, {
-              timeout: 20000,
+              timeout: timeout(),
             }),
-            21000,
+            timeout(),
           );
         } else if (a.do === "navigate" && a.mode === "reload") {
           begin();
-          await p.reload({ waitUntil: "domcontentloaded", timeout: 20000 });
+          await p.reload({ waitUntil: "domcontentloaded", timeout: timeout() });
         } else if (a.do === "wait") {
           await waitText(
               p,
               a.text ?? a.gone,
               a.text != null,
-              (a.timeout_secs ?? 60) * 1000,
+              timeout(),
             );
         } else if (a.do === "press" && !a.ref) {
           begin();
@@ -1138,7 +1141,7 @@ async function run(task, env) {
           if (a.ref) {
             const l = await resolve(p, a.ref);
             begin();
-            await l.scrollIntoViewIfNeeded({ timeout });
+            await l.scrollIntoViewIfNeeded({ timeout: timeout() });
           } else if (a.until_text) {
             let found = false;
             for (let i = 0; i <= (a.max ?? 15); i++) {
@@ -1148,7 +1151,7 @@ async function run(task, env) {
                   .first();
                 if (await l.isVisible().catch(() => false)) {
                   begin();
-                  await l.scrollIntoViewIfNeeded({ timeout });
+                  await l.scrollIntoViewIfNeeded({ timeout: timeout() });
                   found = true;
                   break;
                 }
@@ -1293,7 +1296,7 @@ async function run(task, env) {
                   ? { multiple: e.multiple }
                   : null,
               undefined,
-              { timeout },
+              { timeout: timeout() },
             );
             if (direct) {
               if (files.length > 1 && !direct.multiple)
@@ -1304,14 +1307,14 @@ async function run(task, env) {
               begin();
               await l.setInputFiles(
                 files.map((f) => f.path),
-                { timeout },
+                { timeout: timeout() },
               );
             } else {
               const pending = p
-                .waitForEvent("filechooser", { timeout })
+                .waitForEvent("filechooser", { timeout: timeout() })
                 .catch(() => null);
               begin();
-              await l.click({ timeout });
+              await l.click({ timeout: timeout() });
               const fc = await pending;
               if (!fc)
                 throw fault(
@@ -1325,21 +1328,21 @@ async function run(task, env) {
                 );
               await fc.setFiles(
                 files.map((f) => f.path),
-                { timeout },
+                { timeout: timeout() },
               );
             }
           } else if (a.do === "download") {
             const pending = p
-              .waitForEvent("download", { timeout: (a.timeout_secs ?? 30) * 1000 })
+              .waitForEvent("download", { timeout: timeout() })
               .catch(() => null);
             begin();
-            await l.click({ timeout });
+            await l.click({ timeout: timeout() });
             const d = await pending;
             if (!d)
               throw fault("NO_DOWNLOAD", "The click did not start a download.");
             const saved = await bounded(
               hooks.get(p.context()).save(d),
-              (a.timeout_secs ?? 30) * 1000,
+              timeout(),
             );
             if (saved.error) throw fault("DOWNLOAD_FAILED", saved.error);
           } else if (a.do === "select") {
@@ -1356,7 +1359,7 @@ async function run(task, env) {
                   : { count: selected.length };
               },
               a.value,
-              { timeout },
+              { timeout: timeout() },
             );
             if (option.invalid)
               throw fault(
@@ -1369,33 +1372,33 @@ async function run(task, env) {
                 "Choose an exact, unambiguous option value or label.",
               );
             begin();
-            await l.selectOption({ value: option.value }, { timeout });
+            await l.selectOption({ value: option.value }, { timeout: timeout() });
           } else if (a.do === "drag") {
             const to = await resolve(p, a.to_ref);
             begin();
-            await l.dragTo(to, { timeout });
+            await l.dragTo(to, { timeout: timeout() });
           } else {
             begin();
             switch (a.do) {
               case "click":
                 await l.click({
-                  timeout,
+                  timeout: timeout(),
                   button: a.button || "left",
                   clickCount: a.double ? 2 : 1,
                 });
                 break;
               case "fill":
-                await l.fill(a.text, { timeout });
-                if (a.submit) await l.press("Enter", { timeout });
+                await l.fill(a.text, { timeout: timeout() });
+                if (a.submit) await l.press("Enter", { timeout: timeout() });
                 break;
               case "check":
-                await l.setChecked(a.checked ?? true, { timeout });
+                await l.setChecked(a.checked ?? true, { timeout: timeout() });
                 break;
               case "hover":
-                await l.hover({ timeout });
+                await l.hover({ timeout: timeout() });
                 break;
               case "press":
-                await l.press(a.key, { timeout });
+                await l.press(a.key, { timeout: timeout() });
                 break;
               default:
                 throw fault("INVALID_ARGUMENT", "Unsupported action.");
@@ -1418,7 +1421,7 @@ async function run(task, env) {
         ...(a.ref ? { ref: a.ref } : {}),
       };
       break;
-    }
+    } finally { stop?.(); }
   }
   let result = { completed: done, of: args.actions.length, page_id: current };
   if (
@@ -1433,7 +1436,7 @@ async function run(task, env) {
         ...(await observe(failure ? "snapshot" : args.then || "diff")),
       };
     } catch (e) {
-      Object.assign(result, await metadata().catch(() => ({})));
+      // Do not start a second observation after the observation budget failed.
       result.observation_error = classify(e, page);
     }
   } else if (page || observeTab) Object.assign(result, await metadata().catch(() => ({})));

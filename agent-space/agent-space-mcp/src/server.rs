@@ -379,13 +379,7 @@ impl AgentSpaceMcpServer {
                 ));
             }
             "browser_snapshot" => {
-                for (key, value) in [
-                    ("view", json!("page")),
-                    ("diff", json!(false)),
-                    ("image", json!(false)),
-                    ("text", json!(false)),
-                    ("recent_tasks_limit", json!(0)),
-                ] {
+                for (key, value) in [("view", json!("page")), ("image", json!(false))] {
                     schema["properties"][key]["default"] = value;
                 }
             }
@@ -397,8 +391,6 @@ impl AgentSpaceMcpServer {
                     ("op", json!("execute")),
                     ("wait_secs", json!(30)),
                     ("then", json!("diff")),
-                    ("action_timeout_secs", json!(5)),
-                    ("timeout_secs", json!(120)),
                 ] {
                     schema["properties"][key]["default"] = value;
                 }
@@ -450,30 +442,19 @@ impl AgentSpaceMcpServer {
 #[tool_router]
 impl AgentSpaceMcpServer {
     #[tool(
-        description = "Observe current-page elements and panels, including iframes. Use view=tabs only to find or manage pages. Use observed refs unchanged; query browser_read to find a known target. Add image=true only when visual context is needed."
+        description = "Observe the connected Runcove space's built-in browser. Use view=page (default) for page structure, controls and states, including iframes; add image=true for a full-page screenshot annotated with element refs. Use view=tabs to find page IDs, or view=tasks to find running or recent browser and desktop tasks in this space, with task IDs for browser_act wait/cancel."
     )]
     async fn browser_snapshot(
         &self,
         Parameters(mut params): Parameters<SnapshotParams>,
     ) -> Result<CallToolResult, McpError> {
+        if params.view == Some(crate::browser_params::SnapshotView::Tasks) {
+            return Ok(browser_result(Ok(self.desktop().await?.task_list().await)));
+        }
         if params.view == Some(crate::browser_params::SnapshotView::Tabs) {
             params.page_id = None;
             params.r#ref = None;
-            params.diff = None;
             params.image = None;
-            params.text = None;
-        }
-        if params.recent_tasks_limit.is_some_and(|n| n > 10) {
-            return Err(McpError::invalid_params(
-                "recent_tasks_limit must be 0-10",
-                None,
-            ));
-        }
-        if params.r#ref.is_some() && params.diff == Some(true) {
-            return Err(McpError::invalid_params(
-                "ref selects a subtree snapshot; omit diff or omit ref",
-                None,
-            ));
         }
         if params
             .r#ref
@@ -487,7 +468,8 @@ impl AgentSpaceMcpServer {
         }
         let hub = self.desktop().await?;
         let session = self.ensure_session().await?;
-        let mut args = json!({"view":params.view,"diff":params.diff.unwrap_or(false),"ref":params.r#ref,"image":params.image.unwrap_or(false),"text":params.text.unwrap_or(false),"recent_tasks_limit":params.recent_tasks_limit.unwrap_or(0)});
+        let mut args =
+            json!({"view":params.view,"ref":params.r#ref,"image":params.image.unwrap_or(false)});
         self.feedback
             .lock()
             .await
@@ -500,7 +482,7 @@ impl AgentSpaceMcpServer {
             .await)
     }
     #[tool(
-        description = "Execute browser or desktop steps in order, with page feedback at the end of the batch. Use op=wait or op=cancel with task_id for an existing task."
+        description = "Execute browser or desktop steps in order, with page feedback at the end of the batch. Use op=wait or op=cancel with task_id for an existing task. A running task continues in the background; do not resubmit its actions."
     )]
     async fn browser_act(
         &self,
@@ -524,7 +506,7 @@ impl AgentSpaceMcpServer {
                 .await),
             ActAction::Execute => {
                 let session = self.ensure_session().await?;
-                let mut args = json!({"actions":params.actions.unwrap(),"then":params.then,"action_timeout_secs":params.action_timeout_secs});
+                let mut args = json!({"actions":params.actions.unwrap(),"then":params.then});
                 self.feedback
                     .lock()
                     .await
@@ -536,7 +518,7 @@ impl AgentSpaceMcpServer {
                             "act",
                             args,
                             params.page_id,
-                            params.timeout_secs.unwrap_or(120),
+                            agent_engine::desktop::ACTION_BATCH_TIMEOUT_SECS,
                         )
                         .await,
                     )
@@ -545,7 +527,7 @@ impl AgentSpaceMcpServer {
         }
     }
     #[tool(
-        description = "Read page text or extract tables, links and fields, including iframes. Use query to find a known target and obtain refs; use ref to scope a read. For page structure and panels, use browser_snapshot."
+        description = "Read page content, find elements by name or text, or extract tables, links and form fields in the connected Runcove space's built-in browser, including iframes. Use ref to limit the scope. Use browser_snapshot for page structure."
     )]
     async fn browser_read(
         &self,
@@ -1085,7 +1067,7 @@ impl ServerHandler for AgentSpaceMcpServer {
     #[instrument(skip_all, fields(tool = %request.name), level = "info")]
     async fn call_tool(
         &self,
-        request: CallToolRequestParams,
+        mut request: CallToolRequestParams,
         context: RequestContext<RoleServer>,
     ) -> Result<CallToolResult, McpError> {
         self.recheck(&context).await?;
@@ -1094,6 +1076,9 @@ impl ServerHandler for AgentSpaceMcpServer {
                 "browser tools are not enabled for this space image",
                 None,
             ));
+        }
+        if let Some(args) = request.arguments.as_mut() {
+            crate::browser_params::discard_retired(&request.name, args);
         }
         let request_id = context.id.clone();
         let started = std::time::Instant::now();
@@ -1335,6 +1320,14 @@ fn compact_base_schema(value: &mut serde_json::Value) {
     }
 }
 fn compact_browser_feedback(value: &mut serde_json::Value) {
+    if let Some(tasks) = value
+        .get_mut("tasks")
+        .and_then(serde_json::Value::as_array_mut)
+    {
+        for task in tasks {
+            compact_browser_feedback(task);
+        }
+    }
     if let Some(epoch) = value.get("started_at").and_then(|v| v.as_i64()) {
         if let Ok(time) = time::OffsetDateTime::from_unix_timestamp(epoch) {
             value["started_at"] = json!(format!(
@@ -1544,6 +1537,19 @@ mod tests {
     }
 
     #[test]
+    fn task_list_projects_compact_times_without_result_wrappers() {
+        let reply = browser_result(Ok(json!({"control":{"mode":"AI"},"tasks":[{
+            "task_id":"id","tool":"browser_act","description":"Wait 4s","state":"running","started_at":1792495384u64}]})));
+        let wire = serde_json::to_value(reply).unwrap();
+        let value: serde_json::Value =
+            serde_json::from_str(wire["content"][0]["text"].as_str().unwrap()).unwrap();
+        assert_eq!(value["tasks"][0]["started_at"], "10-20 11:23:04Z");
+        assert_eq!(value["tasks"][0]["description"], "Wait 4s");
+        assert!(value.get("task_id").is_none());
+        assert!(value.get("value").is_none());
+    }
+
+    #[test]
     fn screenshot_timing_preserves_sequences_and_failures() {
         for (state, count, keep) in [
             ("succeeded", 1, false),
@@ -1691,8 +1697,7 @@ mod tests {
         assert!(bash.timeout_secs.is_none());
         assert_eq!(bash.cmd, " echo hi ");
         let observe: SnapshotParams =
-            serde_json::from_value(json!({"page_id":"","image":null,"recent_tasks_limit":null}))
-                .unwrap();
+            serde_json::from_value(json!({"page_id":"","image":null})).unwrap();
         assert!(observe.page_id.is_none());
         let task: ActParams =
             serde_json::from_value(json!({"task_id":"id","op":"wait","wait_secs":0})).unwrap();

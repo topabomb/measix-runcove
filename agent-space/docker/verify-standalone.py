@@ -105,7 +105,8 @@ def main():
   check('real_shared_desktop_screenshot')
   # The fixed browser API accepts no code or worker-result path. Inject a
   # user-owned link separately while a real browser task runs as UID1001.
-  task=text(client.tool('browser_act',{'actions':[{'do':'wait','secs':10}]}))
+  task=text(client.tool('browser_act',{'actions':[{'do':'wait','secs':60}]}))
+  assert task['state']=='running',task
   job=command('docker','exec',container,'python3','-c',"from pathlib import Path;import sys;dirs=list(Path('/tmp/agent-space').glob('*/job-'+sys.argv[1]));assert len(dirs)==1;print(dirs[0])",task['task_id'])
   command('docker','exec','--user','1001:1001',container,'python3','-c',"from pathlib import Path;import sys;(Path(sys.argv[1])/'observation.json').symlink_to('/tmp/root-private')",job)
   completed,_=client.finish(client.tool('browser_act',{'op':'wait','task_id':task['task_id']}));assert completed['state']=='succeeded',completed

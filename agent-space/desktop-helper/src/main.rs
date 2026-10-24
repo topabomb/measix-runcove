@@ -412,7 +412,7 @@ async fn worker(
         .page_id
         .as_ref()
         .map_or_else(|| observation["page_id"].clone(), |id| json!(id));
-    let worker_spec = json!({"operation":params.operation,"args":params.args,"page_id":selected,"window":observation["window"],"captures":params.captures,"guard_port":port,"task_id":job.id});
+    let worker_spec = json!({"budget_ms":remaining.as_millis() as u64,"operation":params.operation,"args":params.args,"page_id":selected,"window":observation["window"],"captures":params.captures,"guard_port":port,"task_id":job.id});
     let spec = json!({"program":"node","args":[format!("{}/browser-worker.cjs",desktop::NODE)],"uid":process::workspace_uid(),
     "timeout_secs":remaining.as_secs_f64(),"max_bytes":32768,"max_lines":500,"cleanup_on_exit":true});
     let mut command = Command::new("python3");

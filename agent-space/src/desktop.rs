@@ -1,5 +1,8 @@
 //! Host-side browser jobs share the SessionManager's workspace and activity.
 //! Guest supervision owns hard deadlines; disconnects never replay scripts.
+#[path = "task_summary.rs"]
+mod task_summary;
+
 use crate::{
     control::ControlGate,
     engine::{EngineError, ManagedInstance, ManagedLaunch},
@@ -24,13 +27,17 @@ pub struct DesktopHub {
     captures: Mutex<Vec<Value>>,
     browser: crate::config::BrowserConfig,
 }
+// Server policy, not model-selectable execution parameters.
+pub const ACTION_BATCH_TIMEOUT_SECS: u64 = 120;
+const INITIAL_WAIT_SECS: u64 = 30;
 struct Job {
     id: String,
     accepted: Instant,
     started_at: u64,
     report_started_at: bool,
     report_duration: bool,
-    recent_limit: usize,
+    tool: &'static str,
+    description: String,
     status: Mutex<Value>,
     done: Notify,
     cancel: tokio_util::sync::CancellationToken,
@@ -257,7 +264,8 @@ impl DesktopHub {
                 .as_secs(),
             report_duration: modifies,
             report_started_at: modifies || body["count"].as_u64().unwrap_or(1) > 1,
-            recent_limit: body["args"]["recent_tasks_limit"].as_u64().unwrap_or(0) as usize,
+            tool: task_summary::tool(&body),
+            description: task_summary::describe(&body),
             status: Mutex::new(json!({"state":"running","phase":"preparing","terminal":false})),
             done: Notify::new(),
             cancel: cancellation.clone(),
@@ -471,7 +479,7 @@ impl DesktopHub {
                 .get_or_insert_with(Instant::now);
             running.done.notify_waiters();
         });
-        self.task(&job.id, 8, false).await
+        self.task(&job.id, INITIAL_WAIT_SECS, false).await
     }
     pub async fn task(&self, id: &str, wait: u64, cancel: bool) -> Result<Value, EngineError> {
         if wait > 30 {
@@ -541,9 +549,6 @@ impl DesktopHub {
             value["duration_secs"] = json!((duration.as_secs_f64() * 10.0).round() / 10.0);
         }
         value["control"] = json!({"mode":self.control.view("").control});
-        if job.recent_limit > 0 {
-            value["recent_tasks"] = json!(self.recent_jobs(job.recent_limit).await);
-        }
         value.as_object_mut().map(|o| o.remove("terminal"));
         Ok(value)
     }
@@ -559,17 +564,27 @@ impl DesktopHub {
             captures.remove(0);
         }
     }
-    async fn recent_jobs(&self, limit: usize) -> Vec<Value> {
+    pub async fn task_list(&self) -> Value {
         self.prune_jobs().await;
-        let jobs = self.jobs.lock().await;
-        let mut selected = jobs.values().cloned().collect::<Vec<_>>();
-        selected.sort_by_key(|j| std::cmp::Reverse(j.accepted));
-        let mut summaries = vec![];
-        for job in selected.into_iter().take(limit) {
+        let jobs: Vec<_> = self.jobs.lock().await.values().cloned().collect();
+        let mut summaries = Vec::with_capacity(jobs.len());
+        for job in jobs {
             let status = job.status.lock().await;
-            summaries.push(json!({"task_id":job.id,"state":status["state"]}));
+            summaries.push((
+                status["state"] != "running",
+                std::cmp::Reverse(job.accepted),
+                json!({"task_id":job.id,"tool":job.tool,"description":job.description,
+                    "state":status["state"],"started_at":job.started_at}),
+            ));
         }
-        summaries
+        summaries.sort_by(|a, b| (&a.0, &a.1).cmp(&(&b.0, &b.1)));
+        let truncated = summaries.len() > 10;
+        let mut result = json!({"control":{"mode":self.control.view("").control},
+            "tasks":summaries.into_iter().take(10).map(|(_,_,v)|v).collect::<Vec<_>>()});
+        if truncated {
+            result["truncated"] = json!(true);
+        }
+        result
     }
     async fn prune_jobs(&self) {
         let mut jobs = self.jobs.lock().await;
@@ -667,6 +682,73 @@ mod tests {
     };
 
     #[tokio::test]
+    async fn task_list_is_bounded_running_first_and_does_not_create_or_refresh_jobs() {
+        let manager = SessionManager::new(
+            Arc::new(MockEngine::new()),
+            1,
+            WorkspaceOpts {
+                image: "mock".into(),
+                cpus: 1,
+                memory_mib: 256,
+                shell: "/bin/bash".into(),
+                volumes: vec![],
+                network_access: Default::default(),
+                outbound_proxy: None,
+                max_tcp_connections: None,
+                max_udp_connections: None,
+            },
+        );
+        let session = manager.get_or_create("task-wait-contract").await.unwrap();
+        let hub = Arc::new(DesktopHub::new(session, Default::default()));
+        let make_job = |id: &str| {
+            Arc::new(Job {
+                id: id.into(),
+                accepted: Instant::now(),
+                started_at: SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs(),
+                report_started_at: id != "observation",
+                report_duration: id != "observation",
+                tool: "browser_act",
+                description: "Wait 1s".into(),
+                status: Mutex::new(json!({"state":"running","terminal":false})),
+                done: Notify::new(),
+                cancel: tokio_util::sync::CancellationToken::new(),
+                finished: Mutex::new(None),
+            })
+        };
+        assert_eq!(hub.task_list().await["tasks"], json!([]));
+        for i in 0..12 {
+            let mut job = make_job(&format!("done-{i}"));
+            Arc::get_mut(&mut job).unwrap().accepted = Instant::now() - Duration::from_secs(20 - i);
+            *job.status.lock().await = json!({"state":"succeeded","terminal":true});
+            *job.finished.lock().await = Some(Instant::now());
+            hub.jobs.lock().await.insert(job.id.clone(), job);
+        }
+        let mut running = make_job("old-running");
+        Arc::get_mut(&mut running).unwrap().accepted = Instant::now() - Duration::from_secs(4000);
+        hub.jobs.lock().await.insert(running.id.clone(), running);
+        let expired = make_job("expired");
+        *expired.finished.lock().await = Some(Instant::now() - Duration::from_secs(1801));
+        hub.jobs.lock().await.insert(expired.id.clone(), expired);
+        let listed = hub.task_list().await;
+        assert_eq!(listed["tasks"].as_array().unwrap().len(), 10);
+        assert_eq!(listed["tasks"][0]["task_id"], "old-running");
+        assert_eq!(listed["tasks"][1]["task_id"], "done-11");
+        assert_eq!(listed["truncated"], true);
+        assert!(listed.get("task_id").is_none());
+        assert_eq!(hub.jobs.lock().await.len(), 13);
+        assert_eq!(hub.task_list().await, listed);
+        assert!(hub.task("expired", 0, false).await.is_err());
+        // A task outside the first ten remains directly queryable.
+        assert_eq!(
+            hub.task("done-0", 0, false).await.unwrap()["state"],
+            "succeeded"
+        );
+    }
+
+    #[tokio::test]
     async fn task_wait_accepts_thirty_seconds_and_preserves_running_tasks() {
         let manager = SessionManager::new(
             Arc::new(MockEngine::new()),
@@ -695,7 +777,8 @@ mod tests {
                     .as_secs(),
                 report_started_at: id != "observation",
                 report_duration: id != "observation",
-                recent_limit: 0,
+                tool: "browser_act",
+                description: "Wait 1s".into(),
                 status: Mutex::new(json!({"state":"running","terminal":false})),
                 done: Notify::new(),
                 cancel: tokio_util::sync::CancellationToken::new(),

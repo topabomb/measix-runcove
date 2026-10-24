@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-24",
+  "source_revision": "ce9bebb004ff6d3481e1064f670a166456050cf3",
+  "working_tree": true,
+  "source_sha256": "21e6de2145df69748df1b9e26b2aa15e805d220fa63deda10978ffa4d9295ec8",
+  "binary_sha256": {
+    "agent-space-mcp": "5e0ecd0a096b58760cbbd57d80d91918d2083bcd920f426d5b50c1d10adcf6a2",
+    "agent-space-desktop": "dcaefe939b59012056a5abea1fb1bb1ac800d98e3cf4d2c10f24dbea69fe8491"
+  },
+  "replaced_binaries": [
+    "agent-space-mcp",
+    "agent-space-desktop"
+  ],
+  "image_rebuilt": false,
+  "test_containers_created": false,
+  "backup": false,
+  "migration": false,
+  "snapshot": false,
+  "passed": true,
+  "checks": [
+    "running_binaries_metadata_accounts_config_mounts_and_ports_verified",
+    "task_list_is_empty_without_creating_jobs_or_page_observation",
+    "retired_inputs_ignored_snapshot_full_read_context_and_act_diff_verified",
+    "thirty_second_return_window_task_discovery_and_original_result_query_verified",
+    "four_task_sources_summaries_and_screenshot_verified"
+  ],
+  "deployed": true,
+  "temporary_space_cleanup_confirmed": true,
+  "peer_restart_observed": false,
+  "original_accounts_config_mounts_preserved": true,
+  "production_and_peer_healthy": true,
+  "upload_staging_removed": true,
+  "transport": "Tailscale",
+  "compressed_upload_bytes_total": 33339036,
+  "verification_fixture_correction": "Initial fixture attempted innerHTML on a Chromium internal page; verification was rerun using an explicit data-URL navigation. No additional program replacement or restart was needed."
+}

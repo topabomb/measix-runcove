@@ -1,0 +1,27 @@
+{
+  "build": {
+    "source_digest": "21e6de2145df69748df1b9e26b2aa15e805d220fa63deda10978ffa4d9295ec8",
+    "builder_image": "sha256:2c806124a91fe8ccb5f5a708fc70a5dd25ab4fe3bb9227728fe9788421ccb69a",
+    "base_builder": "runcove-remove-none-builder",
+    "binaries_sha256": {
+      "agent-space-mcp": "5e0ecd0a096b58760cbbd57d80d91918d2083bcd920f426d5b50c1d10adcf6a2",
+      "agent-space-desktop": "dcaefe939b59012056a5abea1fb1bb1ac800d98e3cf4d2c10f24dbea69fe8491"
+    },
+    "sqlite_link": "3.51.3 verified in builder",
+    "working_tree": true
+  },
+  "checks": {
+    "mcp_unit": 43,
+    "mcp_http_protocol": 5,
+    "task_summary_all_actions": 1,
+    "task_list_order_bounds_expiry": 1,
+    "clippy": "MCP and desktop helper all targets passed",
+    "format_syntax_diff": "passed"
+  },
+  "prior_unchanged_worker_checks": {
+    "semantic_and_worker": 17,
+    "chromium": 6
+  },
+  "full_qualification": false,
+  "committed": false
+}

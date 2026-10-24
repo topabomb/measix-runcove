@@ -39,8 +39,8 @@ class BrowserQualification(unittest.TestCase):
    if name=='desktop':
     self.assertTrue({'browser_snapshot','browser_act','browser_read','screen_observe'}<=tools.keys())
     (Q/'browser-tools.json').write_text(json.dumps([tools[key] for key in ['browser_snapshot','browser_act','browser_read','screen_observe']],ensure_ascii=False,indent=2)+'\n')
-  observed=self.client.snapshot(recent_tasks_limit=10);self.assertTrue(observed.get('page',{}).get('page_id'));self.assertNotIn('health',observed);self.assertLessEqual(len(observed['recent_tasks']),10)
-  for name,args in [('browser_act',{'code':'return 1'}),('browser_act',{'actions':[{'do':'wait','secs':1},{'do':'click','ref':'bad'}]}),('browser_snapshot',{'recent_tasks_limit':11}),('browser_read',{'query':'a','extract':'fields'}),('browser_act',{'op':'wait','task_id':'missing','actions':[{'do':'navigate','mode':'reload'}]})]:
+  observed=self.client.snapshot();self.assertTrue(observed.get('page',{}).get('page_id'));self.assertNotIn('health',observed);self.assertLessEqual(len(self.client.snapshot(view='tasks')['tasks']),10)
+  for name,args in [('browser_act',{'code':'return 1'}),('browser_act',{'actions':[{'do':'wait','secs':1},{'do':'click','ref':'bad'}]}),('browser_read',{'query':'a','extract':'fields'}),('browser_act',{'op':'wait','task_id':'missing','actions':[{'do':'navigate','mode':'reload'}]})]:
    with self.assertRaises(RuntimeError):self.client.tool(name,args)
   began=time.monotonic();value,_=self.act([{'do':'wait','secs':1}],page_id='missing-page')
   self.assertGreaterEqual(time.monotonic()-began,1);self.assertEqual(value['completed_steps'],1);self.assertNotIn('page',value);self.assertNotIn('observation',value)
@@ -54,15 +54,15 @@ class BrowserQualification(unittest.TestCase):
   readback=self.client.good('bash',{'cmd':'sha256sum '+shlex.quote(file['path'])})
   self.assertIn(hashlib.sha256(bytes([123])*65536).hexdigest(),json.dumps(readback))
  def test_03_deadline_cancellation_and_stable_late_failure(self):
-  value,_=self.act([{'do':'wait','secs':10}],timeout_secs=2,success=False);self.assertEqual(value['state'],'timed_out')
-  started=text(self.client.tool('browser_act',{'actions':[{'do':'wait','secs':10},{'do':'wait','secs':10}],'timeout_secs':60}))
+  value,_=self.act([{'do':'wait','secs':60}]*3,success=False);self.assertEqual(value['state'],'timed_out')
+  started=text(self.client.tool('browser_act',{'actions':[{'do':'wait','secs':60}]}))
   self.assertEqual(started['state'],'running',started)
   value,reply=self.client.finish(self.client.tool('browser_act',{'op':'cancel','task_id':started['task_id']}));self.assertEqual(value['state'],'cancelled');self.assertTrue(reply.get('isError'))
-  value,_=self.act([{'do':'wait','secs':9},{'do':'wait','text':'Never appears','timeout_secs':1}],success=False)
+  value,_=self.act([{'do':'wait','secs':9},{'do':'wait','text':'Never appears'}],success=False)
   self.assertEqual(value['state'],'failed');self.assertEqual(value['failed_step']['step_number'],2);self.assertEqual(value['error']['code'],'TIMEOUT');self.assertEqual(value['side_effects'],'not_started')
   self.assertEqual(text(self.client.tool('browser_act',{'op':'wait','task_id':value['task_id'],'wait_secs':0})),value)
   # Browser/user text never controls the supervisor's cleanup decision.
-  value,_=self.act([{'do':'wait','text':'CLEANUP_UNCONFIRMED','timeout_secs':1}],success=False)
+  value,_=self.act([{'do':'wait','text':'CLEANUP_UNCONFIRMED'}],success=False)
   self.assertEqual(value['error']['code'],'TIMEOUT');self.assertNotEqual(value.get('cleanup_confirmed'),False)
   self.act([{'do':'wait','secs':1}])
  def test_04_target_selection_and_tabs(self):
@@ -113,7 +113,7 @@ class BrowserQualification(unittest.TestCase):
   ref=element(self.client.snapshot(),'button','Count once')
   address=urllib.parse.urlsplit(BASE);connection=http.client.HTTPConnection(address.hostname,address.port,timeout=10)
   self.client.counter+=1
-  payload={'jsonrpc':'2.0','id':self.client.counter,'method':'tools/call','params':{'name':'browser_act','arguments':{'actions':[{'do':'click','ref':ref},{'do':'wait','secs':10},{'do':'wait','secs':2}],'timeout_secs':30}}}
+  payload={'jsonrpc':'2.0','id':self.client.counter,'method':'tools/call','params':{'name':'browser_act','arguments':{'actions':[{'do':'click','ref':ref},{'do':'wait','secs':10},{'do':'wait','secs':2}]}}}
   connection.request('POST',space_path('desktop','mcp'),json.dumps(payload),{'Authorization':'Bearer '+self.client.token,'Content-Type':'application/json','Accept':'application/json, text/event-stream','MCP-Protocol-Version':'2025-11-25','Mcp-Session-Id':self.client.session})
   time.sleep(1);connection.close()
   busy=text(self.client.tool('browser_act',{'actions':[{'do':'wait','secs':1}]}));self.assertEqual(busy['error']['code'],'BUSY')
@@ -139,7 +139,7 @@ class BrowserQualification(unittest.TestCase):
   reset_tabs(self.client)
   self.client.fixture_js("await page.evaluate(()=>{window.statusClicks=0;document.body.innerHTML='<button onclick=window.statusClicks++>Count once</button>'});return true;")
   button=element(self.client.snapshot(),'button','Count once')
-  response=self.client.tool('browser_act',{'actions':[{'do':'click','ref':button},{'do':'wait','secs':20}],'then':'diff','timeout_secs':40})
+  response=self.client.tool('browser_act',{'actions':[{'do':'click','ref':button},{'do':'wait','secs':45}],'then':'diff'})
   initial=text(response);self.assertEqual(initial['state'],'running',initial)
   code="""import os,signal,time,json
 from pathlib import Path
@@ -157,7 +157,7 @@ print(json.dumps({'paused_seconds':5}))"""
   self.client.good('bash',{'cmd':'python3 -c '+shlex.quote(code)})
   value,reply=self.client.finish(response)
   self.assertFalse(reply.get('isError'),value);self.assertEqual(value['state'],'succeeded',value)
-  self.assertGreaterEqual(value['duration_secs'],20)
+  self.assertGreaterEqual(value['duration_secs'],45)
   self.assertEqual(self.client.fixture_js('return await page.evaluate(()=>window.statusClicks);'),1)
   (Q/'transient-status-read.json').write_text(json.dumps(value,indent=2)+'\n')
 

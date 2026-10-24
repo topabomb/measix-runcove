@@ -37,7 +37,7 @@ class WorkspaceLayout(unittest.TestCase):
   self.assertEqual(result['status'],'unpublished')
  def test_02_legacy_artifacts_and_default_download_location(self):
   self.python("from pathlib import Path;import json;p=Path('/workspace/.agent-space/desktop');a=p/'artifacts';a.mkdir(parents=True);(a/'same.txt').write_text('old');(a/'other.txt').write_text('other');(a/'unknown').mkdir();n=Path('/workspace/agent-space/artifacts');n.mkdir(parents=True);(n/'same.txt').write_text('new');d=p/'profile/Default';d.mkdir(parents=True);(d/'Preferences').write_text(json.dumps({'download':{'default_directory':str(a),'prompt_for_download':False}}))")
-  observed=self.client.snapshot(page_id='',recent_tasks_limit=None)
+  observed=self.client.snapshot(page_id='')
   self.assertTrue(observed.get('page',{}).get('page_id'),observed)
   self.python("from pathlib import Path;import json;p=Path('/workspace/.agent-space/desktop');n=Path('/workspace/agent-space/artifacts');assert (n/'same.txt').read_text()=='new';assert (n/'other.txt').read_text()=='other';assert len([f for f in n.glob('*same.txt') if f.read_text()=='old'])==1;assert (p/'artifacts/unknown').is_dir();assert not (p/'artifacts/same.txt').exists();assert not Path('/workspace/agent-space/README.md').exists();assert json.loads((p/'profile/Default/Preferences').read_text())['download']['default_directory']==str(n)")
   result,reply=self.client.act([{'do':'wait','secs':1}])

@@ -1,6 +1,6 @@
 "use strict";
 const { test } = require("node:test"), assert = require("node:assert/strict");
-const { build, present } = require("../guest/desktop/semantic-observation.cjs");
+const { build, present, queryContext } = require("../guest/desktop/semantic-observation.cjs");
 const interactive = new Set(["button", "textbox"]);
 const identity = { document: "doc", url: "https://fixture.test", mode: "compact" };
 const node = (ref, role, name, parent = null, attrs = {}) => ({ ref, role, name, parent, attrs });
@@ -38,10 +38,10 @@ test("unchanged, navigation, reorder and incomplete observations have distinct o
 test("large trees and long text never imply reliable removals", () => {
   const tree = snapshot(Array.from({length:200}, (_,i)=>node("b"+i,"button","Item "+i)));
   assert.equal(tree.truncated, true); assert.equal(tree.rows.length,150);
-  const long = build([node("", "text", "🙂".repeat(500))], interactive, [], false, true);
+  const long = build([node("", "alert", "🙂".repeat(500))], interactive);
   assert.equal(long.truncated,true); assert.ok(!long.rows[0].line.includes("\ufffd"));
 });
-test("optional prose filtering does not disable compact diffs; long alerts remain explicit", () => {
+test("compact prose filtering does not disable compact diffs; long alerts remain explicit", () => {
   const control = node("b", "button", "Continue");
   const prose = node("", "text", "article ".repeat(100));
   const compact = snapshot([control, prose]);
@@ -88,4 +88,17 @@ test("DOM name enrichment keeps the observed role and states and bounds text", (
     [{ref:"p",role:"panel",name:"🙂".repeat(500),refs:["b"]}]);
   assert.equal(long.truncated,true);assert.ok(!long.rows[0].line.includes("\ufffd"));
   assert.ok(Array.from(long.rows[0].line).length<320);
+});
+
+test("query context uses named semantic ancestors and marks bounded context", () => {
+  const a = node("a", "region", "Project A"), b = node("b", "region", "Project B");
+  assert.deepEqual(queryContext(node("x", "button", "Save", a)), {context:'region "Project A"'});
+  assert.deepEqual(queryContext(node("y", "button", "Save", b)), {context:'region "Project B"'});
+  assert.deepEqual(queryContext(node("z", "button", "Save", node("w", "generic", "Unrelated"))), {});
+  const long = queryContext(node("x", "button", "Save", node("a", "region", "🙂".repeat(500))));
+  assert.equal(long.context_truncated, true); assert.equal(Array.from(long.context).length, 300);
+  assert.ok(!long.context.includes("\ufffd"));
+  let parent = a; for(let i=0;i<4;i++) parent=node("g"+i,"group","Group "+i,parent);
+  const deep=queryContext(node("x","button","Save",parent));
+  assert.equal(deep.context_truncated,true);assert.match(deep.context,/Group 1.*Group 2.*Group 3/);
 });

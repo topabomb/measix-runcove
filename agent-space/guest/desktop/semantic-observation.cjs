@@ -9,7 +9,7 @@ const CONTEXT = new Set(["heading", "dialog", "alertdialog", "alert", "status",
 const MAX_ROWS = 150, MAX_CHARS = 24000;
 const normalize = text => String(text || "").replace(/\s+/g, " ").trim();
 
-function build(nodes, interactive, panels = [], incomplete = false, includeText = false) {
+function build(nodes, interactive, panels = [], incomplete = false) {
   const entries = [], byNode = new Map();
   let truncated = incomplete;
   for (const n of nodes) {
@@ -29,7 +29,7 @@ function build(nodes, interactive, panels = [], incomplete = false, includeText 
       let message = false;
       for (let a = n.parent; a; a = a.parent)
         if (["alert", "status", "dialog", "alertdialog", "tooltip"].includes(a.role)) message = true;
-      if (!includeText && !message && Array.from(text).length > 300) continue;
+      if (!message && Array.from(text).length > 300) continue;
       // Only ancestors of THIS source may subsume its text. Do not deduplicate
       // by global string membership or discard independent sibling messages.
       let covered = false;
@@ -167,4 +167,17 @@ function present(current, previous, mode, identity) {
   if (output.length > MAX_ROWS || output.join("\n").length > MAX_CHARS) return snapshot();
   return { observation_diff: output.join("\n") };
 }
-module.exports = { build, present };
+// Only observed, named semantic ancestors provide context; never infer nearby labels.
+function queryContext(node) {
+  const ancestors = [];
+  for (let p = node.parent; p; p = p.parent) {
+    const name = normalize(p.name);
+    if (CONTEXT.has(p.role) && name) ancestors.push(`${p.role} ${JSON.stringify(name)}`);
+  }
+  if (!ancestors.length) return {};
+  const text = ancestors.slice(0, 3).reverse().join(" > ");
+  const chars = Array.from(text);
+  return { context: chars.length > 300 ? chars.slice(0, 299).join("") + "…" : text,
+    ...(ancestors.length > 3 || chars.length > 300 ? { context_truncated: true } : {}) };
+}
+module.exports = { build, present, queryContext };

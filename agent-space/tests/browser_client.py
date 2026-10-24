@@ -39,7 +39,7 @@ class Client:
  def snapshot(self,**args):
   value,reply=self.finish(self.tool('browser_snapshot',args));assert not reply.get('isError'),value
   result=value
-  return {**result,**{k:value[k] for k in ['control','recent_tasks'] if k in value}}
+  return {**result,**{k:value[k] for k in ['control'] if k in value}}
  def read_browser(self,**args):return self.good('browser_read',args)
  def navigate(self,url,**args):
   value,reply=self.act([{'do':'navigate','url':url}],then='snapshot',**args)

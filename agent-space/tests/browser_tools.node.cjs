@@ -61,7 +61,8 @@ test('batch feedback has scoped text once, old states, hidden removals and snaps
  assert.equal(await page.locator('#cancel').count(),1,'observation removal is not a DOM deletion');
  assert.equal((result.observation_diff.match(/Choose file/g)||[]).length,1,brief(result));
  assert.match(result.observation_diff,/menu[\s\S]*status "Ready"/);
- assert.equal((await good('snapshot',{diff:true})).observation_diff,'');
+ assert.equal((await act([{do:'wait',text:'Ready'}])).observation_diff,'');
+ const full=await good('snapshot');assert.ok(full.observation);assert.equal(full.observation_diff,undefined);
  await page.locator('#menu [role=status]').evaluate(e=>e.textContent='Selected');
  const changed=await act([{do:'wait',text:'Selected'}]);
  assert.match(changed.observation_diff,/status "Selected"/);
@@ -77,15 +78,15 @@ test('duplicate node identity survives insertion and reordering',async()=>{
 for(const route of ['/iframe','/nested','/xorigin'])test('frame content is observable and actionable: '+route,async()=>{
  const v=await fresh(route);const q=ref(v,'textbox','Search articles'),go=ref(v,'button','Go');
  const matches=(await good('read',{query:'Search articles'})).matches;assert.ok(matches.some(m=>m.ref===q&&m.iframe),brief(matches));
- await act([{do:'fill',ref:q,text:'widgets'},{do:'click',ref:go},{do:'wait',text:'3 articles found',timeout_secs:3}]);
+ await act([{do:'fill',ref:q,text:'widgets'},{do:'click',ref:go},{do:'wait',text:'3 articles found'}]);
  const read=await good('read');assert.match(read.text,/3 articles found/);const field=await good('read',{ref:q});assert.ok(field);
  if(route==='/xorigin')assert.ok((await get('/json/list')).some(t=>t.type==='iframe'),'must exercise a real OOPIF');
 });
 test('removed/reinserted iframe invalidates its old refs',async()=>{
- let v=await fresh('/dynframe');await act([{do:'click',ref:ref(v,'button','Open chat')},{do:'wait',text:'Search articles',timeout_secs:3}]);
+ let v=await fresh('/dynframe');await act([{do:'click',ref:ref(v,'button','Open chat')},{do:'wait',text:'Search articles'}]);
  v=await good('snapshot');const q=ref(v,'textbox','Search articles');await act([{do:'click',ref:ref(v,'button','Close chat')}]);
  let r=await call('act',{actions:[{do:'fill',ref:q,text:'bad'}]});assert.equal(r.error?.code,'STALE_REF',brief(r));
- v=await good('snapshot');await act([{do:'click',ref:ref(v,'button','Open chat')},{do:'wait',text:'Search articles',timeout_secs:3}]);
+ v=await good('snapshot');await act([{do:'click',ref:ref(v,'button','Open chat')},{do:'wait',text:'Search articles'}]);
  r=await call('act',{actions:[{do:'fill',ref:q,text:'bad'}]});assert.equal(r.error?.code,'STALE_REF',brief(r));
  v=await good('snapshot');assert.notEqual(ref(v,'textbox','Search articles'),q);
 });
@@ -163,13 +164,13 @@ test('passive tools do not dismiss an already-open JS dialog',async()=>{
 test('Unicode limits preserve full scalar characters and report text removals',async()=>{
  await fresh('/login');await page.evaluate(()=>{document.title='😀'.repeat(201);document.body.innerHTML='<main><p id=text></p></main>';document.querySelector('#text').textContent='😀'.repeat(5000);});
  const read=await good('read',{max_chars:1});assert.equal(read.text,'😀');assert.equal(read.chars,5000);assert.equal(read.truncated,true);
- await good('snapshot',{text:true});await page.locator('#text').evaluate(e=>e.remove());const diff=await good('snapshot',{diff:true});assert.ok(diff.observation !== undefined,brief(diff));
+ await good('snapshot');await page.locator('#text').evaluate(e=>e.remove());const full=await good('snapshot');assert.ok(full.observation !== undefined,brief(full));
  await page.evaluate(()=>document.body.innerHTML='<textarea aria-label="Long field">'+ '😀'.repeat(3000)+'</textarea>');const fields=await good('read',{extract:'fields'});assert.equal(Array.from(fields.fields[0].value).length,1000);assert.equal(fields.truncated,true);
  const value=await good('read',{ref:fields.fields[0].ref,max_chars:4000});assert.equal(Array.from(value.text).length,3000);
  const multiline='中文\nhello "quoted" \\ 🙂';await page.locator('textarea').fill(multiline);assert.equal((await good('read',{extract:'fields'})).fields[0].value,multiline);
  const label='Path "quoted" \\ 中文';await page.locator('textarea').evaluate((e,label)=>e.setAttribute('aria-label',label),label);assert.equal((await good('read',{extract:'fields'})).fields[0].name,label);
  await page.evaluate(()=>document.body.innerHTML='<select aria-label="Country"><option value="cn" selected>China</option></select>');assert.equal((await good('read',{extract:'fields'})).fields[0].value,'cn');
- await page.evaluate(()=>document.body.innerHTML='<main>'+ '😀'.repeat(5000)+'</main>');const inline=await good('snapshot',{text:true});assert.ok(inline.observation.includes('😀'),brief(inline));assert.equal(inline.observation_truncated,true);
+ await page.evaluate(()=>document.body.innerHTML='<main>'+ '😀'.repeat(5000)+'</main>');const inline=await good('read',{max_chars:5000});assert.equal(inline.text,'😀'.repeat(5000));
 });
 test('whole-batch validation rejects later invalid steps before any click',async()=>{
  const v=await fresh('/panels');const r=await call('act',{actions:[{do:'click',ref:ref(v,'button','Actions')},{do:'click',ref:'invalid'}]});assert.equal(r.error?.code,'INVALID_ARGUMENT',brief(r));assert.equal(await page.locator('[role=menu]').count(),0);
@@ -189,12 +190,12 @@ test('wait matches visible text and accessible names literally across frames and
  await fresh('/login');
  await page.setContent('<input placeholder="Prompt input"><button aria-label="Upload image"></button><img alt="Generated [1].png"><p aria-hidden="true">Visible only</p><p hidden>Hidden result</p><div id="shadow"></div><iframe srcdoc="<button aria-label=FrameName></button>"></iframe>');
  await page.locator('#shadow').evaluate(e=>e.attachShadow({mode:'open'}).innerHTML='<button aria-label="ShadowName"></button>');
- await act(['prompt INPUT','upload IMAGE','generated [1].png','visible ONLY','framename','shadowname'].map(text=>({do:'wait',text,timeout_secs:2})));
- let failed=await call('act',{actions:[{do:'wait',text:'Hidden result',timeout_secs:1}]});assert.equal(failed.error?.code,'TIMEOUT',brief(failed));
- failed=await call('act',{actions:[{do:'wait',gone:'upload image',timeout_secs:1}]});assert.equal(failed.error?.code,'TIMEOUT',brief(failed));
- await page.getByRole('button',{name:'Upload image',exact:true}).evaluate(e=>e.remove());await act([{do:'wait',gone:'upload image',timeout_secs:1}]);
+ await act(['prompt INPUT','upload IMAGE','generated [1].png','visible ONLY','framename','shadowname'].map(text=>({do:'wait',text})));
+ let failed=await call('act',{actions:[{do:'wait',text:'Hidden result'}]});assert.equal(failed.error?.code,'TIMEOUT',brief(failed));
+ failed=await call('act',{actions:[{do:'wait',gone:'upload image'}]});assert.equal(failed.error?.code,'TIMEOUT',brief(failed));
+ await page.getByRole('button',{name:'Upload image',exact:true}).evaluate(e=>e.remove());await act([{do:'wait',gone:'upload image'}]);
  // Regex metacharacters must stay literal, not match any label containing a dot.
- failed=await call('act',{actions:[{do:'wait',text:'Generated .png',timeout_secs:1}]});assert.equal(failed.error?.code,'TIMEOUT',brief(failed));
+ failed=await call('act',{actions:[{do:'wait',text:'Generated .png'}]});assert.equal(failed.error?.code,'TIMEOUT',brief(failed));
 });
 test('query ref scopes matches and ordinary results omit redundant healthy metadata',async()=>{
  const v=await fresh('/scope');assert.equal(v.tabs,undefined);const tabs=await good('snapshot',{view:'tabs'});assert.ok(tabs.tabs?.length);assert.equal(tabs.observation,undefined);
@@ -232,15 +233,15 @@ test('seconds waits honor real timers, early conditions and the 60 second defaul
  await page.setContent('<button onclick="window.marked=performance.now()">Mark</button>');
  let v=await good('snapshot'); const mark=ref(v,'button','Mark');
  const start=await page.evaluate(()=>performance.now());
- await act([{do:'wait',secs:2,timeout_secs:0},{do:'click',ref:mark}],{then:'diff'});
+ await act([{do:'wait',secs:2},{do:'click',ref:mark}],{then:'diff'});
  const elapsed=await page.evaluate(start=>window.marked-start,start);
  assert.ok(elapsed>=2000,`fixed wait ended early: ${elapsed}`);
  await page.evaluate(()=>setTimeout(()=>document.body.append('ready after old default'),11000));
  const began=Date.now(); await act([{do:'wait',text:'ready after old default'}],{then:'diff'});
  const conditionMs=Date.now()-began;assert.ok(conditionMs>=10000&&conditionMs<30000,`condition wait: ${conditionMs}`);
- const timeoutStart=Date.now();const failed=await call('act',{actions:[{do:'wait',text:'never present',timeout_secs:1}],then:'diff'});
- assert.equal(failed.error?.code,'TIMEOUT',brief(failed));assert.ok(Date.now()-timeoutStart>=1000);
- console.log('WAIT_TIMING '+JSON.stringify({fixedSeconds:2,measuredMs:elapsed,defaultConditionMeasuredMs:conditionMs,explicitTimeoutSeconds:1}));
+ const timeoutStart=Date.now();const failed=await call('act',{actions:[{do:'wait',text:'never present'}],then:'diff'});
+ assert.equal(failed.error?.code,'TIMEOUT',brief(failed));assert.ok(Date.now()-timeoutStart>=59000);
+ console.log('WAIT_TIMING '+JSON.stringify({fixedSeconds:2,measuredMs:elapsed,defaultConditionMeasuredMs:conditionMs,conditionTimeoutSeconds:60}));
 });
 
 test('fixed waits do not access a page or request observations',async()=>{
@@ -292,4 +293,20 @@ test('long document URLs and titles stay bounded and explicitly truncated',async
  assert.ok(!result.error,brief(result));assert.equal(result.value.downloads[0].truncated,true);
  assert.ok(Array.from(result.value.downloads[0].url).length<=1001);
  assert.equal(fs.readFileSync(result.files[0].path,'utf8'),'x'.repeat(3000));
+});
+
+test('query context distinguishes duplicate controls and respects subtree scope',async()=>{
+ await fresh('/login');
+ await page.evaluate(()=>document.body.innerHTML='<section aria-label="Project A"><button>Save</button></section><section aria-label="Project B"><button>Save</button></section>');
+ const snapshot=await good('snapshot');
+ const found=await good('read',{query:'Save'});
+ const buttons=found.matches.filter(m=>m.role==='button');assert.equal(buttons.length,2,brief(found));
+ assert.deepEqual(buttons.map(m=>m.context),['region "Project A"','region "Project B"']);
+ const scoped=await good('read',{query:'Save',ref:ref(snapshot,'region','Project B')});
+ assert.equal(scoped.matches.filter(m=>m.role==='button').length,1);
+ assert.equal(scoped.matches.find(m=>m.role==='button').ref,buttons[1].ref);
+ const empty=await good('read',{query:'absent-target'});assert.deepEqual(empty.matches,[]);
+ await page.locator('section').first().evaluate(e=>e.remove());
+ const afterRead=await act([{do:'wait',gone:'absent-target'}]);
+ assert.match(afterRead.observation_diff,/- .*region "Project A"/,'read does not replace the act baseline');
 });

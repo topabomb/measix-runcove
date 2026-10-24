@@ -8,38 +8,22 @@ use serde::{Deserialize, Serialize};
 pub struct SnapshotParams {
     #[serde(default, deserialize_with = "publish_params::optional_choice")]
     #[schemars(
-        description = "Default page observes the selected page; tabs lists open pages only, ignoring page-specific options."
+        description = "page (default), tabs, or tasks. tabs/tasks ignore page_id, ref and image."
     )]
     pub view: Option<SnapshotView>,
     #[serde(default, deserialize_with = "publish_params::optional_string")]
     #[schemars(
-        description = "Page ID from browser_snapshot(view='tabs'). Default: focused tab, or an available tab."
+        description = "Page ID from view=tabs. Default: the focused tab, or an available tab."
     )]
     pub page_id: Option<String>,
-    #[serde(default)]
-    #[schemars(
-        description = "Compare with this page's last unscoped snapshot or action feedback; default false. A new document returns a full snapshot."
-    )]
-    pub diff: Option<bool>,
     #[serde(default, deserialize_with = "publish_params::optional_string")]
     #[schemars(
-        description = "Element ref from an observation. Scope the observation to its subtree. Default: whole page. Images remain page-wide. Excludes diff=true."
+        description = "Observed element ref to scope the snapshot to its subtree. Default: whole page. Images remain page-wide."
     )]
     pub r#ref: Option<String>,
     #[serde(default)]
-    #[schemars(
-        description = "Include a page image annotated with element refs; default false. For unannotated images or saved originals, use screen_observe."
-    )]
+    #[schemars(description = "Include the annotated screenshot; default false.")]
     pub image: Option<bool>,
-    #[serde(default)]
-    #[schemars(description = "Include long page text excerpts in the observation; default false.")]
-    pub text: Option<bool>,
-    #[serde(default)]
-    #[schemars(range(min = 0, max = 10))]
-    #[schemars(
-        description = "Number of recent browser and screenshot task summaries, newest first: 0-10; default 0."
-    )]
-    pub recent_tasks_limit: Option<usize>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, PartialEq)]
@@ -47,6 +31,7 @@ pub struct SnapshotParams {
 pub enum SnapshotView {
     Page,
     Tabs,
+    Tasks,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema)]
@@ -224,12 +209,6 @@ pub enum ActStep {
     Download {
         #[schemars(description = "Observed ref of the element that starts the download.")]
         r#ref: String,
-        #[serde(default)]
-        #[schemars(range(min = 1, max = 60))]
-        #[schemars(
-            description = "Seconds to wait for the download event and, separately, save it: 1-60; default 30."
-        )]
-        timeout_secs: Option<u64>,
     },
     /// Scroll an element into view, scroll to find text, or send vertical wheel input to the selected page.
     Scroll {
@@ -301,16 +280,8 @@ pub enum ActStep {
         gone: Option<String>,
         #[serde(default)]
         #[schemars(range(min = 0, max = 60))]
-        #[schemars(
-            description = "Fixed delay in seconds, 0-60, independent of page state. Ignores timeout_secs."
-        )]
+        #[schemars(description = "Fixed delay in seconds, 0-60, independent of page state.")]
         secs: Option<u64>,
-        #[serde(default)]
-        #[schemars(range(min = 1, max = 60))]
-        #[schemars(
-            description = "Page-condition timeout in seconds, 1-60; default 60. Returns as soon as the condition is met."
-        )]
-        timeout_secs: Option<u64>,
     },
     /// Open a URL, go back or forward, or reload the selected page.
     Navigate {
@@ -385,13 +356,13 @@ pub struct ActParams {
     pub op: Option<ActAction>,
     #[serde(default, deserialize_with = "publish_params::optional_string")]
     #[schemars(
-        description = "Required for wait/cancel: task_id returned by a browser or screenshot tool."
+        description = "Required for wait/cancel: task ID returned by browser_act, browser_snapshot, browser_read or screen_observe."
     )]
     pub task_id: Option<String>,
     #[serde(default)]
     #[schemars(range(min = 0, max = 30))]
     #[schemars(
-        description = "Task wait limit in seconds; default 30, zero polls immediately. Ignored for execute. Does not extend the task deadline."
+        description = "Only for op=wait/cancel: how long this call waits for the existing task, 0-30 seconds; default 30."
     )]
     pub wait_secs: Option<u64>,
     #[serde(default, deserialize_with = "optional_steps")]
@@ -407,21 +378,9 @@ pub struct ActParams {
     pub page_id: Option<String>,
     #[serde(default, deserialize_with = "publish_params::optional_choice")]
     #[schemars(
-        description = "End-of-batch feedback: diff (default) or snapshot. Diff compares the previous returned observation; without a usable baseline, returns a snapshot. Failures may include a diagnostic observation."
+        description = "End-of-batch feedback: diff (default) or snapshot. Diff compares this page's last unscoped snapshot or action feedback in this connection; without a usable baseline, returns a snapshot. Failures may include a diagnostic observation."
     )]
     pub then: Option<ActThen>,
-    #[serde(default)]
-    #[schemars(range(min = 1, max = 30))]
-    #[schemars(
-        description = "Element interaction timeout in seconds, 1-30; default 5. Navigation, page-condition waits and downloads have separate limits."
-    )]
-    pub action_timeout_secs: Option<u64>,
-    #[serde(default)]
-    #[schemars(range(min = 1, max = 600))]
-    #[schemars(
-        description = "Task deadline in seconds, including preparation and all steps; default 120."
-    )]
-    pub timeout_secs: Option<u64>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema)]
@@ -460,6 +419,44 @@ pub struct BrowserReadParams {
         description = "Plain-text character limit; default 4000. Ignored for query or extract."
     )]
     pub max_chars: Option<u64>,
+}
+
+/// Discard retired inputs at the MCP boundary without advertising compatibility fields.
+pub fn discard_retired(name: &str, args: &mut serde_json::Map<String, serde_json::Value>) {
+    match name {
+        "browser_snapshot" => {
+            if matches!(
+                args.get("view")
+                    .and_then(serde_json::Value::as_str)
+                    .map(str::trim),
+                Some("tabs" | "tasks")
+            ) {
+                for key in ["page_id", "ref", "image"] {
+                    args.remove(key);
+                }
+            }
+            args.remove("recent_tasks_limit");
+            args.remove("diff");
+            args.remove("text");
+        }
+        "browser_act" => {
+            args.remove("timeout_secs");
+            args.remove("action_timeout_secs");
+            if let Some(steps) = args
+                .get_mut("actions")
+                .and_then(serde_json::Value::as_array_mut)
+            {
+                for step in steps {
+                    if matches!(step["do"].as_str(), Some("wait" | "download")) {
+                        if let Some(fields) = step.as_object_mut() {
+                            fields.remove("timeout_secs");
+                        }
+                    }
+                }
+            }
+        }
+        _ => {}
+    }
 }
 
 pub fn is_ref(s: &str) -> bool {
@@ -508,7 +505,6 @@ where
                             "max",
                         ],
                         "scroll" => &["image_id", "x", "y", "delta"],
-                        "wait" if m.get("secs").is_some_and(|v| !v.is_null()) => &["timeout_secs"],
                         "tab" if m.get("action").and_then(|v| v.as_str()) == Some("new") => {
                             &["page_id"]
                         }
@@ -595,10 +591,7 @@ pub fn check_steps(steps: &[ActStep]) -> Result<(), String> {
                         .iter()
                         .all(|p| p.starts_with('/') && !p.contains('\0'))
             }
-            ActStep::Download {
-                r#ref,
-                timeout_secs,
-            } => is_ref(r#ref) && timeout_secs.is_none_or(|n| (1..=60).contains(&n)),
+            ActStep::Download { r#ref } => is_ref(r#ref),
             ActStep::Scroll {
                 target,
                 image_id,
@@ -620,12 +613,7 @@ pub fn check_steps(steps: &[ActStep]) -> Result<(), String> {
                         && max.is_none_or(|n| (1..=30).contains(&n))
                 }
             }
-            ActStep::Wait {
-                text,
-                gone,
-                secs,
-                timeout_secs,
-            } => {
+            ActStep::Wait { text, gone, secs } => {
                 usize::from(text.is_some())
                     + usize::from(gone.is_some())
                     + usize::from(secs.is_some())
@@ -633,7 +621,6 @@ pub fn check_steps(steps: &[ActStep]) -> Result<(), String> {
                     && text.as_ref().is_none_or(|s| !s.is_empty())
                     && gone.as_ref().is_none_or(|s| !s.is_empty())
                     && secs.is_none_or(|n| n <= 60)
-                    && timeout_secs.is_none_or(|n| (1..=60).contains(&n))
             }
             ActStep::Navigate { mode, url } => {
                 !matches!(mode, None | Some(NavigateMode::Open))
@@ -687,8 +674,6 @@ impl ActParams {
             ActAction::Wait | ActAction::Cancel => {
                 self.page_id = None;
                 self.then = None;
-                self.action_timeout_secs = None;
-                self.timeout_secs = None;
                 if self.actions.as_ref().is_some_and(Vec::is_empty) {
                     self.actions = None;
                 }
@@ -702,13 +687,6 @@ impl ActParams {
             ActAction::Execute => {
                 if self.task_id.is_some() {
                     return Err("execute requires new actions, not task_id; use op=wait/cancel for an existing task".into());
-                }
-                if self.timeout_secs.is_some_and(|n| !(1..=600).contains(&n))
-                    || self
-                        .action_timeout_secs
-                        .is_some_and(|n| !(1..=30).contains(&n))
-                {
-                    return Err("timeout_secs must be 1-600 and action_timeout_secs 1-30".into());
                 }
                 check_steps(self.actions.as_deref().unwrap_or_default())
             }
@@ -793,7 +771,7 @@ mod tests {
             json!({"op":"wait","task_id":"id","wait_secs":30}),
             json!({"op":"cancel","task_id":"id","wait_secs":30}),
             json!({"op":"execute","actions":[{"do":"navigate","mode":"reload"}],"wait_secs":999}),
-            json!({"op":"wait","task_id":"id","actions":[],"page_id":"old","then":"snapshot","timeout_secs":0,"action_timeout_secs":0}),
+            json!({"op":"wait","task_id":"id","actions":[],"page_id":"old","then":"snapshot"}),
         ] {
             serde_json::from_value::<ActParams>(v)
                 .unwrap()
@@ -818,7 +796,6 @@ mod tests {
             json!({"do":"tab","action":"new","page_id":false}),
             json!({"do":"tab","action":"close","url":false}),
             json!({"do":"navigate","mode":"reload","url":false}),
-            json!({"do":"wait","secs":0,"timeout_secs":false}),
         ] {
             let params: ActParams = serde_json::from_value(json!({"actions":[v]})).unwrap();
             params.normalize().validate().unwrap();
@@ -844,42 +821,70 @@ mod tests {
         }
     }
     #[test]
-    fn seconds_limits_and_irrelevant_wait_deadlines() {
+    fn seconds_limits_and_server_owned_deadlines() {
         for value in [
-            json!({"actions":[{"do":"wait","secs":0}]}),
-            json!({"actions":[{"do":"wait","secs":60,"timeout_secs":0}],"action_timeout_secs":30}),
-            json!({"actions":[{"do":"wait","text":"ready","timeout_secs":60}]}),
-            json!({"actions":[{"do":"wait","gone":"busy"}]}),
-            json!({"actions":[{"do":"download","ref":"eabcdefghij","timeout_secs":60}]}),
+            json!({"actions":[{"do":"wait","secs":60}]}),
+            json!({"actions":[{"do":"wait","text":"ready"}]}),
+            json!({"actions":[{"do":"download","ref":"eabcdefghij"}]}),
         ] {
-            let p = serde_json::from_value::<ActParams>(value)
-                .unwrap()
-                .normalize();
-            p.validate().unwrap();
-        }
-        for value in [
-            json!({"actions":[{"do":"wait","secs":61}]}),
-            json!({"actions":[{"do":"wait","text":"ready","timeout_secs":0}]}),
-            json!({"actions":[{"do":"wait","gone":"busy","timeout_secs":61}]}),
-            json!({"actions":[{"do":"wait","secs":0}],"action_timeout_secs":0}),
-            json!({"actions":[{"do":"wait","secs":0}],"action_timeout_secs":31}),
-            json!({"actions":[{"do":"download","ref":"eabcdefghij","timeout_secs":61}]}),
-        ] {
-            assert!(serde_json::from_value::<ActParams>(value)
+            serde_json::from_value::<ActParams>(value)
                 .unwrap()
                 .normalize()
                 .validate()
-                .is_err());
+                .unwrap();
+        }
+        assert!(
+            serde_json::from_value::<ActParams>(json!({"actions":[{"do":"wait","secs":61}]}))
+                .unwrap()
+                .validate()
+                .is_err()
+        );
+        for mut value in [
+            json!({"actions":[{"do":"wait","secs":0}],"timeout_secs":120}),
+            json!({"actions":[{"do":"wait","secs":0}],"action_timeout_secs":25}),
+            json!({"actions":[{"do":"wait","text":"ready","timeout_secs":60}]}),
+            json!({"actions":[{"do":"wait","secs":0,"timeout_secs":0}]}),
+            json!({"actions":[{"do":"download","ref":"eabcdefghij","timeout_secs":60}]}),
+        ] {
+            discard_retired("browser_act", value.as_object_mut().unwrap());
+            serde_json::from_value::<ActParams>(value)
+                .unwrap()
+                .normalize()
+                .validate()
+                .unwrap();
         }
         let schema = serde_json::to_string(&schemars::schema_for!(ActParams)).unwrap();
         assert!(!schema.contains("timeout_ms"));
+        assert!(!schema.contains("timeout_secs"));
         assert!(!schema.contains("\"ms\""));
     }
     #[test]
-    fn optional_null_and_read_modes_are_explicit() {
-        let p: SnapshotParams =
-            serde_json::from_value(json!({"view":" ","image":null,"diff":null,"text":null}))
+    fn retired_inputs_are_ignored_without_relaxing_other_validation() {
+        for retired in [
+            serde_json::Value::Null,
+            json!(false),
+            json!(true),
+            json!("ignored"),
+            json!({"x":1}),
+        ] {
+            let mut args = json!({"diff":retired,"text":retired,"recent_tasks_limit":retired});
+            discard_retired("browser_snapshot", args.as_object_mut().unwrap());
+            assert_eq!(args, json!({}));
+            let mut args = json!({"timeout_secs":retired,"action_timeout_secs":retired,
+                "actions":[{"do":"wait","secs":0,"timeout_secs":retired},{"do":"download","ref":"eabcdefghij","timeout_secs":retired}]});
+            discard_retired("browser_act", args.as_object_mut().unwrap());
+            serde_json::from_value::<ActParams>(args)
+                .unwrap()
+                .validate()
                 .unwrap();
+        }
+        let mut args = json!({"unexpected":true,"diff":false});
+        discard_retired("browser_snapshot", args.as_object_mut().unwrap());
+        assert!(serde_json::from_value::<SnapshotParams>(args).is_err());
+    }
+    #[test]
+    fn optional_null_and_read_modes_are_explicit() {
+        let p: SnapshotParams = serde_json::from_value(json!({"view":" ","image":null})).unwrap();
         assert!(p.view.is_none());
         assert!(p.image.is_none());
         for value in [

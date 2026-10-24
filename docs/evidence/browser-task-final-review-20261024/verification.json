@@ -1,0 +1,382 @@
+{
+  "build": {
+    "source_digest": "c53bb7b22f392cd3dbb16ec2cdd03eb12356be5d67446745039414d79b18bb72",
+    "builder_image": "sha256:c5eeb7fe48e698338b3bf86afbe5895197d8cf71f5a1e3ac388bed8b039524d6",
+    "base_builder": "runcove-task-list-builder",
+    "binaries_sha256": {
+      "agent-space-mcp": "5062aecef845f84ee2c02434ca2f18de048bea542a7176bd7bd4a8634b559897",
+      "agent-space-desktop": "a14033792c5ba4767dfb071347e854b0fdde76e0b2413d0ba6c6ebc2f1b96d3f"
+    },
+    "sqlite_link": "3.51.3 verified in builder",
+    "working_tree": true
+  },
+  "rust": {
+    "rust-lib.log": {
+      "suites": [
+        {
+          "passed": 94,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 43,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "sha256": "14a7e2fee474b4331fbc3280e4849ab093cb59d365b8f614f98ff2c32e13c0d3"
+    },
+    "rust-bins.log": {
+      "suites": [
+        {
+          "passed": 9,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 0,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 8,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 0,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "sha256": "ad857cb4102d9afdfe3d3873ff481a3ede4f2240a9ea7f6cb5300ad1a3834843"
+    },
+    "fixes.log": {
+      "suites": [
+        {
+          "passed": 43,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 5,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 2,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "sha256": "78d33e6d4f92fefb0476a2421d244b91bee3e076c30fa3da0298cadd845b392e"
+    },
+    "standalone-contract.log": {
+      "suites": [
+        {
+          "passed": 43,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 5,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "sha256": "092b9932d6da8d71c737a02bd452acf85bcc1fb1aa5fb1b67c6ace078e211de8"
+    },
+    "rust-http.log": {
+      "suites": [
+        {
+          "passed": 10,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 3,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 4,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 3,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 15,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 5,
+          "failed": 0,
+          "ignored": 0
+        },
+        {
+          "passed": 15,
+          "failed": 0,
+          "ignored": 0
+        }
+      ],
+      "sha256": "99963ab70f8d596744b9f4866df69823ee5790a783b7de32ed3b607579bf57fe"
+    }
+  },
+  "helper_embedded_sources_sha256": {
+    "observe-worker.cjs": "9d5d677f95e916f3c92c085b2b2cd17f92ae3736b348f522fd46517943e96893",
+    "browser-worker.cjs": "f2873a8724e4e97b9d401c6f61c9b84cb755ceb33b95a3114d02e7ce2b95a19b",
+    "observation.cjs": "4967b1f6c2c20a748f5ccc4a014afa1b3fa0eb35c9f3714e0c8023acc4741be4",
+    "artifacts.cjs": "e9f54e88cd3502612883e29631cc3306491e11af170046ca3a95125103dcd2c9",
+    "semantic-observation.cjs": "15c684620a3cc389391d29694cde6ccf604edf4d11411aaa0a23cdfeb04a8ac7",
+    "timing.cjs": "baef5a8bec9f67f17a43d517c1df7ed1dfa4cf8e03d9dfe8edc2e1fa278f67d3",
+    "browser-tools.cjs": "af090f1e037a49b3fe4ac67075f7b8384275fb5f371cbc24308bb33aead3548e"
+  },
+  "qualifications": [
+    {
+      "target": "server",
+      "passed_after_correction": true,
+      "initial_run": {
+        "target": "server",
+        "image_id": "sha256:932d905bdc34f99160776980d7b9d3ca470c5903af26600649f33dcf86cc4e5a",
+        "scope": "development assets",
+        "full": false,
+        "shared_full": false,
+        "checks": [
+          "shared_test_browser_vm.py",
+          "shared_test_browser_structured_vm.py",
+          "shared_test_browser_pages_vm.py"
+        ],
+        "passed": false,
+        "source_digest": "c53bb7b22f392cd3dbb16ec2cdd03eb12356be5d67446745039414d79b18bb72",
+        "binaries_sha256": {
+          "agent-space-mcp": "cf58fd720064628c659db54776dc4baab65165c858963fe909d2a58f4c7e0f37",
+          "agent-space-static-http": "7fbce63047acdacad4ae943f097aa5b97eb5bdc0455adcfd3c4eed448f4b951d",
+          "agent-space-webdav": "647aaaffcc102b9e18704b2dc34e3a8fed4000863128365c9fae9cd931a4e7bc",
+          "agent-space-desktop": "4364f92da2a8a23b4a370cf6f59877b754631122e048dbe7b1ff032ae20d83e3"
+        },
+        "cleanup_passed": true,
+        "suites": {
+          "test_browser_pages_vm.py.log": {
+            "sha256": "186c68d5680c5e7c95bfdd54244e94e5b63dcb90e3df460eba60751b88849984",
+            "result": "OK",
+            "tests": 4
+          },
+          "test_browser_structured_vm.py.log": {
+            "sha256": "c2bf70b29e190fd6863a7061855924031d96f47d830b02fedb1251592392a303",
+            "result": "OK",
+            "tests": 15
+          },
+          "test_browser_vm.py.log": {
+            "sha256": "10d86d305ea862702e14135cabdb21c70cfad5a89982103a11461212b2d371c1",
+            "result": "OK",
+            "tests": 11
+          },
+          "test_media_vm.py.log": {
+            "sha256": "ec7cd2221456edbf966889198c6807b3f5c5213b1bee01be4b774d01f30a7b83",
+            "result": "FAILED (failures=1)",
+            "tests": 10
+          }
+        }
+      },
+      "correction_and_remaining_run": {
+        "target": "server",
+        "image_id": "sha256:932d905bdc34f99160776980d7b9d3ca470c5903af26600649f33dcf86cc4e5a",
+        "scope": "continuation: corrected media test_02b, profiles and restart; development assets",
+        "full": false,
+        "shared_full": false,
+        "checks": [
+          "remaining_fixture_setup",
+          "corrected_test_02b_test_media_vm.py",
+          "shared_test_browser_profiles_vm.py",
+          "reduced_page_limit_after_restart_preserves_profile_and_existing_pages"
+        ],
+        "passed": true,
+        "source_digest": "c53bb7b22f392cd3dbb16ec2cdd03eb12356be5d67446745039414d79b18bb72",
+        "binaries_sha256": {
+          "agent-space-mcp": "e0cb3402b88ea47bfd50cc1087d2da5d63d9e69a14cc440089d6b87d61e66b26",
+          "agent-space-static-http": "7fbce63047acdacad4ae943f097aa5b97eb5bdc0455adcfd3c4eed448f4b951d",
+          "agent-space-webdav": "647aaaffcc102b9e18704b2dc34e3a8fed4000863128365c9fae9cd931a4e7bc",
+          "agent-space-desktop": "4364f92da2a8a23b4a370cf6f59877b754631122e048dbe7b1ff032ae20d83e3"
+        },
+        "cleanup_passed": true,
+        "suites": {
+          "test_browser_profiles_vm.py.log": {
+            "sha256": "5440ad8ed73e52a9622d466c8b512e42d8c430e945f6c0008eeaaf48d6b79df0",
+            "result": "OK",
+            "tests": 1
+          },
+          "test_media_vm.py.log": {
+            "sha256": "7ffcec87e1f23c691d88897b006f7ef1f903ddbeb20de518fcb38701f3cf9365",
+            "result": "OK",
+            "tests": 1
+          }
+        },
+        "page_limit_restart": {
+          "initial_limit": 4,
+          "restarted_limit": 1,
+          "restored_pages": 4,
+          "restored_after_profile_picker": true,
+          "clean_profile_verified": true,
+          "restored_urls_match": true,
+          "new_page_error": "PAGE_LIMIT_REACHED",
+          "existing_page_navigation_and_close": true
+        }
+      },
+      "correction": "The single successful screenshot contract omits elapsed_secs. Corrected the outdated test assertion; all nine other media cases passed initially. Re-ran the corrected single-frame/multi-frame original-file case, then completed profiles and restart checks with the same source digest and identical helper binaries. Cargo HTTP integration tests rebuilt the main executables between frozen runs; both exact executable hashes are retained."
+    },
+    {
+      "target": "standalone",
+      "passed_after_correction": true,
+      "initial_run": {
+        "target": "standalone",
+        "image_id": "sha256:76ffec5356255e77465e4e957612044707d93da89698fa4ce2d2b04c348a663a",
+        "scope": "development assets",
+        "checks": [
+          "starts_without_kvm_msb_or_docker_socket",
+          "single_space_routes_have_no_management_or_user_selection",
+          "shared_nine_tools_and_nonroot_secret_isolation",
+          "profile_preparation_cannot_follow_user_links_with_root_privileges",
+          "real_shared_desktop_screenshot",
+          "root_task_owner_keeps_final_results_without_following_user_paths",
+          "dav_workbench_and_mcp_edits_share_writable_user_ownership",
+          "artifact_listing_respects_payload_permissions_through_user_symlinks",
+          "publication_uses_single_space_address",
+          "stopped_data_child_dies_with_killed_control_owner_and_helper_recovers",
+          "shared_test_browser_vm.py",
+          "shared_test_browser_structured_vm.py",
+          "shared_test_browser_pages_vm.py"
+        ],
+        "passed": false,
+        "source_digest": "c53bb7b22f392cd3dbb16ec2cdd03eb12356be5d67446745039414d79b18bb72",
+        "binaries_sha256": {
+          "runcove-standalone": "2fa6f0c440156d0ebbe8105fae44cf42d290a660046d48fabe16bc4e4fb4f303",
+          "agent-space-static-http": "7fbce63047acdacad4ae943f097aa5b97eb5bdc0455adcfd3c4eed448f4b951d",
+          "agent-space-webdav": "647aaaffcc102b9e18704b2dc34e3a8fed4000863128365c9fae9cd931a4e7bc",
+          "agent-space-desktop": "4364f92da2a8a23b4a370cf6f59877b754631122e048dbe7b1ff032ae20d83e3"
+        },
+        "cleanup_passed": true,
+        "suites": {
+          "test_browser_pages_vm.py.log": {
+            "sha256": "6eb4b7669640b9a2bcc7be40a4b47996eee8d3e2922026b539b4c563afa9f7e0",
+            "result": "OK",
+            "tests": 4
+          },
+          "test_browser_structured_vm.py.log": {
+            "sha256": "b00a96070b93c35fe8284f8321f6010de5ef2b6e78d159e6fb20c2491d4eccf7",
+            "result": "OK",
+            "tests": 15
+          },
+          "test_browser_vm.py.log": {
+            "sha256": "9a46f6fadd88fff2b70bfc207ef50171d1e5dc39c02359942d91be567dd38e2f",
+            "result": "OK (skipped=1)",
+            "tests": 11
+          },
+          "test_media_vm.py.log": {
+            "sha256": "7262ae7f2a830fab6097a8239108f7e0c72faaef1f5b0e379760fa0bf4e3c6af",
+            "result": "FAILED (failures=1)",
+            "tests": 10
+          }
+        }
+      },
+      "correction_and_remaining_run": {
+        "target": "standalone",
+        "image_id": "sha256:76ffec5356255e77465e4e957612044707d93da89698fa4ce2d2b04c348a663a",
+        "scope": "continuation: corrected media test_02b, profiles and restart; development assets",
+        "full": false,
+        "shared_full": false,
+        "checks": [
+          "starts_without_kvm_msb_or_docker_socket",
+          "single_space_routes_have_no_management_or_user_selection",
+          "shared_nine_tools_and_nonroot_secret_isolation",
+          "profile_preparation_cannot_follow_user_links_with_root_privileges",
+          "real_shared_desktop_screenshot",
+          "root_task_owner_keeps_final_results_without_following_user_paths",
+          "dav_workbench_and_mcp_edits_share_writable_user_ownership",
+          "artifact_listing_respects_payload_permissions_through_user_symlinks",
+          "publication_uses_single_space_address",
+          "stopped_data_child_dies_with_killed_control_owner_and_helper_recovers",
+          "remaining_fixture_setup",
+          "corrected_test_02b_test_media_vm.py",
+          "shared_test_browser_profiles_vm.py",
+          "rewritten_host_workbench_preserves_own_origin_and_nonce_checks",
+          "lost_desktop_owner_blocks_recreation_and_control_until_container_restart",
+          "active_mcp_sse_closes_on_graceful_shutdown",
+          "graceful_restart_preserves_workspace_and_expires_page_session",
+          "reduced_page_limit_after_restart_preserves_profile_and_existing_pages"
+        ],
+        "passed": true,
+        "source_digest": "c53bb7b22f392cd3dbb16ec2cdd03eb12356be5d67446745039414d79b18bb72",
+        "binaries_sha256": {
+          "runcove-standalone": "2893615230de210604aef5ad3faf49cfdb87b864e6d0d709e5c8787d36dbf6d6",
+          "agent-space-static-http": "7fbce63047acdacad4ae943f097aa5b97eb5bdc0455adcfd3c4eed448f4b951d",
+          "agent-space-webdav": "647aaaffcc102b9e18704b2dc34e3a8fed4000863128365c9fae9cd931a4e7bc",
+          "agent-space-desktop": "4364f92da2a8a23b4a370cf6f59877b754631122e048dbe7b1ff032ae20d83e3"
+        },
+        "cleanup_passed": true,
+        "suites": {
+          "test_browser_profiles_vm.py.log": {
+            "sha256": "8a592284ab29647ec67053a617b9f47bc26d75f30a45f9df8a8fb204f9902a1c",
+            "result": "OK",
+            "tests": 1
+          },
+          "test_media_vm.py.log": {
+            "sha256": "02d10846a1acf3acf2d0ebf72e79aca619c90ecad1130999eafdf1c707af4fcc",
+            "result": "OK",
+            "tests": 1
+          }
+        },
+        "page_limit_restart": {
+          "initial_limit": 4,
+          "restarted_limit": 1,
+          "restored_pages": 4,
+          "restored_after_profile_picker": true,
+          "clean_profile_verified": true,
+          "restored_urls_match": true,
+          "new_page_error": "PAGE_LIMIT_REACHED",
+          "existing_page_navigation_and_close": true
+        }
+      },
+      "correction": "The single successful screenshot contract omits elapsed_secs. Corrected the outdated test assertion; all nine other media cases passed initially. Re-ran the corrected single-frame/multi-frame original-file case, then completed profiles and restart checks with the same source digest and identical helper binaries. Cargo HTTP integration tests rebuilt the main executables between frozen runs; both exact executable hashes are retained."
+    }
+  ],
+  "additional_checks": {
+    "clippy.log": {
+      "sha256": "20c518e9b5ddc646c8e6b4d36093a373961ca7cb918c6581eedcd4a7e0f29f48",
+      "passed": true
+    },
+    "clippy-standalone.log": {
+      "sha256": "9887a146a59504e2b6b5f10f8e41f1662c0447d7cc6705c17ef4e7ced66bbb0a",
+      "passed": true
+    },
+    "python.log": {
+      "sha256": "9cda266a837844c4ae441f285570abe77c231561c8cd0eacee104c987e87ea5a",
+      "passed": true
+    },
+    "node-full.log": {
+      "sha256": "027514fcccc4518b973d1800d6fc78ad23afc9477aa11991cd40fd115e7c2016",
+      "passed": true
+    },
+    "node-dpr.log": {
+      "sha256": "e2966e0c8f79123eb72b076d473251ca1165b97b50a7b579bf3752a1ba340d16",
+      "passed": true
+    }
+  },
+  "initial_qualification_correction": "Initial development qualification accidentally used an older debug helper. Rebuilt all helpers and verified all seven embedded worker sources before rerunning both tool qualifications; no feedback assertion was relaxed.",
+  "scope": "Tool-change qualification for Server and Standalone; not a complete durable image release qualification.",
+  "build_configuration_note": "Initial Standalone binaries and separate contract tests used no-default-features. Default-feature Cargo HTTP tests rebuilt both entry binaries before continuation; continuation validates the same source behavior, not the no-MSB link property or an exact release image. Shared helper hashes remained identical."
+}

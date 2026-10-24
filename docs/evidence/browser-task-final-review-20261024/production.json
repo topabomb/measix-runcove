@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-24",
+  "source_revision": "ce9bebb004ff6d3481e1064f670a166456050cf3",
+  "working_tree": true,
+  "source_sha256": "c53bb7b22f392cd3dbb16ec2cdd03eb12356be5d67446745039414d79b18bb72",
+  "binary_sha256": {
+    "agent-space-mcp": "5062aecef845f84ee2c02434ca2f18de048bea542a7176bd7bd4a8634b559897",
+    "agent-space-desktop": "a14033792c5ba4767dfb071347e854b0fdde76e0b2413d0ba6c6ebc2f1b96d3f"
+  },
+  "replaced_binaries": [
+    "agent-space-mcp",
+    "agent-space-desktop"
+  ],
+  "image_rebuilt": false,
+  "backup": false,
+  "migration": false,
+  "passed": true,
+  "checks": [
+    "running_binaries_metadata_accounts_config_mounts_and_ports_verified",
+    "task_list_is_empty_without_creating_jobs_or_page_observation",
+    "retired_inputs_ignored_snapshot_full_read_context_and_act_diff_verified",
+    "thirty_second_return_window_task_discovery_and_original_result_query_verified",
+    "coordinate_summary_preserves_full_image_id_and_coordinates",
+    "four_task_sources_summaries_and_screenshot_verified"
+  ],
+  "deployed": true,
+  "temporary_space_cleanup_confirmed": true,
+  "peer_restart_observed": false,
+  "original_accounts_config_mounts_preserved": true,
+  "production_and_peer_healthy": true,
+  "upload_staging_removed": true,
+  "compressed_upload_bytes_total": 33324498,
+  "verification_fixture_correction": "Coordinate summaries serialize f64 coordinates as 10.0. Corrected the numeric-equivalence assertion and repeated verification without uploading or restarting.",
+  "reverification_uploaded_binaries": [],
+  "reverification_restarted": false
+}

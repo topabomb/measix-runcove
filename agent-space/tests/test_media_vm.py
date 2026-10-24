@@ -70,7 +70,7 @@ class MediaQualification(unittest.TestCase):
  def test_02_screenshots_semantics_and_intervals(self):
   self.client.navigate('data:text/html,<title>Observe fixture</title><button>Continue</button>')
   dom=self.client.snapshot();self.assertIn('observation',dom);self.assertNotIn('recent_tasks',dom)
-  recent=self.client.snapshot(recent_tasks_limit=1);self.assertEqual(len(recent['recent_tasks']),1)
+  recent=self.client.snapshot(view='tasks');self.assertTrue(recent['tasks']);self.assertNotIn('task_id',recent)
   for view in ['page','desktop']:
    value,reply=self.finish(self.client.tool('screen_observe',{'view':view,'count':3,'interval_secs':1}))
    self.assertFalse(reply.get('isError'),value);self.assertEqual(value['captured_count'],3)
@@ -109,7 +109,7 @@ class MediaQualification(unittest.TestCase):
     self.assertRegex(Path(path).name,r'^screen-[0-9A-Za-z]{10}\.png$')
     self.assertEqual(file['frame_index'],frame['index']);self.assertEqual(file['image_id'],frame['image_id'])
     self.assertEqual(set(file),{'path','image_id','frame_index','size','format'});self.assertEqual(file['format'],'PNG')
-    self.assertEqual(set(frame),{'index','image_id','elapsed_secs','size','format'})
+    self.assertEqual(set(frame),{'index','image_id','size','format'} | ({'elapsed_secs'} if count>1 else set()))
     saved=self.client.tool('read',{'path':path,'multimodal':True})
     self.assertFalse(saved.get('isError'),text(saved))
     image=next(c for c in saved['content'] if c['type']=='image')
@@ -180,7 +180,7 @@ class MediaQualification(unittest.TestCase):
    self.assertFalse(restored.get('isError'),text(restored))
 
  def test_03_cancel_sequence_preserves_frames_and_allows_browser_work(self):
-  value=text(self.client.tool('screen_observe',{'view':'page','count':8,'interval_secs':3,'save_original':True,'save_dir':'/workspace/qualification/cancelled-originals'}))
+  value=text(self.client.tool('screen_observe',{'view':'page','count':8,'interval_secs':6,'save_original':True,'save_dir':'/workspace/qualification/cancelled-originals'}))
   self.assertEqual(value['state'],'running',value)
   task=value['task_id']
   run,reply=self.client.act([{'do':'wait','secs':1}])
@@ -196,8 +196,8 @@ class MediaQualification(unittest.TestCase):
   for ending in ['failure','timeout','cancel']:
    self.client.navigate('http://127.0.0.1:8125/download');ref=element(self.client.snapshot(),'link','Download CSV')
    steps=[{'do':'download','ref':ref}]
-   steps += ([{'do':'wait','text':'Never appears','timeout_secs':1}] if ending=='failure' else [{'do':'wait','secs':10},{'do':'wait','secs':10}])
-   reply=self.client.tool('browser_act',{'actions':steps,'timeout_secs':4 if ending=='timeout' else 60})
+   steps += ([{'do':'wait','text':'Never appears'}] if ending=='failure' else [{'do':'wait','secs':60}]*(3 if ending=='timeout' else 1))
+   reply=self.client.tool('browser_act',{'actions':steps})
    if ending=='cancel':
     value=text(reply);self.assertEqual(value['state'],'running',value);reply=self.client.tool('browser_act',{'op':'cancel','task_id':value['task_id']})
    value,reply=self.finish(reply);self.assertTrue(reply.get('isError'),value);self.assertEqual(value['state'],{'failure':'failed','timeout':'timed_out','cancel':'cancelled'}[ending]);self.assertEqual(len(value['files']),1,value)
@@ -206,7 +206,7 @@ class MediaQualification(unittest.TestCase):
 
  def test_04b_closed_target_preserves_frames_without_switching_tabs(self):
   target=self.client.snapshot()['page']['page_id']
-  value=text(self.client.tool('screen_observe',{'view':'page','page_id':target,'count':8,'interval_secs':3,'save_original':True}))
+  value=text(self.client.tool('screen_observe',{'view':'page','page_id':target,'count':8,'interval_secs':6,'save_original':True}))
   self.assertEqual(value['state'],'running',value)
   task=value['task_id']
   self.client.act([{'do':'tab','action':'new'},{'do':'tab','action':'close','page_id':target}],page_id=target)

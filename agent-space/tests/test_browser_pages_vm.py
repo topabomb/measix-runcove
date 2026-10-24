@@ -44,7 +44,7 @@ console.log('popup_requests='+count);await new Promise(r=>setTimeout(r,600));
  def test_03_deadline_and_cancel_retain_live_pages(self):
   for cancel in [False,True]:
    reset_tabs(self.client)
-   started=self.client.tool('browser_act',{'actions':[{'do':'tab','action':'new'},{'do':'wait','secs':10},{'do':'wait','secs':10}],'timeout_secs':60 if cancel else 3})
+   started=self.client.tool('browser_act',{'actions':[{'do':'tab','action':'new'}]+[{'do':'wait','secs':60}]*(1 if cancel else 3)})
    if cancel:
     value=text(started);self.assertEqual(value['state'],'running',value);started=self.client.tool('browser_act',{'op':'cancel','task_id':value['task_id']})
    value,_=self.client.finish(started);self.assertEqual(value['state'],'cancelled' if cancel else 'timed_out',value);self.assertEqual(self.count(),2)

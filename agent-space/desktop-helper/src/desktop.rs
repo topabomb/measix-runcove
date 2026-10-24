@@ -23,6 +23,7 @@ pub fn install_sources() -> anyhow::Result<()> {
     );
     use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
     for (name, source) in [
+        ("timing.cjs", include_str!("../../guest/desktop/timing.cjs")),
         (
             "browser-worker.cjs",
             include_str!("../../guest/desktop/browser-worker.cjs"),
@@ -511,7 +512,8 @@ impl Desktop {
     }
 }
 pub async fn node(value: serde_json::Value) -> anyhow::Result<serde_json::Value> {
-    let timeout = if value["view"] == "page" { 15 } else { 5 };
+    // Page observation shares the worker observation budget; lifecycle RPCs stay bounded separately.
+    let timeout = if value["action"].is_string() { 5 } else { 30 };
     let spec = serde_json::json!({"program":"node","args":[format!("{NODE}/observe-worker.cjs"),value.to_string()],"timeout_secs":timeout,"max_bytes":agent_engine::media::REPORT_LIMIT,"max_lines":10000,"uid":process::workspace_uid()});
     let mut command = Command::new("python3");
     process::workspace_env(&mut command);
@@ -531,6 +533,10 @@ pub async fn node(value: serde_json::Value) -> anyhow::Result<serde_json::Value>
     anyhow::ensure!(
         result["truncated"] != true && result["stdout"].is_string(),
         "INVALID_OBSERVATION_REPORT: truncated or incomplete report"
+    );
+    anyhow::ensure!(
+        result["timed_out"] != true,
+        "PAGE_UNRESPONSIVE: Page observation timed out."
     );
     anyhow::ensure!(
         result["exit_code"] == 0,

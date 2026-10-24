@@ -3,12 +3,38 @@ const fs = require("node:fs"),
   crypto = require("node:crypto");
 const { chromium } = require("/opt/agent-tools/node_modules/playwright");
 const tools = require("./browser-tools.cjs");
+const timing = require("./timing.cjs");
 const {
   publish,
   directory,
 } = require("/opt/agent-space/desktop/artifacts.cjs");
 const task = JSON.parse(process.env.AGENT_TASK);
 delete process.env.AGENT_TASK;
+const taskDeadline = performance.now() + (task.budget_ms ?? 120000);
+let phaseDeadline = taskDeadline;
+const remaining = () => Math.max(1, phaseDeadline - performance.now());
+function armDeadline(ms, phase) {
+  const previous = phaseDeadline;
+  phaseDeadline = Math.min(taskDeadline, performance.now() + ms);
+  const timer = Number.isFinite(ms) ? setTimeout(() => {
+    // Terminate this per-request worker: a timed-out async action must never
+    // resume in the background and execute later steps.
+    if (phase.observation) {
+      const error = { code: "PAGE_UNRESPONSIVE", message: "Page observation timed out." };
+      const extra = { value: { ...saved.value, observation_error: error } };
+      if (phase.failure) {
+        const { step_number, do: action, ref, ...failure } = phase.failure;
+        Object.assign(extra, { error: failure, failed_step: { step_number, do: action, ...(ref ? { ref } : {}) } });
+      } else if (task.operation !== "act") extra.error = error;
+      checkpoint(extra);
+      process.exit(extra.error ? 1 : 0);
+    }
+    checkpoint({ error: { code: "TIMEOUT", message: "Action execution timed out." }, failed_step: phase,
+      side_effects: saved.side_effects || "not_started" });
+    process.exit(1);
+  }, remaining()) : null;
+  return () => { clearTimeout(timer); phaseDeadline = previous; };
+}
 const captures = new Map((task.captures || []).map((c) => [c.image_id, c]));
 const images = [],
   files = [],
@@ -229,7 +255,7 @@ const observe = async (page_id, view) =>
       cp.execFile(
         process.execPath,
         [__dirname + "/observe-worker.cjs", JSON.stringify({ page_id, view })],
-        { timeout: 6000, maxBuffer: 2 * 1024 * 1024 },
+        { timeout: Math.ceil(Math.min(timing.OBSERVATION_MS, remaining())), maxBuffer: 2 * 1024 * 1024 },
         (e, stdout, stderr) => {
           if (!e) return resolve(stdout);
           const timedOut = e.killed || /timeout|timed out/i.test(stderr || e.message);
@@ -249,6 +275,8 @@ const environment = {
   output,
   desktop,
   checkpoint,
+  armDeadline,
+  remaining,
   capture: (id) => captures.get(id),
   observe,
   page: async (id) => {
@@ -287,8 +315,8 @@ const environment = {
       // Passive tools leave dialogs opened during observation for the human or
       // a later explicit dialog action, rather than Playwright's auto-dismiss.
       if (task.operation !== "act") context.on("dialog", () => {});
-      context.setDefaultTimeout(5000);
-      context.setDefaultNavigationTimeout(20000);
+      context.setDefaultTimeout(timing.INTERACTION_MS);
+      context.setDefaultNavigationTimeout(timing.EXTENDED_MS);
       for (const p of context.pages()) {
         let s;
         try {

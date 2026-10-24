@@ -1,0 +1,104 @@
+{
+  "tasks": {
+    "control": {
+      "mode": "AI"
+    },
+    "tasks": [
+      {
+        "description": "Capture page",
+        "started_at": "10-24 14:23:03Z",
+        "state": "succeeded",
+        "task_id": "task-1",
+        "tool": "screen_observe"
+      },
+      {
+        "description": "Wait 35s",
+        "started_at": "10-24 14:22:27Z",
+        "state": "succeeded",
+        "task_id": "task-2",
+        "tool": "browser_act"
+      },
+      {
+        "description": "Wait for “NON_EXISTENT_FEEDBACK_MARKER” to disa…",
+        "started_at": "10-24 14:22:25Z",
+        "state": "succeeded",
+        "task_id": "task-3",
+        "tool": "browser_act"
+      },
+      {
+        "description": "Find “Save” in page",
+        "started_at": "10-24 14:22:23Z",
+        "state": "succeeded",
+        "task_id": "task-4",
+        "tool": "browser_read"
+      },
+      {
+        "description": "Observe page",
+        "started_at": "10-24 14:22:21Z",
+        "state": "succeeded",
+        "task_id": "task-5",
+        "tool": "browser_snapshot"
+      },
+      {
+        "description": "Open data URL",
+        "started_at": "10-24 14:22:19Z",
+        "state": "succeeded",
+        "task_id": "task-6",
+        "tool": "browser_act"
+      },
+      {
+        "description": "Observe page",
+        "started_at": "10-24 14:22:11Z",
+        "state": "succeeded",
+        "task_id": "task-7",
+        "tool": "browser_snapshot"
+      }
+    ]
+  },
+  "query": {
+    "control": {
+      "mode": "AI"
+    },
+    "matches": [
+      {
+        "context": "region \"First\"",
+        "name": "Save",
+        "ref": "ref-8",
+        "role": "button"
+      },
+      {
+        "context": "region \"Second\"",
+        "name": "Save",
+        "ref": "ref-9",
+        "role": "button"
+      }
+    ],
+    "page": {
+      "page_id": "page-10",
+      "url": "data:text/html,<section aria-label=First><button>Save</button></section><section aria-label=Second><button>Save</button></section>"
+    },
+    "state": "succeeded",
+    "task_id": "task-4"
+  },
+  "running": {
+    "control": {
+      "mode": "AI"
+    },
+    "duration_secs": 30.0,
+    "remaining_secs": 90,
+    "started_at": "10-24 14:22:27Z",
+    "state": "running",
+    "task_id": "task-2"
+  },
+  "completed": {
+    "completed_steps": 1,
+    "control": {
+      "mode": "AI"
+    },
+    "duration_secs": 35.1,
+    "started_at": "10-24 14:22:27Z",
+    "state": "succeeded",
+    "task_id": "task-2",
+    "total_steps": 1
+  }
+}
