@@ -29,6 +29,7 @@ struct Job {
     accepted: Instant,
     started_at: u64,
     report_started_at: bool,
+    report_duration: bool,
     recent_limit: usize,
     status: Mutex<Value>,
     done: Notify,
@@ -254,6 +255,7 @@ impl DesktopHub {
                 .duration_since(UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_secs(),
+            report_duration: modifies,
             report_started_at: modifies || body["count"].as_u64().unwrap_or(1) > 1,
             recent_limit: body["args"]["recent_tasks_limit"].as_u64().unwrap_or(0) as usize,
             status: Mutex::new(json!({"state":"running","phase":"preparing","terminal":false})),
@@ -535,7 +537,9 @@ impl DesktopHub {
         let duration = finished
             .unwrap_or_else(Instant::now)
             .saturating_duration_since(job.accepted);
-        value["duration_secs"] = json!((duration.as_secs_f64() * 10.0).round() / 10.0);
+        if job.report_duration || value["state"] != "succeeded" {
+            value["duration_secs"] = json!((duration.as_secs_f64() * 10.0).round() / 10.0);
+        }
         value["control"] = json!({"mode":self.control.view("").control});
         if job.recent_limit > 0 {
             value["recent_tasks"] = json!(self.recent_jobs(job.recent_limit).await);
@@ -690,6 +694,7 @@ mod tests {
                     .unwrap_or_default()
                     .as_secs(),
                 report_started_at: id != "observation",
+                report_duration: id != "observation",
                 recent_limit: 0,
                 status: Mutex::new(json!({"state":"running","terminal":false})),
                 done: Notify::new(),
@@ -705,7 +710,14 @@ mod tests {
             .insert(observation.id.clone(), observation.clone());
         let observed = hub.task("observation", 0, false).await.unwrap();
         assert!(observed.get("started_at").is_none());
-        assert!(observed.get("duration_secs").is_some());
+        assert!(observed.get("duration_secs").is_none());
+        *observation.status.lock().await = json!({"state":"running","terminal":false});
+        assert!(hub
+            .task("observation", 0, false)
+            .await
+            .unwrap()
+            .get("duration_secs")
+            .is_some());
         *observation.status.lock().await = json!({"state":"failed","terminal":true});
         assert!(hub
             .task("observation", 0, false)

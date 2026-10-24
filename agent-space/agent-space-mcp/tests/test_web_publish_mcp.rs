@@ -624,6 +624,9 @@ async fn desktop_catalog_and_structured_arguments_reach_the_mcp_handlers() {
         .await
         .unwrap();
     assert_ne!(reply.is_error, Some(true));
+    let wire = serde_json::to_value(reply).unwrap();
+    assert_eq!(wire["content"].as_array().unwrap().len(), 2);
+    assert_eq!(wire["content"][1]["text"], "Exit code: 0");
     h.sessions.remove(&h.sandbox).await.unwrap();
 }
 

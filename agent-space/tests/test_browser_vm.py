@@ -18,15 +18,16 @@ class BrowserQualification(unittest.TestCase):
   value,reply=self.client.act(steps,**args)
   self.assertEqual(not bool(reply.get('isError')),success,value)
   return value,reply
- def test_00_write_cannot_clear_files_and_bash_reports_timing(self):
+ def test_00_write_cannot_clear_files_and_bash_preserves_output_without_timing(self):
   path='/workspace/write-empty-guard.txt'
   self.client.good('write',{'path':path,'content':'keep me'})
   with self.assertRaisesRegex(RuntimeError,'nonempty'):
    self.client.tool('write',{'path':path,'content':''})
   self.assertIn('keep me',json.dumps(self.client.good('read',{'path':path})))
-  result=self.client.tool('bash',{'cmd':'sleep 1; printf measured'})
-  timing=json.loads(result['content'][-1]['text']);self.assertGreaterEqual(timing['duration_secs'],1)
-  self.assertRegex(timing['started_at'],r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
+  for output,exit_code in [('plain output',0),('一行中文',7),('{"started_at":"user value","duration_secs":42}',0)]:
+   import shlex
+   result=self.client.tool('bash',{'cmd':'printf %s '+shlex.quote(output)+'; exit '+str(exit_code)})
+   self.assertEqual(result['content'],[{'type':'text','text':output},{'type':'text','text':'Exit code: '+str(exit_code)}])
   schema=next(t['inputSchema'] for t in self.client.call('tools/list')['tools'] if t['name']=='web_publish')
   self.assertIn('keep_alive_secs',schema['properties']);self.assertNotIn('keep_alive_minutes',schema['properties'])
   value=self.client.good('web_publish',{'action':'publish','name':'seconds-check','file':path,'keep_alive_secs':60})

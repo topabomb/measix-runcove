@@ -828,7 +828,7 @@ impl AgentSpaceMcpServer {
 
     #[instrument(skip(self, params), fields(workspace), level = "info")]
     #[tool(
-        description = "Run Bash commands in the connected Runcove space. Each call has a separate non-interactive shell. Returns bounded, merged stdout/stderr and an exit code; check the exit code for success. Redirect background-service input from /dev/null and output to a log file. Returns started_at and duration_secs."
+        description = "Run Bash commands in the connected Runcove space. Each call has a separate non-interactive shell. Returns bounded, merged stdout/stderr and an exit code; check the exit code for success. Redirect background-service input from /dev/null and output to a log file."
     )]
     async fn bash(
         &self,
@@ -857,11 +857,6 @@ impl AgentSpaceMcpServer {
             ));
         }
         let start = std::time::Instant::now();
-        let started_at = time::OffsetDateTime::now_utc()
-            .replace_nanosecond(0)
-            .unwrap()
-            .format(&time::format_description::well_known::Rfc3339)
-            .unwrap_or_default();
         let workdir = params.workdir.as_deref().unwrap_or("/workspace");
         self.recheck_bound().await?;
         let session = self.ensure_session().await?;
@@ -873,7 +868,7 @@ impl AgentSpaceMcpServer {
 
         tracing::Span::current().record("workspace", session.workspace_name.as_str());
         info!(workspace = %session.workspace_name, command_bytes = params.cmd.len(), timeout_secs, "bash exec");
-        let result: Result<CallToolResult, McpError> = match session.exec(&cmd, timeout).await {
+        match session.exec(&cmd, timeout).await {
             Ok(result) => {
                 info!(
                     workspace = %session.workspace_name,
@@ -935,17 +930,7 @@ impl AgentSpaceMcpServer {
                     &format!("bash exec failed: {error}"),
                 ))]))
             }
-        };
-        let mut result = result?;
-        let mut timing = json!({
-            "started_at": started_at,
-            "duration_secs": (start.elapsed().as_secs_f64() * 10.0).round() / 10.0
-        });
-        if result.is_error == Some(true) {
-            timing["hint"] = json!("Inspect command state and outputs before retrying; side effects may have occurred.");
         }
-        result.content.push(Content::text(timing.to_string()));
-        Ok(result)
     }
 
     #[instrument(skip(self, params, context), fields(workspace), level = "info")]
@@ -1352,15 +1337,26 @@ fn compact_base_schema(value: &mut serde_json::Value) {
 fn compact_browser_feedback(value: &mut serde_json::Value) {
     if let Some(epoch) = value.get("started_at").and_then(|v| v.as_i64()) {
         if let Ok(time) = time::OffsetDateTime::from_unix_timestamp(epoch) {
-            if let Ok(text) = time.format(&time::format_description::well_known::Rfc3339) {
-                value["started_at"] = json!(text);
-            }
+            value["started_at"] = json!(format!(
+                "{:02}-{:02} {:02}:{:02}:{:02}Z",
+                time.month() as u8,
+                time.day(),
+                time.hour(),
+                time.minute(),
+                time.second()
+            ));
         }
     }
 
+    let single_success = value["state"] == "succeeded" && value["captured_count"] == 1;
     if let Some(frames) = value.get_mut("frames").and_then(|v| v.as_array_mut()) {
         for frame in frames {
             if let Some(object) = frame.as_object_mut() {
+                if single_success {
+                    object.remove("elapsed_ms");
+                    object.remove("elapsed_secs");
+                    continue;
+                }
                 if let Some(ms) = object.remove("elapsed_ms").and_then(|v| v.as_u64()) {
                     object.insert(
                         "elapsed_secs".into(),
@@ -1548,12 +1544,30 @@ mod tests {
     }
 
     #[test]
+    fn screenshot_timing_preserves_sequences_and_failures() {
+        for (state, count, keep) in [
+            ("succeeded", 1, false),
+            ("succeeded", 2, true),
+            ("failed", 1, true),
+            ("running", 1, true),
+        ] {
+            let mut value =
+                json!({"state":state,"captured_count":count,"frames":[{"elapsed_ms":1250}]});
+            compact_browser_feedback(&mut value);
+            assert_eq!(value["frames"][0].get("elapsed_secs").is_some(), keep);
+            assert!(value["frames"][0].get("elapsed_ms").is_none());
+            if keep {
+                assert_eq!(value["frames"][0]["elapsed_secs"], 1.3);
+            }
+        }
+    }
+
+    #[test]
     fn browser_timing_and_success_metadata_are_compact_without_losing_failures() {
         let mut value = json!({"state":"succeeded","started_at":1792495384u64,"duration_secs":2.1,"phase":"done","side_effects":"may_have_occurred","value":{"completed":1}});
         compact_browser_feedback(&mut value);
         let start = value["started_at"].as_str().unwrap();
-        assert_eq!(start.len(), 20);
-        assert!(start.ends_with('Z'));
+        assert_eq!(start, "10-20 11:23:04Z");
         assert_eq!(value["duration_secs"], 2.1);
         assert!(value.get("phase").is_none());
         assert!(value.get("side_effects").is_none());

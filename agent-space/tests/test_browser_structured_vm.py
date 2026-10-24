@@ -61,17 +61,17 @@ class StructuredBrowser(unittest.TestCase):
   value,reply=self.client.finish(self.client.tool('browser_snapshot',{}))
   self.assertFalse(reply.get('isError'),value)
   self.assertNotIn('started_at',value)
-  self.assertGreaterEqual(value['duration_secs'],0)
+  self.assertNotIn('duration_secs',value)
   for key in ['tabs','health','layers','truncated']:self.assertNotIn(key,value)
   again=text(self.client.tool('browser_act',{'op':'wait','task_id':value['task_id'],'wait_secs':0}))
-  self.assertNotIn('started_at',again);self.assertEqual(again['duration_secs'],value['duration_secs'])
+  self.assertNotIn('started_at',again);self.assertNotIn('duration_secs',again)
   listed=self.client.good('browser_snapshot',{'view':'tabs','page_id':'irrelevant','ref':'invalid','diff':True,'image':True,'text':True})
   self.assertTrue(listed['tabs']);self.assertNotIn('observation',listed);self.assertNotIn('image',listed)
   self.assertTrue(self.client.good('browser_snapshot',{'view':' '})['page']['page_id'])
   for tool,args,has_start in [('browser_read',{},False),('screen_observe',{'view':'page'},False),('screen_observe',{'view':'page','count':2,'interval_secs':0},True),('browser_act',{'actions':[{'do':'wait','secs':0}]},True)]:
    timing,reply=self.client.finish(self.client.tool(tool,args));self.assertFalse(reply.get('isError'),timing)
-   self.assertEqual('started_at' in timing,has_start,timing);self.assertGreaterEqual(timing['duration_secs'],0)
-   if has_start:self.assertRegex(timing['started_at'],r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
+   self.assertEqual('started_at' in timing,has_start,timing);self.assertEqual('duration_secs' in timing,tool=='browser_act',timing)
+   if has_start:self.assertRegex(timing['started_at'],r'^\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z$')
 
   page=value['page']['page_id']
   self.act([{'do':'tab','action':'new','url':'data:text/html,<title>Other '+str(i)+'</title>'} for i in range(3)],then='none')
