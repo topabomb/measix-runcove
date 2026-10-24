@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-24",
+  "source_revision": "4f741afc320948dd802d148ca870ef8143677916",
+  "source_sha256": "667c8c8284f47a3a3c7954a67cdc971cdcf76b44aa2e6c1e3a632bdd13308864",
+  "binary_sha256": {
+    "agent-space-mcp": "f477499781bacea8e139a73b650c7587568f0cca10773f40efc8bee3c8c23b8d",
+    "agent-space-desktop": "042e566d81c07734435904ff8c413936630e08c0628704095b7172d04fecb94b"
+  },
+  "replaced_binaries": [
+    "agent-space-desktop"
+  ],
+  "image_rebuilt": false,
+  "test_containers_created": false,
+  "backup": false,
+  "migration": false,
+  "snapshot": false,
+  "passed": true,
+  "checks": [
+    "running_binaries_metadata_accounts_config_mounts_and_ports_verified",
+    "none_rejected_default_empty_diff_and_explicit_snapshot_verified",
+    "bash_plain_unicode_json_empty_nonzero_and_timeout_have_no_added_timing",
+    "compact_utc_start_label_is_stable_for_running_completed_and_replayed_tasks",
+    "browser_failure_and_sequence_start_labels_compact_duration_policy_verified"
+  ],
+  "deployed": true,
+  "temporary_space_cleanup_confirmed": true,
+  "upload_staging_removed": true,
+  "peer_restart_observed": false,
+  "original_accounts_config_mounts_preserved": true,
+  "production_and_peer_healthy": true,
+  "transport": "Tailscale",
+  "compressed_upload_bytes_total": 33275725,
+  "deployment_sequence": [
+    "MCP update: 99f066e",
+    "Explicit helper rebuild and update: 4f741af"
+  ]
+}
