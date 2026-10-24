@@ -12,6 +12,8 @@ Bash 移除附加计时块，保留命令原始输出和超时诊断。started_a
 
 已审查全部变更；原任务计时回归1项、MCP单元40项及HTTP合同5项、workspace all-targets Clippy、Python语法和差异检查通过。生产候选复用已校验的构建基底，仅替换当前两份Rust源文件重新编译MCP，SQLite 3.51.3链接检查通过。完整浏览器资格和完整镜像构建本次未重复，见[本次验证](evidence/tool-timing-20261024/verification.json)。
 
+生产已按源码 `28ea06b` 快速替换 MCP 二进制并重启，运行进程哈希一致。临时空间实测 Bash 各类输出、动作运行/完成/重复查询、失败、单张与连续截图计时均通过；原有账户、配置、挂载及其他 helper 保持，服务与相邻服务健康，测试空间和上传暂存已清理。无需迁移或备份，实际未执行；此次为容器可写层更新，未发布持久镜像。见[生产证据](evidence/tool-timing-20261024/production.json)。
+
 ## 浏览器语义反馈统一（2026-10-24）
 
 四个浏览器工具和16种动作保持，公开响应移除 value 包装，采用 completed_steps/total_steps、page、observation/observation_diff；失败步骤从1计数。控件、独立文字和真实浮层合入一棵有界语义树，差异包含旧行、新行及归属上下文；删除重复 text_added 与 CSS 浮层列表。基准改为每个 MCP 连接持有，旧任务和其他连接不会覆盖它；导航、重排、截断或缺少可靠基准时回退快照。完整语义见[浏览器合同](browser-desktop.md)，公开输入说明保持克制。
