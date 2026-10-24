@@ -1425,8 +1425,7 @@ async function run(task, env) {
     (page || observeTab) &&
     current &&
     (!page || !page.isClosed()) &&
-    !page?.__runcoveCrashed &&
-    (failure || args.then !== "none")
+    !page?.__runcoveCrashed
   ) {
     try {
       result = {

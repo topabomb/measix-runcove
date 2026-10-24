@@ -63,9 +63,9 @@ test('batch feedback has scoped text once, old states, hidden removals and snaps
  assert.match(result.observation_diff,/menu[\s\S]*status "Ready"/);
  assert.equal((await good('snapshot',{diff:true})).observation_diff,'');
  await page.locator('#menu [role=status]').evaluate(e=>e.textContent='Selected');
- const none=await act([{do:'wait',secs:0}],{then:'none'});
- assert.equal(none.observation,undefined);assert.equal(none.observation_diff,undefined);
- assert.match((await good('snapshot',{diff:true})).observation_diff,/status "Selected"/);
+ const changed=await act([{do:'wait',text:'Selected'}]);
+ assert.match(changed.observation_diff,/status "Selected"/);
+ assert.equal((await act([{do:'wait',text:'Selected'}])).observation_diff,'');
  // Navigate explicitly: document replacement must never become a massive removal patch.
  const navigated=await act([{do:'navigate',url:'data:text/html,<button>New document</button>'}]);
  assert.ok(navigated.observation);assert.equal(navigated.observation_diff,undefined);
@@ -232,13 +232,13 @@ test('seconds waits honor real timers, early conditions and the 60 second defaul
  await page.setContent('<button onclick="window.marked=performance.now()">Mark</button>');
  let v=await good('snapshot'); const mark=ref(v,'button','Mark');
  const start=await page.evaluate(()=>performance.now());
- await act([{do:'wait',secs:2,timeout_secs:0},{do:'click',ref:mark}],{then:'none'});
+ await act([{do:'wait',secs:2,timeout_secs:0},{do:'click',ref:mark}],{then:'diff'});
  const elapsed=await page.evaluate(start=>window.marked-start,start);
  assert.ok(elapsed>=2000,`fixed wait ended early: ${elapsed}`);
  await page.evaluate(()=>setTimeout(()=>document.body.append('ready after old default'),11000));
- const began=Date.now(); await act([{do:'wait',text:'ready after old default'}],{then:'none'});
+ const began=Date.now(); await act([{do:'wait',text:'ready after old default'}],{then:'diff'});
  const conditionMs=Date.now()-began;assert.ok(conditionMs>=10000&&conditionMs<30000,`condition wait: ${conditionMs}`);
- const timeoutStart=Date.now();const failed=await call('act',{actions:[{do:'wait',text:'never present',timeout_secs:1}],then:'none'});
+ const timeoutStart=Date.now();const failed=await call('act',{actions:[{do:'wait',text:'never present',timeout_secs:1}],then:'diff'});
  assert.equal(failed.error?.code,'TIMEOUT',brief(failed));assert.ok(Date.now()-timeoutStart>=1000);
  console.log('WAIT_TIMING '+JSON.stringify({fixedSeconds:2,measuredMs:elapsed,defaultConditionMeasuredMs:conditionMs,explicitTimeoutSeconds:1}));
 });

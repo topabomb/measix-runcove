@@ -34,7 +34,7 @@ class StructuredBrowser(unittest.TestCase):
   c.tool('browser_act',{'op':'wait','task_id':av['task_id'],'wait_secs':0})
   self.assertIn('observation',c.snapshot(diff=True))
   self.client.fixture_js("await page.evaluate(()=>document.querySelector('[role=status]').textContent='Selected');return true;",target)
-  a.read_browser();a.act([{'do':'wait','secs':0}],then='none')
+  a.read_browser()
   delta=a.snapshot(diff=True)['observation_diff'];self.assertIn('Ready',delta);self.assertIn('Selected',delta)
  def test_parameter_normalization_and_semantic_wait(self):
   initial=self.client.snapshot();email=element(initial,'textbox','Email')
@@ -74,7 +74,7 @@ class StructuredBrowser(unittest.TestCase):
    if has_start:self.assertRegex(timing['started_at'],r'^\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z$')
 
   page=value['page']['page_id']
-  self.act([{'do':'tab','action':'new','url':'data:text/html,<title>Other '+str(i)+'</title>'} for i in range(3)],then='none')
+  self.act([{'do':'tab','action':'new','url':'data:text/html,<title>Other '+str(i)+'</title>'} for i in range(3)],then='diff')
   current=self.client.good('browser_snapshot',{'page_id':page})
   pages=self.client.good('browser_snapshot',{'view':'tabs'})
   self.assertEqual(len(pages['tabs']),4);self.assertNotIn('tabs',current)
@@ -85,19 +85,19 @@ class StructuredBrowser(unittest.TestCase):
  def test_sixty_second_wait_and_default_condition_deadline(self):
   # Exercise the 8-second initial response and repeated 30-second task waits.
   began=time.monotonic()
-  response=self.client.tool('browser_act',{'actions':[{'do':'wait','secs':60,'timeout_secs':0}], 'then':'none'})
+  response=self.client.tool('browser_act',{'actions':[{'do':'wait','secs':60,'timeout_secs':0}], 'then':'diff'})
   initial=text(response);self.assertEqual(initial['state'],'running')
   value,reply=self.client.finish(response)
   fixed=time.monotonic()-began
   self.assertFalse(reply.get('isError'),value);self.assertGreaterEqual(fixed,60)
   self.assertEqual(initial['started_at'],value['started_at'])
   began=time.monotonic()
-  value,reply=self.client.act([{'do':'wait','text':'UNMATCHED_SECONDS_DEADLINE'}],then='none')
+  value,reply=self.client.act([{'do':'wait','text':'UNMATCHED_SECONDS_DEADLINE'}],then='diff')
   condition=time.monotonic()-began
   self.assertTrue(reply.get('isError'),value);self.assertEqual(value['error']['code'],'TIMEOUT')
   self.assertGreaterEqual(condition,60);self.assertLess(condition,100)
   self.client.fixture_js("await page.evaluate(()=>{const p=document.createElement('p');p.textContent='Delayed busy marker';document.body.append(p);setTimeout(()=>p.remove(),11000)});return true;")
-  self.act([{'do':'wait','gone':'Delayed busy marker'}],then='none')
+  self.act([{'do':'wait','gone':'Delayed busy marker'}],then='diff')
   (Q/'seconds-wait-timing.json').write_text(json.dumps({'fixed_secs':60,'fixed_elapsed_secs':fixed,'default_condition_elapsed_secs':condition,'initial_state':initial['state']},indent=2)+'\n')
  def test_frames_nested_cross_site_and_dynamic(self):
   for route in ['/iframe','/nested','/xorigin']:

@@ -139,7 +139,7 @@ class BrowserQualification(unittest.TestCase):
   reset_tabs(self.client)
   self.client.fixture_js("await page.evaluate(()=>{window.statusClicks=0;document.body.innerHTML='<button onclick=window.statusClicks++>Count once</button>'});return true;")
   button=element(self.client.snapshot(),'button','Count once')
-  response=self.client.tool('browser_act',{'actions':[{'do':'click','ref':button},{'do':'wait','secs':20}],'then':'none','timeout_secs':40})
+  response=self.client.tool('browser_act',{'actions':[{'do':'click','ref':button},{'do':'wait','secs':20}],'then':'diff','timeout_secs':40})
   initial=text(response);self.assertEqual(initial['state'],'running',initial)
   code="""import os,signal,time,json
 from pathlib import Path

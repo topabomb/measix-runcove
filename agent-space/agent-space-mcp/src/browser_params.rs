@@ -374,7 +374,6 @@ pub enum ActAction {
 pub enum ActThen {
     Diff,
     Snapshot,
-    None,
 }
 #[derive(Debug, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -408,7 +407,7 @@ pub struct ActParams {
     pub page_id: Option<String>,
     #[serde(default, deserialize_with = "publish_params::optional_choice")]
     #[schemars(
-        description = "End-of-batch feedback: diff (default), snapshot, or none. Diff compares the previous returned observation; without a usable baseline, returns a snapshot. Failures may include a diagnostic observation."
+        description = "End-of-batch feedback: diff (default) or snapshot. Diff compares the previous returned observation; without a usable baseline, returns a snapshot. Failures may include a diagnostic observation."
     )]
     pub then: Option<ActThen>,
     #[serde(default)]
@@ -754,6 +753,22 @@ impl BrowserReadParams {
 mod tests {
     use super::*;
     use serde_json::json;
+    #[test]
+    fn feedback_accepts_only_diff_and_snapshot() {
+        for then in [serde_json::Value::Null, json!("diff"), json!("snapshot")] {
+            let params: ActParams =
+                serde_json::from_value(json!({"actions":[{"do":"wait","secs":0}],"then":then}))
+                    .unwrap();
+            assert!(params.normalize().validate().is_ok());
+        }
+        assert!(serde_json::from_value::<ActParams>(
+            json!({"actions":[{"do":"wait","secs":0}],"then":"none"})
+        )
+        .is_err());
+        let schema = serde_json::to_value(schemars::schema_for!(ActThen)).unwrap();
+        assert_eq!(schema["enum"], json!(["diff", "snapshot"]));
+    }
+
     #[test]
     fn validates_batches_before_execution_and_separates_task_control() {
         for v in [

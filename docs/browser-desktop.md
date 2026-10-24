@@ -79,7 +79,7 @@ Standalone 的 Agent 可管理项目和用户态依赖，系统依赖由部署�
 | task_id | string；来自浏览器或截图任务结果 |
 | op / action | string enum；顶层 op 为 execute/wait/cancel；tab 步骤的 action 为 new/close/focus |
 | do | string const；选择下表的一种动作，每种动作有自己的字段和必填规则 |
-| then / extract / view | string enum；then 为 diff/snapshot/none，extract 为 table/links/fields；snapshot 的 view 为 page/tabs，screen_observe 的 view 为 page/desktop |
+| then / extract / view | string enum；then 为 diff/snapshot，extract 为 table/links/fields；snapshot 的 view 为 page/tabs，screen_observe 的 view 为 page/desktop |
 | button / target / mode | string enum；button 为 left/right/middle，target 为 page/desktop；navigate.mode 为 open/back/forward/reload，window.mode 为 normal/maximized/fullscreen |
 | diff、image、text（快照）、exact、double、submit、checked、accept、save_original | boolean；使用 true/false。动作中的 text 则为 string |
 | actions / paths | array；分别为 1..20 个动作对象、1..20 个空间内绝对路径字符串 |
@@ -106,7 +106,7 @@ browser_read 的 query 在所选页面及其 iframe 的已观察元素名称或�
 {"actions":[{"do":"fill","ref":"eabcdefghij","text":"query"},{"do":"click","ref":"eklmnopqrst"}]}
 ```
 
-整批参数在执行前校验；运行时遇错停止，已发生的动作不回滚。默认 then=diff，可选 snapshot 或 none；整批结束后观察一次。失败时尽力附当前诊断快照，即使 then=none。观察失败另报 observation_error，不伪装成空差异，也不改变已成功动作的任务状态。超时/取消保留已产生的部分结果，不额外启动昂贵观察。
+整批参数在执行前校验；运行时遇错停止，已发生的动作不回滚。默认 then=diff，可选 snapshot；整批结束后观察一次。失败时尽力附当前诊断快照。观察失败另报 observation_error，不伪装成空差异，也不改变已成功动作的任务状态。超时/取消保留已产生的部分结果，不额外启动昂贵观察。
 
 公开 MCP 结果没有 value 包装。state/task_id 表达任务状态与身份；completed_steps/total_steps 表达已完成和总步骤数；page 包含 page_id/url/title，未涉及页面时不补造。失败保留 error、failed_step（step_number 从1开始）、side_effects、已完成数量和已有 files/popups。失败步骤即使已经产生部分副作用也不计入 completed_steps。任务成功不代表网站业务成功；不自动重试或生成业务结论。内部 worker 的 value/checkpoint 封装仍由原任务所有者管理。
 
@@ -120,7 +120,7 @@ observation 是有界语义快照，observation_diff 是相对于该 MCP 会话�
 +     eklmnopqrst button "从计算机上传"
 ```
 
-基准属于 MCP 连接而非网页或共享空间，按页面、文档和观察模式匹配；只接受该连接生成且已提供的观察。跨连接查询任务时，保存的差异转换为其快照，不引入对方基准。read、截图、then=none 和子树观察不推进基准；任务查询返回已保存结果，不重新采集，首次取回本连接生成的观察可以登记基准，旧结果重复取回不会倒退基准。无可用基准、导航、模式变化、重排/移位、并发结果的基准已过期或不可靠/过大的差异返回 observation。连接最多缓存8页，重连或缓存淘汰后的首次观察返回快照；这是有界会话缓存，不写网页或持久工作区，也不增加任务服务。
+基准属于 MCP 连接而非网页或共享空间，按页面、文档和观察模式匹配；只接受该连接生成且已提供的观察。跨连接查询任务时，保存的差异转换为其快照，不引入对方基准。read、截图和子树观察不推进基准；任务查询返回已保存结果，不重新采集，首次取回本连接生成的观察可以登记基准，旧结果重复取回不会倒退基准。无可用基准、导航、模式变化、重排/移位、并发结果的基准已过期或不可靠/过大的差异返回 observation。连接最多缓存8页，重连或缓存淘汰后的首次观察返回快照；这是有界会话缓存，不写网页或持久工作区，也不增加任务服务。
 
 语义输出最多150行、24000个字符，每项内容最多300 Unicode字符；截断明确返回 observation_truncated=true，未采集内容不判定为移除，不完整基准不能生成确定的增量。独立扫描失败返回 observation_error 或观察任务错误，与截断区分。页面截图和文件产物预算沿用原合同。
 
