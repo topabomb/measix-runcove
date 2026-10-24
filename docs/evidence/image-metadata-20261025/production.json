@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-25",
+  "source_revision": "78437a73265be300d2343cfd8538535ed217481b",
+  "working_tree": false,
+  "source_sha256": "7c16c092f5ba2aa732d68b12c09b6956627ae35e649e800db5debea901ca0466",
+  "binary_sha256": {
+    "agent-space-mcp": "6297f2d7b71a119d7e3d0f995d6b520ea0d7b75a3f4a18d4aa939cc7f32b67f7",
+    "agent-space-desktop": "5d3e06a75d3d28693ce791305f5abf544587ad934b7b1474d785722d18a1c3dd"
+  },
+  "replaced_binaries": [
+    "agent-space-mcp",
+    "agent-space-desktop"
+  ],
+  "image_rebuilt": false,
+  "test_containers_created": false,
+  "backup": false,
+  "migration": false,
+  "snapshot": false,
+  "passed": true,
+  "checks": [
+    "running_binaries_metadata_accounts_config_mounts_and_ports_verified",
+    "schema_and_utf8_size_bytes",
+    "snapshot_page_desktop_read_dimensions_and_task_replay"
+  ],
+  "deployed": true,
+  "temporary_space_cleanup_confirmed": true,
+  "upload_staging_removed": true,
+  "peer_restart_observed": false,
+  "original_accounts_config_mounts_preserved": true,
+  "production_and_peer_healthy": true,
+  "uploaded_payload_bytes": 33314796,
+  "uploaded_file_bytes": 33319944
+}
