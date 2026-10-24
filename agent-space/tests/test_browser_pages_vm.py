@@ -22,8 +22,8 @@ class PageLimits(unittest.TestCase):
   self.client.navigate('http://127.0.0.1:8124/');tabs=self.client.snapshot(view='tabs')['tabs']
   value,reply=self.client.act([{'do':'tab','action':'close','page_id':tabs[-1]['page_id']},{'do':'tab','action':'new'}]);self.assertFalse(reply.get('isError'),value);self.assertEqual(self.count(),self.maximum)
  def test_02_js_popup_and_native_window_share_the_limit(self):
-  view=self.client.navigate('http://127.0.0.1:8125/popup');self.fill();view=self.client.snapshot(page_id=view['page_id'])
-  self.limited([{'do':'click','ref':element(view,'link','Open invoices in new tab')}],page_id=view['page_id']);self.assertEqual(self.count(),self.maximum)
+  view=self.client.navigate('http://127.0.0.1:8125/popup');self.fill();view=self.client.snapshot(page_id=view['page']['page_id'])
+  self.limited([{'do':'click','ref':element(view,'link','Open invoices in new tab')}],page_id=view['page']['page_id']);self.assertEqual(self.count(),self.maximum)
   # Real browser keyboard creates a native Chrome window through the same guard.
   self.client.act([{'do':'press','target':'desktop','key':'Control+n'}]);self.assertEqual(self.count(),self.maximum)
   # A separate CDP client simulates a hostile page opening a burst of windows.
@@ -37,7 +37,7 @@ let count=0;for(let i=0;i<12;i++)count+=Number(await new Promise((resolve,reject
  w.onerror=()=>{clearTimeout(timer);reject(Error('burst CDP connection failed'));};
 }));
 console.log('popup_requests='+count);await new Promise(r=>setTimeout(r,600));
-})().then(()=>process.exit()).catch(e=>{console.error(e);process.exit(1)});""".replace('PAGE_ID',json.dumps(view['page_id']))
+})().then(()=>process.exit()).catch(e=>{console.error(e);process.exit(1)});""".replace('PAGE_ID',json.dumps(view['page']['page_id']))
   result=self.client.good('bash',{'cmd':'node -e '+shlex.quote(script)})
   self.assertIn('popup_requests=12',result['text'])
   self.assertEqual(self.count(),self.maximum)
@@ -52,7 +52,7 @@ console.log('popup_requests='+count);await new Promise(r=>setTimeout(r,600));
  def test_04_closing_last_tab_is_explicit_and_snapshot_does_not_create_one(self):
   for _ in range(3):
    reset_tabs(self.client)
-   target=self.client.snapshot()['page_id'];value,reply=self.client.act([{'do':'tab','action':'close','page_id':target}]);self.assertFalse(reply.get('isError'),value)
+   target=self.client.snapshot()['page']['page_id'];value,reply=self.client.act([{'do':'tab','action':'close','page_id':target}]);self.assertFalse(reply.get('isError'),value)
    # Chromium can quit before replying when its last window closes. A later
    # start owns the native startup tab; snapshot never calls the page guard.
    view=self.client.snapshot(view='tabs');self.assertIsInstance(view['tabs'],list)

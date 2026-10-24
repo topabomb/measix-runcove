@@ -1,0 +1,113 @@
+{
+  "date": "2026-10-24",
+  "source_digest": "36fb4b2c8a1708f37a21bd5df1b1e2f96d484935f38a1a08648673407eb76745",
+  "build": {
+    "source_digest": "36fb4b2c8a1708f37a21bd5df1b1e2f96d484935f38a1a08648673407eb76745",
+    "builder_image": "sha256:2b3951f900d01d7ea722c0689b16e9da0c7c49d2e50219ddb0493dc8b1f089de",
+    "binaries_sha256": {
+      "agent-space-webdav": "df017a13b0f7e70dd20ddcb15efb4d94df8e0e463b68a0615652fd48e3858c98",
+      "agent-space-desktop": "8e1d3fbeae3c7785e973064e7dfc667d19b190bd65199f2dfb262fdc98c64d8c",
+      "agent-space-static-http": "cc602e12e7374d077be92aa23058aac26f9738a44dd7ae5c12f8c6102f053016",
+      "agent-space-mcp": "6ffa2dd196aa2aa5faa8bf39f13451f43e54d01f7263319b69b3374828cb58fd"
+    },
+    "sqlite_link": "3.51.3 verified by docker/verify-sqlite-link.py in builder"
+  },
+  "reviewed_scope": "All pending implementation, public contract, helper packaging, consumers, regression tests and evidence.",
+  "fixes": [
+    "Keep removals in tree order beside their original region; moved subtrees return a snapshot.",
+    "Reparent only actual observed panel members, preserving unrelated siblings.",
+    "Concurrent results whose published baseline changed and cross-connection task diffs return their saved current snapshot.",
+    "DOM name enrichment preserves the original role and states and caps long labels.",
+    "Pure waits explicitly assert no page object in the new public response."
+  ],
+  "validation": {
+    "rust": {
+      "log": "agent-space/target/browser-feedback-review-rust.log",
+      "sha256": "2b04ecc79079c498c2d61488bf541dfe52c0e330c23b12ded3a5b26defb247e3",
+      "summary": [
+        "    Finished `test` profile [unoptimized] target(s) in 13.29s",
+        "test result: ok. 39 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.02s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s"
+      ]
+    },
+    "clippy": {
+      "log": "agent-space/target/browser-feedback-review-clippy.log",
+      "sha256": "bbba883a896c245257872653eff9d264ecc109a0abd14578b0f8bf982c655038",
+      "summary": [
+        "    Finished `dev` profile [unoptimized] target(s) in 5.60s"
+      ]
+    },
+    "standalone-rust": {
+      "log": "agent-space/target/browser-feedback-review/standalone-rust.log",
+      "sha256": "f4d8c0b2ab12f9815d4102505e04aaaf6068e016fe8ca4ce73d4aec4aa52efd8",
+      "summary": [
+        "    Finished `test` profile [unoptimized] target(s) in 13.39s",
+        "test result: ok. 39 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.06s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s"
+      ]
+    },
+    "standalone-clippy": {
+      "log": "agent-space/target/browser-feedback-review/standalone-clippy.log",
+      "sha256": "e546e42a98542361bc3fb1f81615cbe081cccccf993b11931dd892affa763119",
+      "summary": [
+        "    Finished `dev` profile [unoptimized] target(s) in 2.90s"
+      ]
+    },
+    "semantic": {
+      "log": "agent-space/target/browser-feedback-review/semantic.log",
+      "sha256": "c84580748a1d4b6027c6d1a486a0791544d02840038edbe3b421afdfe550288f",
+      "summary": [
+        "# tests 9",
+        "# pass 9",
+        "# fail 0",
+        "# skipped 0"
+      ]
+    },
+    "node": {
+      "log": "agent-space/target/browser-feedback-review/node.log",
+      "sha256": "400ca9b1e4f29e0ab6d6be25ca9a547ece05e94c5bd6bbb2adf4d8e0aa157a9b",
+      "summary": [
+        "# tests 38",
+        "# pass 37",
+        "# fail 0",
+        "# skipped 1"
+      ]
+    },
+    "node-panel-final": {
+      "log": "agent-space/target/browser-feedback-review/node-panel-final.log",
+      "sha256": "1814d25785b460e4c38d4d3ae11fd3115094a43ca99d6816156bcf6fee4bccbe",
+      "summary": [
+        "# tests 2",
+        "# pass 2",
+        "# fail 0",
+        "# skipped 0"
+      ]
+    },
+    "node-native-final": {
+      "log": "agent-space/target/browser-feedback-review/node-native-final.log",
+      "sha256": "021a81e754d2b0304f2fa3ee8d57ff5a7c64123c23c53330a66d9efa48a67c67",
+      "summary": [
+        "# tests 2",
+        "# pass 2",
+        "# fail 0",
+        "# skipped 0"
+      ]
+    },
+    "build-final": {
+      "log": "agent-space/target/browser-feedback-review/build-final.log",
+      "sha256": "55b294cd304056feca2cc13a12db3175e95b96b3f19e54deb047c48e37174feb",
+      "summary": [
+        "#12 [builder  3/23] RUN curl --fail --location --silent --show-error       \"https://www.sqlite.org/2026/sqlite-autoconf-3510300.tar.gz\" -o /tmp/sqlite.tar.gz &&     echo \"81f5be397049b0cae1b167f2225af7646fc0f82e4a9b3c48c9ea3a533e21d77a  /tmp/sqlite.tar.gz\" | sha256sum -c - &&     mkdir -p /opt/sqlite/lib/pkgconfig /opt/sqlite/include &&     tar -xzf /tmp/sqlite.tar.gz -C /tmp &&     cp \"/tmp/sqlite-autoconf-3510300/sqlite3.h\" /opt/sqlite/include/ &&     cc -O2 -fPIC -DSQLITE_CORE -DSQLITE_DEFAULT_FOREIGN_KEYS=1       -DSQLITE_ENABLE_API_ARMOR -DSQLITE_ENABLE_COLUMN_METADATA       -DSQLITE_ENABLE_DBSTAT_VTAB -DSQLITE_ENABLE_FTS3       -DSQLITE_ENABLE_FTS3_PARENTHESIS -DSQLITE_ENABLE_FTS5       -DSQLITE_ENABLE_JSON1 -DSQLITE_ENABLE_LOAD_EXTENSION=1       -DSQLITE_ENABLE_MEMORY_MANAGEMENT -DSQLITE_ENABLE_RTREE       -DSQLITE_ENABLE_STAT4 -DSQLITE_ENABLE_UNLOCK_NOTIFY       -DSQLITE_SOUNDEX -DSQLITE_THREADSAFE=1       -DSQLITE_USE_URI -DHAVE_USLEEP=1 -DHAVE_ISNAN -DHAVE_LOCALTIME_R       -c \"/tmp/sqlite-autoconf-3510300/sqlite3.c\" -o /tmp/sqlite3.o &&     ar rcs /opt/sqlite/lib/libsqlite3.a /tmp/sqlite3.o &&     printf 'prefix=/opt/sqlite\\nlibdir=${prefix}/lib\\nincludedir=${prefix}/include\\nName: sqlite3\\nDescription: pinned SQLite for Agent Space\\nVersion: 3.51.3\\nLibs: -L${libdir} -lsqlite3\\nCflags: -I${includedir}\\n' > /opt/sqlite/lib/pkgconfig/sqlite3.pc &&     rm -rf /tmp/sqlite-autoconf-* /tmp/sqlite.tar.gz /tmp/sqlite3.o",
+        "#23 329.0     Finished `release` profile [optimized] target(s) in 5m 28s",
+        "#24 [builder 20/23] RUN ! ldd /out/agent-space-mcp | grep -q libsqlite3 &&     grep -aq '3.51.3' /out/agent-space-mcp",
+        "#27 0.387 agent-space-mcp: linked SQLite 3.51.3"
+      ]
+    },
+    "focused_node_case_counts": {
+      "panel_menu_tooltip_popover_nested_modal": 1,
+      "native_and_shadow_dialog": 1,
+      "note": "Each focused Node log also includes the zero-selected-tests worker file wrapper; it is not a second functional case."
+    }
+  },
+  "scope_boundary": "Earlier two-entry tools-only qualification applies to source 7341c72c. This review uses targeted Rust/Chromium regression and a separately hashed release build; it does not relabel the earlier qualification as covering the revised source."
+}

@@ -1,0 +1,28 @@
+[
+  {
+    "observation": "main \"消息输入\"\n  e0000000001 button \"添加文件等内容\"\n  e0000000002 status \"准备就绪\"",
+    "page": {
+      "page_id": "fixture-page",
+      "url": "https://fixture.test/menu",
+      "title": "Floating panels"
+    }
+  },
+  {
+    "observation_diff": "  main \"消息输入\"\n-   e0000000001 button \"添加文件等内容\"\n+   e0000000001 button \"添加文件等内容\" [expanded]\n+   e0000000003 menu \"添加内容\"\n+     e0000000004 button \"添加照片和文件 从计算机上传\"\n+     e0000000005 button \"从资料库添加 浏览并搜索你的文件\"\n+     e0000000006 button \"创建图像 可视化呈现任何内容\"",
+    "page": {
+      "page_id": "fixture-page",
+      "url": "https://fixture.test/menu",
+      "title": "Floating panels"
+    },
+    "completed_steps": 1,
+    "total_steps": 1
+  },
+  {
+    "observation_diff": "",
+    "page": {
+      "page_id": "fixture-page",
+      "url": "https://fixture.test/menu",
+      "title": "Floating panels"
+    }
+  }
+]

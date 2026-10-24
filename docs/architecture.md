@@ -163,6 +163,8 @@ SessionManager 仍是唯一 VM 所有者。publish 在现有发布门闩中准�
 
 Server 的状态、资源及管理员配置见[接入参考](server-api.md)，两种目标的完整模板、首次初始化和入口配置见[部署指南](deployment.md)。源码检查、回归矩阵和发布资格统一见[开发指南](development.md)；确切源码/镜像与现场范围见[验证记录](validation-records.md)。
 
+浏览器观察基准由每个 MCP 连接的有界内存缓存持有，按页面/文档/观察模式隔离。worker 只计算观察及候选基准，公开响应边界移除内部状态并登记已提供的观察；网页不保存差异基准。任务仍归共享桌面所有者，查询重放历史结果不重新观察或回退连接基准。
+
 ## 受管进程
 
 Server 在 MSB guest 中运行 helper，Standalone 在本容器内复用相同 helper、执行 owner 与身份保护，不另建任务监督器。这里维护 static-http、webdav 和 desktop 的共同分发、身份、启停及日志约定；“受管”由登记的实例句柄决定。

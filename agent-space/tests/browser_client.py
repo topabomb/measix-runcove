@@ -35,16 +35,16 @@ class Client:
  def good(self,name,args=None):
   value,reply=self.finish(self.tool(name,args or {}))
   assert not reply.get('isError'),value
-  return value.get('value',value)
+  return value
  def snapshot(self,**args):
   value,reply=self.finish(self.tool('browser_snapshot',args));assert not reply.get('isError'),value
-  result=value.get('value',value)
+  result=value
   return {**result,**{k:value[k] for k in ['control','recent_tasks'] if k in value}}
  def read_browser(self,**args):return self.good('browser_read',args)
  def navigate(self,url,**args):
   value,reply=self.act([{'do':'navigate','url':url}],then='snapshot',**args)
   assert not reply.get('isError'),value
-  return value['value']
+  return value
  def fixture_js(self,code,page_id=None):
   """Browser fixture setup/readback; requires a desktop workspace, never a product tool."""
   script="const {chromium}=require('/opt/agent-tools/node_modules/playwright');(async()=>{const browser=await chromium.connectOverCDP('http://127.0.0.1:9222',{noDefaults:true,timeout:5000});const context=browser.contexts()[0];let page=context.pages()[0];"
@@ -58,7 +58,7 @@ class Client:
   return json.loads(match[1])
 
 def element(value,role,name):
- lines=value.get('elements','').splitlines()
+ lines=[line.strip() for line in value.get('observation','').splitlines()]
  match=next((line for line in lines if line.split(' ',2)[1:2]==[role] and json.dumps(name,ensure_ascii=False) in line),None)
  assert match,value
  return match.split(' ',1)[0]

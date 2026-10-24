@@ -212,7 +212,7 @@ print('stopped data child reaped after parent death')"""
   assert request('GET',path,headers=ui_headers)[0]==401
   client=Client('desktop');client.initialize()
   assert 'ui-edited' in json.dumps(tool('read',{'path':'/workspace/agent-space/artifacts/from-workbench.txt'}))
-  assert client.snapshot().get('page_id')
+  assert client.snapshot().get('page',{}).get('page_id')
   check('graceful_restart_preserves_workspace_and_expires_page_session')
   if args.full or args.tools_only:
    from qualification import verify_page_limit_restart

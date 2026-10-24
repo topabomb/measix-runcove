@@ -8,11 +8,38 @@ class StructuredBrowser(unittest.TestCase):
  def setUpClass(cls):cls.client=Client('desktop');cls.client.initialize()
  def setUp(self):reset_tabs(self.client,'http://127.0.0.1:8125/login')
  def act(self,steps,**args):
-  value,reply=self.client.act(steps,**args);self.assertFalse(reply.get('isError'),value);return value['value']
+  value,reply=self.client.act(steps,**args);self.assertFalse(reply.get('isError'),value);return value
+ def test_actual_act_feedback_example(self):
+  view=self.client.navigate('http://127.0.0.1:8125/panels')
+  request={'actions':[{'do':'click','ref':element(view,'button','Actions')},{'do':'wait','text':'Choose item'}]}
+  value,reply=self.client.finish(self.client.tool('browser_act',request))
+  self.assertFalse(reply.get('isError'),value)
+  self.assertEqual(value['completed_steps'],2);self.assertEqual(value['total_steps'],2)
+  self.assertIn('menu "Actions menu"',value['observation_diff'])
+  self.assertNotIn('layers',value);self.assertNotIn('value',value)
+  (Q/'observation-feedback.json').write_text(json.dumps({'request':request,'response':value},ensure_ascii=False,indent=2)+'\n')
+ def test_observation_baselines_are_per_connection_and_old_queries_do_not_rewind(self):
+  a=Client('desktop');a.initialize();b=Client('desktop');b.initialize()
+  self.client.fixture_js("await page.evaluate(()=>document.body.innerHTML='<section aria-label=Upload><button id=b aria-expanded=false>Add files</button><p role=status>Ready</p></section>');return true;")
+  first=a.snapshot();b.snapshot();target=first['page']['page_id']
+  self.assertNotIn('value',first);self.assertNotIn('_observation',json.dumps(first))
+  self.client.fixture_js("await page.evaluate(()=>document.querySelector('#b').setAttribute('aria-expanded','true'));return true;",target)
+  av=a.snapshot(diff=True);bv=b.snapshot(diff=True)
+  for observed in [av,bv]:
+   self.assertIn('observation_diff',observed);self.assertIn('[expanded]',observed['observation_diff'])
+   self.assertIn('- ',observed['observation_diff']);self.assertNotIn('layers',observed)
+  a.tool('browser_act',{'op':'wait','task_id':first['task_id'],'wait_secs':0})
+  self.assertEqual(a.snapshot(diff=True)['observation_diff'],'')
+  c=Client('desktop');c.initialize()
+  c.tool('browser_act',{'op':'wait','task_id':av['task_id'],'wait_secs':0})
+  self.assertIn('observation',c.snapshot(diff=True))
+  self.client.fixture_js("await page.evaluate(()=>document.querySelector('[role=status]').textContent='Selected');return true;",target)
+  a.read_browser();a.act([{'do':'wait','secs':0}],then='none')
+  delta=a.snapshot(diff=True)['observation_diff'];self.assertIn('Ready',delta);self.assertIn('Selected',delta)
  def test_parameter_normalization_and_semantic_wait(self):
   initial=self.client.snapshot();email=element(initial,'textbox','Email')
   value,reply=self.client.act([{'do':'fill','ref':email,'text':'kept@example.com'}],wait_secs=999)
-  self.assertFalse(reply.get('isError'),value);self.assertNotIn('tabs',value['value']);self.assertNotIn('health',value['value'])
+  self.assertFalse(reply.get('isError'),value);self.assertNotIn('tabs',value);self.assertNotIn('health',value)
   self.assertIn('control',value)
   for action in ['wait','cancel']:
    response=self.client.tool('browser_act',{'op':action,'task_id':value['task_id'],'actions':[],
@@ -29,24 +56,24 @@ class StructuredBrowser(unittest.TestCase):
   self.client.fixture_js("await page.evaluate(()=>document.body.innerHTML='<input aria-label=Prompt><img alt=Generated><p hidden>Hidden</p>');return true;")
   self.act([{'do':'wait','text':'prompt','timeout_secs':1},{'do':'wait','text':'GENERATED','timeout_secs':1},{'do':'wait','gone':'Hidden','timeout_secs':1}])
   failed,reply=self.client.act([{'do':'wait','gone':'prompt','timeout_secs':1}])
-  self.assertTrue(reply.get('isError'));self.assertEqual(failed['error']['code'],'TIMEOUT');self.assertIn('page_id',failed['value']);self.assertNotIn('stderr',failed.get('logs',{}))
+  self.assertTrue(reply.get('isError'));self.assertEqual(failed['error']['code'],'TIMEOUT');self.assertIn('page_id',failed['page']);self.assertNotIn('stderr',failed.get('logs',{}))
  def test_compact_snapshot_list_and_stable_task_timing(self):
   value,reply=self.client.finish(self.client.tool('browser_snapshot',{}))
   self.assertFalse(reply.get('isError'),value)
   self.assertNotIn('started_at',value)
   self.assertGreaterEqual(value['duration_secs'],0)
-  for key in ['tabs','health','layers','truncated']:self.assertNotIn(key,value['value'])
+  for key in ['tabs','health','layers','truncated']:self.assertNotIn(key,value)
   again=text(self.client.tool('browser_act',{'op':'wait','task_id':value['task_id'],'wait_secs':0}))
   self.assertNotIn('started_at',again);self.assertEqual(again['duration_secs'],value['duration_secs'])
   listed=self.client.good('browser_snapshot',{'view':'tabs','page_id':'irrelevant','ref':'invalid','diff':True,'image':True,'text':True})
-  self.assertTrue(listed['tabs']);self.assertNotIn('elements',listed);self.assertNotIn('image',listed)
-  self.assertTrue(self.client.good('browser_snapshot',{'view':' '})['page_id'])
+  self.assertTrue(listed['tabs']);self.assertNotIn('observation',listed);self.assertNotIn('image',listed)
+  self.assertTrue(self.client.good('browser_snapshot',{'view':' '})['page']['page_id'])
   for tool,args,has_start in [('browser_read',{},False),('screen_observe',{'view':'page'},False),('screen_observe',{'view':'page','count':2,'interval_secs':0},True),('browser_act',{'actions':[{'do':'wait','secs':0}]},True)]:
    timing,reply=self.client.finish(self.client.tool(tool,args));self.assertFalse(reply.get('isError'),timing)
    self.assertEqual('started_at' in timing,has_start,timing);self.assertGreaterEqual(timing['duration_secs'],0)
    if has_start:self.assertRegex(timing['started_at'],r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
 
-  page=value['value']['page_id']
+  page=value['page']['page_id']
   self.act([{'do':'tab','action':'new','url':'data:text/html,<title>Other '+str(i)+'</title>'} for i in range(3)],then='none')
   current=self.client.good('browser_snapshot',{'page_id':page})
   pages=self.client.good('browser_snapshot',{'view':'tabs'})
@@ -96,16 +123,16 @@ class StructuredBrowser(unittest.TestCase):
  def test_popups_are_identified_readable_and_closable(self):
   view=self.client.navigate('http://127.0.0.1:8125/popup');result=self.act([{'do':'click','ref':element(view,'link','Open invoices in new tab')}]);self.assertEqual(len(result['popups']),1,result)
   page=result['popups'][0]['page_id'];tables=self.client.read_browser(page_id=page,extract='table');self.assertEqual(len(tables['tables'][0]['rows']),30)
-  self.act([{'do':'tab','action':'focus','page_id':page}]);self.assertEqual(self.client.snapshot()['page_id'],page)
+  self.act([{'do':'tab','action':'focus','page_id':page}]);self.assertEqual(self.client.snapshot()['page']['page_id'],page)
   self.act([{'do':'tab','action':'close','page_id':page}]);self.assertEqual(len(self.client.snapshot(view='tabs')['tabs']),1)
  def test_js_menu_popover_tooltip_and_nested_modal(self):
   view=self.client.navigate('http://127.0.0.1:8125/panels');self.act([{'do':'click','ref':element(view,'button','Actions')}]);view=self.client.snapshot()
-  menu=next(l for l in view['layers'] if l['role']=='menu');self.assertTrue(menu['refs']);self.act([{'do':'click','ref':element(view,'menuitem','Choose item')}])
-  view=self.client.snapshot();self.act([{'do':'hover','ref':element(view,'button','Hover for help')}]);view=self.client.snapshot();self.assertTrue(any(l['role']=='tooltip' for l in view['layers']),view)
+  self.assertIn('menu',view['observation']);self.act([{'do':'click','ref':element(view,'menuitem','Choose item')}])
+  view=self.client.snapshot();self.act([{'do':'hover','ref':element(view,'button','Hover for help')}]);view=self.client.snapshot();self.assertIn('tooltip',view['observation'])
   self.client.fixture_js('await page.mouse.move(0,0);return true;')
-  view=self.client.snapshot();self.act([{'do':'click','ref':element(view,'button','Open popover')}]);view=self.client.snapshot();self.assertIn('Popover content',json.dumps(view['layers']))
+  view=self.client.snapshot();self.act([{'do':'click','ref':element(view,'button','Open popover')}]);view=self.client.snapshot();self.assertIn('Popover content',view['observation'])
   self.act([{'do':'click','ref':element(view,'button','Confirm popover')}]);view=self.client.snapshot();self.act([{'do':'click','ref':element(view,'button','Open nested modal')}]);view=self.client.snapshot()
-  self.act([{'do':'click','ref':element(view,'button','Open inner modal')}]);view=self.client.snapshot();self.assertEqual(len([l for l in view['layers'] if l['role']=='dialog']),2)
+  self.act([{'do':'click','ref':element(view,'button','Open inner modal')}]);view=self.client.snapshot();self.assertEqual(view['observation'].count('dialog '),2)
   self.act([{'do':'click','ref':element(view,'button','Finish nested')}]);self.assertIn('nested finished',self.client.read_browser()['text'])
  def test_dialog_policy_and_bounded_reads(self):
   view=self.client.navigate('http://127.0.0.1:8125/dialogs');buttons=self.client.fixture_js('return await page.locator("button").allTextContents();')
@@ -115,7 +142,7 @@ class StructuredBrowser(unittest.TestCase):
   read=self.client.read_browser(max_chars=5);self.assertLessEqual(len(read['text']),5);self.assertTrue(read['truncated'])
   self.client.navigate('http://127.0.0.1:8125/table');table=self.client.read_browser(extract='table');self.assertNotIn('truncated',table);self.assertEqual(len(table['tables'][0]['rows']),30)
  def test_screenshot_coordinates_and_navigation_invalidation(self):
-  self.client.navigate('http://127.0.0.1:8125/canvas');value,reply=self.client.finish(self.client.tool('browser_snapshot',{'image':True}));view=value['value'];image=view['image']
+  self.client.navigate('http://127.0.0.1:8125/canvas');value,reply=self.client.finish(self.client.tool('browser_snapshot',{'image':True}));view=value;image=view['image']
   width,height=image_dimensions(reply);self.assertEqual(set(image),{'image_id','size','format'});self.assertLessEqual(max(width,height),2560)
   box=self.client.fixture_js("return await page.locator('canvas').boundingBox();")
   document=self.client.fixture_js('return await page.evaluate(()=>({width:Math.max(innerWidth,document.documentElement.scrollWidth),height:Math.max(innerHeight,document.documentElement.scrollHeight)}));')
@@ -142,7 +169,7 @@ class StructuredBrowser(unittest.TestCase):
     file=data['files'][0];self.assertEqual(file['format'],'PNG')
     saved=self.client.tool('read',{'path':file['path'],'multimodal':True});self.assertEqual(next(c['data'] for c in saved['content'] if c['type']=='image'),payload['data'])
  def test_pending_native_js_dialog_uses_desktop_without_passive_dismissal(self):
-  view=self.client.navigate('http://127.0.0.1:8125/dialogs');target=view['page_id']
+  view=self.client.navigate('http://127.0.0.1:8125/dialogs');target=view['page']['page_id']
   expression="document.querySelector('#out').textContent=confirm('Pending user decision')?'accepted pending':'dismissed pending'"
   script="(async()=>{const t=(await(await fetch('http://127.0.0.1:9222/json/list')).json()).find(t=>t.id==="+json.dumps(target)+");const w=new WebSocket(t.webSocketDebuggerUrl);w.onopen=()=>{w.send(JSON.stringify({id:1,method:'Runtime.evaluate',params:{expression:"+json.dumps(expression)+"}}));setTimeout(()=>process.exit(),300);};})();"
   self.client.good('bash',{'cmd':'node -e '+shlex.quote(script)})
@@ -156,7 +183,7 @@ class StructuredBrowser(unittest.TestCase):
  def test_unicode_text_limits_are_valid_in_the_rust_task_owner(self):
   self.client.fixture_js("await page.evaluate(()=>{document.title='😀'.repeat(201);document.body.innerHTML='<main>'+ '😀'.repeat(5000)+'</main>';});return true;")
   read=self.client.read_browser(max_chars=1);self.assertEqual(read['text'],'😀');self.assertEqual(read['chars'],5000);self.assertTrue(read['truncated'])
-  self.assertTrue(self.client.snapshot(text=True)['text'])
+  self.assertTrue(self.client.snapshot(text=True)['observation'])
   self.client.fixture_js("await page.evaluate(()=>document.body.innerHTML='<textarea aria-label=Multiline></textarea>');return true;")
   field=self.client.read_browser(extract='fields')['fields'][0];multiline='中文\nhello "quoted" \\ 🙂'
   self.act([{'do':'fill','ref':field['ref'],'text':multiline}])

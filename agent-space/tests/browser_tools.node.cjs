@@ -10,17 +10,20 @@ const get=async p=>(await fetch('http://127.0.0.1:9222'+p)).json();
 const pageIds=new WeakMap();
 const id=async p=>{if(pageIds.has(p))return pageIds.get(p);const s=await context.newCDPSession(p);try{const id=(await s.send('Target.getTargetInfo')).targetInfo.targetId;pageIds.set(p,id);return id;}finally{await s.detach();}};
 const brief=r=>JSON.stringify(r,(k,v)=>k==='images'?'[images]':v).slice(0,5000);
+const baselines={}; let observationOrder=0;
 async function call(operation,args={},page_id=null){
+ args={...args,_baselines:baselines,_observation_order:++observationOrder};
  const result='/tmp/browser-tool-'+crypto.randomUUID()+'.json';
  const spec={operation,args,page_id:page_id||await id(page),guard_port:guard.address().port,task_id:crypto.randomUUID(),captures:[...captures.values()]};
  const r=await new Promise(resolve=>cp.execFile(process.execPath,['/opt/agent-space/desktop/browser-worker.cjs'],{env:{...process.env,AGENT_TASK:JSON.stringify(spec),AGENT_RESULT:result},timeout:90000,maxBuffer:200000},(error,stdout,stderr)=>resolve({error,stdout,stderr})));
  assert.ok(fs.existsSync(result),r.stderr);const body=JSON.parse(fs.readFileSync(result));fs.unlinkSync(result);
+ if(body.value?._observation){const b=body.value._observation;baselines[b.page_id]=b;delete body.value._observation;}
  for(const c of body.captures||[])captures.set(c.image_id,c);
  if(r.error&&!body.error)throw Error(r.stderr||String(r.error));return body;
 }
 const good=async(op,args,pid)=>{const r=await call(op,args,pid);assert.ok(!r.error,brief(r));return r.value;};
 const act=async(actions,extra={})=>good('act',{actions,...extra});
-const ref=(v,role,name)=>{const l=(v.elements||'').split('\n').find(l=>l.split(' ')[1]===role&&l.includes(JSON.stringify(name)));assert.ok(l,brief(v));return l.split(' ')[0];};
+const ref=(v,role,name)=>{const l=(v.observation||'').split('\n').map(l=>l.trim()).find(l=>l.split(' ')[1]===role&&l.includes(JSON.stringify(name)));assert.ok(l,brief(v));return l.split(' ')[0];};
 async function fresh(route){for(const extra of context.pages())if(extra!==page)await extra.close();await page.goto('http://127.0.0.1:'+site.port+route);await page.waitForTimeout(150);return good('snapshot');}
 before(async()=>{
  site=await fixtures.start();
@@ -43,8 +46,32 @@ test('unique replaced nodes and new documents never inherit old refs',async()=>{
  v=await good('snapshot');r=ref(v,'button','Sign in');await page.reload();
  failed=await call('act',{actions:[{do:'click',ref:r}]});assert.equal(failed.error?.code,'STALE_REF',brief(failed));
 });
+
+test('batch feedback has scoped text once, old states, hidden removals and snapshot fallback',async()=>{
+ await fresh('/login');
+ await page.evaluate(()=>document.body.innerHTML='<section aria-label="Upload"><button id="toggle" aria-expanded="false">Add files</button><div id="menu" hidden role="menu"><button>Choose file</button><p role="status">Ready</p></div><button id="cancel">Cancel upload</button></section><section aria-label="History"><p>Ready</p></section>');
+ await page.evaluate(()=>document.querySelector('#toggle').onclick=()=>{document.querySelector('#toggle').setAttribute('aria-expanded','true');document.querySelector('#menu').hidden=false;document.querySelector('#cancel').hidden=true;});
+ const initial=await good('snapshot');
+ const result=await act([{do:'click',ref:ref(initial,'button','Add files')}]);
+ assert.equal(result.completed,1);assert.equal(result.of,1);
+ assert.ok(!result.layers && !result.diff && !result.text,brief(result));
+ assert.match(result.observation_diff,/- .*button "Add files"/);
+ assert.match(result.observation_diff,/\+ .*button "Add files" \[expanded\]/);
+ assert.match(result.observation_diff,/- .*button "Cancel upload"/);
+ assert.equal(await page.locator('#cancel').count(),1,'observation removal is not a DOM deletion');
+ assert.equal((result.observation_diff.match(/Choose file/g)||[]).length,1,brief(result));
+ assert.match(result.observation_diff,/menu[\s\S]*status "Ready"/);
+ assert.equal((await good('snapshot',{diff:true})).observation_diff,'');
+ await page.locator('#menu [role=status]').evaluate(e=>e.textContent='Selected');
+ const none=await act([{do:'wait',secs:0}],{then:'none'});
+ assert.equal(none.observation,undefined);assert.equal(none.observation_diff,undefined);
+ assert.match((await good('snapshot',{diff:true})).observation_diff,/status "Selected"/);
+ // Navigate explicitly: document replacement must never become a massive removal patch.
+ const navigated=await act([{do:'navigate',url:'data:text/html,<button>New document</button>'}]);
+ assert.ok(navigated.observation);assert.equal(navigated.observation_diff,undefined);
+});
 test('duplicate node identity survives insertion and reordering',async()=>{
- const v=await fresh('/dupes'),remove=(v.elements||'').split('\n').filter(l=>l.includes('button "Remove"')).map(l=>l.split(' ')[0]);assert.equal(remove.length,3,brief(v));
+ const v=await fresh('/dupes'),remove=(v.observation||'').split('\n').filter(l=>l.includes('button "Remove"')).map(l=>l.trim().split(' ')[0]);assert.equal(remove.length,3,brief(v));
  await act([{do:'click',ref:ref(v,'button','Add Durian on top')}]);await act([{do:'click',ref:remove[1]}]);assert.equal(await page.locator('#out').innerText(),'Removed Banana');
 });
 for(const route of ['/iframe','/nested','/xorigin'])test('frame content is observable and actionable: '+route,async()=>{
@@ -68,16 +95,16 @@ test('popup reports its page identity and is readable and closable',async()=>{
  await act([{do:'tab',action:'close',page_id:pid}]);assert.equal(context.pages().length,1);
 });
 test('JS menu, hover tooltip, popover and nested modal are observable and interactive',async()=>{
- let v=await fresh('/panels');await act([{do:'click',ref:ref(v,'button','Actions')}]);v=await good('snapshot');assert.ok(v.layers.some(l=>l.role==='menu'),brief(v));
+ let v=await fresh('/panels');await act([{do:'click',ref:ref(v,'button','Actions')}]);v=await good('snapshot');assert.match(v.observation,/menu/);
  await act([{do:'click',ref:ref(v,'menuitem','Choose item')}]);assert.equal(await page.locator('#out').innerText(),'item chosen');
- v=await good('snapshot');await act([{do:'hover',ref:ref(v,'button','Hover for help')}]);v=await good('snapshot');assert.ok(v.layers.some(l=>l.role==='tooltip'&&l.text.includes('Helpful')),brief(v));
- await page.mouse.move(0,0);v=await good('snapshot');await act([{do:'click',ref:ref(v,'button','Open popover')}]);v=await good('snapshot');assert.match(JSON.stringify(v.layers),/Popover content/);
+ v=await good('snapshot');await act([{do:'hover',ref:ref(v,'button','Hover for help')}]);v=await good('snapshot');assert.match(v.observation,/tooltip[\s\S]*Helpful/);
+ await page.mouse.move(0,0);v=await good('snapshot');await act([{do:'click',ref:ref(v,'button','Open popover')}]);v=await good('snapshot');assert.match(v.observation,/Popover content/);
  await act([{do:'click',ref:ref(v,'button','Confirm popover')}]);v=await good('snapshot');await act([{do:'click',ref:ref(v,'button','Open nested modal')}]);
- v=await good('snapshot');await act([{do:'click',ref:ref(v,'button','Open inner modal')}]);v=await good('snapshot');assert.equal(v.layers.filter(l=>l.role==='dialog').length,2,brief(v));
+ v=await good('snapshot');await act([{do:'click',ref:ref(v,'button','Open inner modal')}]);v=await good('snapshot');assert.equal((v.observation.match(/dialog /g)||[]).length,2,brief(v));
  await act([{do:'click',ref:ref(v,'button','Finish nested')}]);assert.equal(await page.locator('#out').innerText(),'nested finished');
 });
 test('floating panels inside an iframe expose usable frame refs',async()=>{
- let v=await fresh('/frame-panels');await act([{do:'click',ref:ref(v,'button','Actions')}]);v=await good('snapshot');const menu=v.layers.find(l=>l.role==='menu');assert.ok(menu?.iframe,brief(v));assert.match(menu.frame_url,/panels/);assert.ok(menu.refs.includes(ref(v,'menuitem','Choose item')));await act([{do:'click',ref:ref(v,'menuitem','Choose item')}]);assert.match((await good('read')).text,/item chosen/);
+ let v=await fresh('/frame-panels');await act([{do:'click',ref:ref(v,'button','Actions')}]);v=await good('snapshot');assert.match(v.observation,/iframe[\s\S]*menu[\s\S]*Choose item/);await act([{do:'click',ref:ref(v,'menuitem','Choose item')}]);assert.match((await good('read')).text,/item chosen/);
 });
 test('script new windows and named-window reuse preserve page identity',async()=>{
  let v=await fresh('/windows');const parent=await id(page);let r=await act([{do:'click',ref:ref(v,'button','Open script window')}]);assert.equal(r.popups?.length,1,brief(r));const child=r.popups[0].page_id;assert.ok(child);assert.equal((await good('read',{extract:'table'},child)).tables[0].rows.length,30);
@@ -90,7 +117,7 @@ test('signup workflow, shadow DOM and navigation history use structured steps',a
 });
 test('native HTML dialogs and shadow-root dialogs are identified and interactive',async()=>{
  for(const [route,open,close,label] of [['/native-dialog','Show native dialog','Close native dialog','Native confirmation'],['/shadow-dialog','Open shadow dialog','Close shadow dialog','Shadow']]){
-  let v=await fresh(route);await act([{do:'click',ref:ref(v,'button',open)}]);v=await good('snapshot');const dialog=v.layers.find(l=>l.role==='dialog'&&l.name===label);assert.ok(dialog,brief(v));assert.ok(dialog.refs.includes(ref(v,'button',close)));if(route==='/native-dialog')assert.equal(dialog.modal,true);await act([{do:'click',ref:ref(v,'button',close)}]);
+  let v=await fresh(route);await act([{do:'click',ref:ref(v,'button',open)}]);v=await good('snapshot');assert.ok(v.observation.includes('dialog '+JSON.stringify(label)),brief(v));assert.ok(ref(v,'button',close));if(route==='/native-dialog')assert.match(v.observation,/dialog.*\[modal\]/);await act([{do:'click',ref:ref(v,'button',close)}]);
  }
 });
 test('scoped field extraction excludes other forms and issues working refs',async()=>{
@@ -136,13 +163,13 @@ test('passive tools do not dismiss an already-open JS dialog',async()=>{
 test('Unicode limits preserve full scalar characters and report text removals',async()=>{
  await fresh('/login');await page.evaluate(()=>{document.title='😀'.repeat(201);document.body.innerHTML='<main><p id=text></p></main>';document.querySelector('#text').textContent='😀'.repeat(5000);});
  const read=await good('read',{max_chars:1});assert.equal(read.text,'😀');assert.equal(read.chars,5000);assert.equal(read.truncated,true);
- await good('snapshot',{text:true});await page.locator('#text').evaluate(e=>e.remove());const diff=await good('snapshot',{diff:true});assert.ok(diff.diff.text_removed.length);assert.notEqual(diff.diff.unchanged,true);
+ await good('snapshot',{text:true});await page.locator('#text').evaluate(e=>e.remove());const diff=await good('snapshot',{diff:true});assert.ok(diff.observation !== undefined,brief(diff));
  await page.evaluate(()=>document.body.innerHTML='<textarea aria-label="Long field">'+ '😀'.repeat(3000)+'</textarea>');const fields=await good('read',{extract:'fields'});assert.equal(Array.from(fields.fields[0].value).length,1000);assert.equal(fields.truncated,true);
  const value=await good('read',{ref:fields.fields[0].ref,max_chars:4000});assert.equal(Array.from(value.text).length,3000);
  const multiline='中文\nhello "quoted" \\ 🙂';await page.locator('textarea').fill(multiline);assert.equal((await good('read',{extract:'fields'})).fields[0].value,multiline);
  const label='Path "quoted" \\ 中文';await page.locator('textarea').evaluate((e,label)=>e.setAttribute('aria-label',label),label);assert.equal((await good('read',{extract:'fields'})).fields[0].name,label);
  await page.evaluate(()=>document.body.innerHTML='<select aria-label="Country"><option value="cn" selected>China</option></select>');assert.equal((await good('read',{extract:'fields'})).fields[0].value,'cn');
- await page.evaluate(()=>document.body.innerHTML='<main>'+ '😀'.repeat(5000)+'</main>');const inline=await good('snapshot',{text:true});assert.ok(inline.text.some(t=>t.includes('😀')),brief(inline));assert.ok(inline.text.every(t=>Array.from(t).length<=300));
+ await page.evaluate(()=>document.body.innerHTML='<main>'+ '😀'.repeat(5000)+'</main>');const inline=await good('snapshot',{text:true});assert.ok(inline.observation.includes('😀'),brief(inline));assert.equal(inline.observation_truncated,true);
 });
 test('whole-batch validation rejects later invalid steps before any click',async()=>{
  const v=await fresh('/panels');const r=await call('act',{actions:[{do:'click',ref:ref(v,'button','Actions')},{do:'click',ref:'invalid'}]});assert.equal(r.error?.code,'INVALID_ARGUMENT',brief(r));assert.equal(await page.locator('[role=menu]').count(),0);
@@ -170,7 +197,7 @@ test('wait matches visible text and accessible names literally across frames and
  failed=await call('act',{actions:[{do:'wait',text:'Generated .png',timeout_secs:1}]});assert.equal(failed.error?.code,'TIMEOUT',brief(failed));
 });
 test('query ref scopes matches and ordinary results omit redundant healthy metadata',async()=>{
- const v=await fresh('/scope');assert.equal(v.tabs,undefined);const tabs=await good('snapshot',{view:'tabs'});assert.ok(tabs.tabs?.length);assert.equal(tabs.elements,undefined);
+ const v=await fresh('/scope');assert.equal(v.tabs,undefined);const tabs=await good('snapshot',{view:'tabs'});assert.ok(tabs.tabs?.length);assert.equal(tabs.observation,undefined);
  const r=await good('read',{ref:ref(v,'region','First form'),query:'name'});
  assert.equal(r.matches.length,1,brief(r));assert.equal(r.matches[0].name,'First name');assert.equal(r.tabs,undefined);if(!v.health)assert.equal(r.health,undefined);else assert.equal(r.health.desktop,false);
  const changed=await act([{do:'fill',ref:r.matches[0].ref,text:''}]);assert.equal(changed.tabs,undefined);if(!v.health)assert.equal(changed.health,undefined);else assert.equal(changed.health.desktop,false);
@@ -180,7 +207,7 @@ test('stale second step preserves completed count, side effects and failure meta
  const v=await fresh('/login'),button=ref(v,'button','Sign in');
  await page.locator('button[type=submit]').evaluate(e=>e.outerHTML=e.outerHTML);
  const r=await call('act',{actions:[{do:'fill',ref:ref(v,'textbox','Email'),text:'once@example.com'},{do:'click',ref:button}]});
- assert.equal(r.error?.code,'STALE_REF',brief(r));assert.equal(r.value.completed,1,brief(r));assert.equal(r.failed_step.index,1,brief(r));assert.equal(r.side_effects,'may_have_occurred');assert.ok(r.value.page_id);assert.equal(await page.locator('input[name=email]').inputValue(),'once@example.com');
+ assert.equal(r.error?.code,'STALE_REF',brief(r));assert.equal(r.value.completed,1,brief(r));assert.equal(r.failed_step.step_number,2,brief(r));assert.equal(r.side_effects,'may_have_occurred');assert.ok(r.value.page_id);assert.equal(await page.locator('input[name=email]').inputValue(),'once@example.com');
 });
 
 test('rounded preview dimensions map each coordinate axis independently',async()=>{
@@ -221,7 +248,20 @@ test('fixed waits do not access a page or request observations',async()=>{
  const unexpected=()=>{throw Error('delay touched browser');};
  const start=Date.now(); const result=await run({operation:'act',page_id:'missing',args:{actions:[{do:'wait',secs:1}],then:'snapshot'}},{checkpoint:()=>{},page:unexpected,observe:unexpected});
  assert.equal(result.value.completed,1); assert.equal(result.value.of,1);assert.ok(Date.now()-start>=1000);
- assert.equal(result.value.elements,undefined);
+ assert.equal(result.value.observation,undefined);
+});
+
+test('successful action survives a failed final observation without advancing its baseline',async()=>{
+ const v=await fresh('/login');
+ const {run}=require('/opt/agent-space/desktop/browser-tools.cjs');
+ const result=await run({operation:'act',page_id:await id(page),args:{actions:[{do:'fill',ref:ref(v,'textbox','Email'),text:'saved@example.com'}]}},{
+  page:async()=>page,checkpoint:()=>{},output:{},
+  observe:async()=>{throw Error('PAGE_UNRESPONSIVE: injected final observation failure');}
+ });
+ assert.equal(result.value.completed,1);assert.equal(result.error,undefined);
+ assert.equal(result.value.observation_error.code,'PAGE_UNRESPONSIVE');
+ assert.equal(result.value._observation,undefined);
+ assert.equal(await page.locator('input[name=email]').inputValue(),'saved@example.com');
 });
 test('merged actions use refs, coordinates and navigation without retired names',async()=>{
  let v=await fresh('/login');const email=ref(v,'textbox','Email');

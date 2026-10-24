@@ -1,0 +1,81 @@
+[
+  {
+    "page_id": "fixture-page",
+    "url": "https://fixture.test/menu",
+    "title": "Floating panels",
+    "elements": "e0000000001 button \"添加文件等内容\"\neE42PBmpMl2 status =\"准备就绪\"",
+    "element_count": 2
+  },
+  {
+    "completed": 1,
+    "of": 1,
+    "page_id": "fixture-page",
+    "url": "https://fixture.test/menu",
+    "title": "Floating panels",
+    "diff": {
+      "added": [
+        "e0000000002 menu \"添加内容\"",
+        "e0000000003 button \"添加照片和文件 从计算机上传\"",
+        "e0000000004 button \"从资料库添加 浏览并搜索你的文件\"",
+        "e0000000005 button \"创建图像 可视化呈现任何内容\""
+      ],
+      "changed": [
+        "e0000000001 button \"添加文件等内容\" [expanded]"
+      ]
+    },
+    "layers": [
+      {
+        "role": "menu",
+        "name": "添加内容",
+        "text": "添加照片和文件 从计算机上传从资料库添加 浏览并搜索你的文件创建图像 可视化呈现任何内容",
+        "modal": false,
+        "position": "static",
+        "z_index": "auto",
+        "coordinate_space": "frame_css",
+        "box": {
+          "x": 20,
+          "y": 44,
+          "width": 1400,
+          "height": 24
+        },
+        "refs": [
+          "e0000000002",
+          "e0000000003",
+          "e0000000004",
+          "e0000000005"
+        ]
+      }
+    ]
+  },
+  {
+    "page_id": "fixture-page",
+    "url": "https://fixture.test/menu",
+    "title": "Floating panels",
+    "diff": {
+      "unchanged": true
+    },
+    "layers": [
+      {
+        "role": "menu",
+        "name": "添加内容",
+        "text": "添加照片和文件 从计算机上传从资料库添加 浏览并搜索你的文件创建图像 可视化呈现任何内容",
+        "modal": false,
+        "position": "static",
+        "z_index": "auto",
+        "coordinate_space": "frame_css",
+        "box": {
+          "x": 20,
+          "y": 44,
+          "width": 1400,
+          "height": 24
+        },
+        "refs": [
+          "e0000000002",
+          "e0000000003",
+          "e0000000004",
+          "e0000000005"
+        ]
+      }
+    ]
+  }
+]

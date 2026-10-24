@@ -56,8 +56,8 @@ Standalone 的 Agent 可管理项目和用户态依赖，系统依赖由部署�
 
 | 工具 | 参数与默认值 | 返回 |
 |---|---|---|
-| browser_snapshot | view=page/tabs；page_id 可选；diff=false；ref 可选；image=false；text=false；recent_tasks_limit=0，0..10 | 当前页元素 ref、浮层和控制模式；异常时附健康信息；view=tabs 单独列页；可附标注整页图 |
-| browser_act | op=execute；actions 1..20；page_id 可选；then=diff；元素操作等待 action_timeout_secs=5，1..30；timeout_secs=120，1..600 | 有序动作结果、页面变化、弹出页、下载及失败位置；超过首次8秒返回 task_id |
+| browser_snapshot | view=page/tabs；page_id 可选；diff=false；ref 可选；image=false；text=false；recent_tasks_limit=0，0..10 | 当前页精简语义树与 ref、控制模式；异常时附健康信息；view=tabs 单独列页；可附标注整页图 |
+| browser_act | op=execute；actions 1..20；page_id 可选；then=diff；元素操作等待 action_timeout_secs=5，1..30；timeout_secs=120，1..600 | 完成步数、批末观察差异、弹出页、下载及失败位置；超过首次8秒返回 task_id |
 | browser_read | page_id/ref 可选；默认正文 max_chars=4000，1..20000；或 query；或 extract=table/links/fields | 有界正文、搜索或结构化提取，包含 iframe 内容及截断标记 |
 | screen_observe | view 必填 page/desktop；page_id 可选；count=1，1..8；interval_secs=1；save_original=false；save_dir 可选 | 单图或定时序列，终态按顺序返回图像；保存时附 files |
 
@@ -94,7 +94,9 @@ ref 绑定实际元素和所属文档。节点存续时跨调用稳定；同名�
 
 所有网页图片统一为**当前已渲染文档从顶部到底部的整页图**，不需要 full_page 参数。`browser_snapshot(image=true)` 附带带 ref 标注的整页图；`screen_observe(view="page")` 返回无标注整页图，可定时连续捕获或保存原图。两者共用捕获、文档校验和坐标映射。完整文档包含 iframe 在父页面上实际呈现的区域；iframe 内部独立滚动的全部文档、尚未加载的无限列表不等于父页面整页范围。语义观察和读取仍进入同源、嵌套和跨域 iframe，不受截图范围限制。
 
-浮层单独返回 role/name/text/modal、所在 frame_url、区域与关联 refs，包括 JS 菜单、tooltip、popover、模态框和可识别的定位面板；截断显式标记。iframe 控件给出所属 iframe 层级。view=tabs 返回的每个页面具备独立 page_id，动作触发的弹出页也在 popups 报告；用该 ID 继续观察、读取、聚焦或关闭。浏览器原生窗口和个人资料选择器以 browser_ui/health 标明，使用桌面截图和桌面动作。已经弹出的原生 alert/confirm/prompt 可能阻塞渲染器，snapshot 返回 page_blocked，仍保留页面身份和异常健康信息；桌面截图可观察内容，press(target=desktop)、desktop_type 和 click 可处理。只读观察不自动关闭对话框。
+观察将控件、独立文字、语义区域及真实浮层合成一棵精简树。行包含可操作 ref、ARIA role、名称和状态；缩进保留区域、列表项、对话框和 iframe 等必要归属。普通无语义包装压缩，同源且已被控件名称表达的文字不重复；不同区域相同的文字仍保留。text=true 允许长正文摘录进入同一棵树，不返回第二份 text 列表。面板依据明确语义、原生 dialog/popover 或展开控件的 aria-controls 识别，不仅凭 fixed/absolute 定位认定浮层；不会猜测触发控件或业务价值。普通观察不返回独立 layers、CSS 坐标、position 或 z_index。
+
+view=tabs 返回每个页面的 page_id；动作触发的弹出页也在 popups 报告。浏览器原生窗口和资料选择器以 browser_ui/health 标明，使用桌面截图和桌面动作。已弹出的 alert/confirm/prompt 可能阻塞渲染器，snapshot 返回 page_blocked，保留页面身份和健康信息；只读观察不自动关闭对话框。
 
 browser_read 的 query 在所选页面及其 iframe 的已观察元素名称或文本中查找不区分大小写的子串，最多20项；可用 ref 限定子树，与 extract 同传仍报错。query/extract 使用各自的结果上限，忽略 max_chars；table 最多5表、每表100数据行、每行40格；links 最多200项；fields 最多150项、单值最多1000字符，保留控件原值（含换行和 select 的 option value），字段 ref 立即可操作；较长控件值可用 ref 正文读取。正文默认主内容并包含各 frame，ref 则限于该子树。内容、单元格或集合达到上限时均标记 truncated。
 
@@ -104,7 +106,23 @@ browser_read 的 query 在所选页面及其 iframe 的已观察元素名称或�
 {"actions":[{"do":"fill","ref":"eabcdefghij","text":"query"},{"do":"click","ref":"eklmnopqrst"}]}
 ```
 
-整批参数在执行前校验；运行时遇错停止，已发生的动作不回滚。默认 then=diff；可选 snapshot 或 none。将已有可靠 ref 的步骤合并；需要操作前一步新出现的控件时，先读取反馈取得新 ref。元素动作自带可操作等待，优先等待页面条件而非固定睡眠。失败保存 error、failed_step、已完成步数、side_effects 和可用当前观察；任务本身保持失败，后续查询不会变为成功。副作用依据动作是否已开始记录，不按错误码猜测；上传按钮已点击后才发现文件选择器不兼容，也必须报告可能已发生副作用。
+整批参数在执行前校验；运行时遇错停止，已发生的动作不回滚。默认 then=diff，可选 snapshot 或 none；整批结束后观察一次。失败时尽力附当前诊断快照，即使 then=none。观察失败另报 observation_error，不伪装成空差异，也不改变已成功动作的任务状态。超时/取消保留已产生的部分结果，不额外启动昂贵观察。
+
+公开 MCP 结果没有 value 包装。state/task_id 表达任务状态与身份；completed_steps/total_steps 表达已完成和总步骤数；page 包含 page_id/url/title，未涉及页面时不补造。失败保留 error、failed_step（step_number 从1开始）、side_effects、已完成数量和已有 files/popups。失败步骤即使已经产生部分副作用也不计入 completed_steps。任务成功不代表网站业务成功；不自动重试或生成业务结论。内部 worker 的 value/checkpoint 封装仍由原任务所有者管理。
+
+observation 是有界语义快照，observation_diff 是相对于该 MCP 会话此前返回观察的多行差异，两者互斥。差异使用 + 新行、- 旧行、无标记上下文；同 ref 的前后行表示描述变化，消失行保留旧名称。它是观察集合变化，不证明 DOM 删除，也不证明变化由本批动作导致。没有变化为 observation_diff=""；未观察则两字段均省略。
+
+```diff
+  region "文件上传"
+-   eabcdefghij button "添加文件" [expanded=false]
++   eabcdefghij button "添加文件" [expanded]
++   menu
++     eklmnopqrst button "从计算机上传"
+```
+
+基准属于 MCP 连接而非网页或共享空间，按页面、文档和观察模式匹配；只接受该连接生成且已提供的观察。跨连接查询任务时，保存的差异转换为其快照，不引入对方基准。read、截图、then=none 和子树观察不推进基准；任务查询返回已保存结果，不重新采集，首次取回本连接生成的观察可以登记基准，旧结果重复取回不会倒退基准。无可用基准、导航、模式变化、重排/移位、并发结果的基准已过期或不可靠/过大的差异返回 observation。连接最多缓存8页，重连或缓存淘汰后的首次观察返回快照；这是有界会话缓存，不写网页或持久工作区，也不增加任务服务。
+
+语义输出最多150行、24000个字符，每项内容最多300 Unicode字符；截断明确返回 observation_truncated=true，未采集内容不判定为移除，不完整基准不能生成确定的增量。独立扫描失败返回 observation_error 或观察任务错误，与截断区分。页面截图和文件产物预算沿用原合同。
 
 | 动作 | 参数 |
 |---|---|
@@ -142,7 +160,7 @@ op=cancel 请求取消；wait/cancel 使用 task_id、wait_secs（默认30，0..
 
 步骤 wait.text/gone 使用与观察一致的可见文字或可访问名称（输入框名称、按钮标签、图片 alt 等），不区分大小写、按字面子串匹配并包含 iframe；gone 在所有可观察匹配消失后完成，页面读取失败不代表消失。顶层 op=wait 仅查询任务，两种等待不混用。
 
-默认快照、读取和动作均不附带全量页面列表；需要查找、聚焦或关闭页面时调用 `browser_snapshot({"view":"tabs"})`，该路径只查询 Chromium 页面清单，不读取 DOM 或探测各页焦点，并忽略 page_id/ref/diff/image/text。弹窗直接返回 popups 中的新 page_id；达到页面上限时错误提示引导查询列表并复用或关闭旧页，不自动淘汰。正常 health、空浮层、false 截断标记、非 iframe 的空 frame_path 和空差异项省略；空查询结果 matches/fields 等保留，表示查询确实没有结果。异常健康状态、真实字段值、失败位置与副作用仍完整返回。
+默认快照、读取和动作均不附带全量页面列表；需要查找、聚焦或关闭页面时调用 `browser_snapshot({"view":"tabs"})`，该路径只查询 Chromium 页面清单，不读取 DOM 或探测各页焦点，并忽略 page_id/ref/diff/image/text。弹窗直接返回 popups 中的新 page_id；达到页面上限时错误提示引导查询列表并复用或关闭旧页，不自动淘汰。正常 health、false 截断标记和非 iframe 的空 frame_path 省略；空差异以 observation_diff="" 表示；空查询结果 matches/fields 等保留，表示查询确实没有结果。异常健康状态、真实字段值、失败位置与副作用仍完整返回。
 
 公开接口仅保留上述16种动作及顶层 op，不保留旧动作名或顶层 action 的兼容入口。
 

@@ -38,7 +38,7 @@ class WorkspaceLayout(unittest.TestCase):
  def test_02_legacy_artifacts_and_default_download_location(self):
   self.python("from pathlib import Path;import json;p=Path('/workspace/.agent-space/desktop');a=p/'artifacts';a.mkdir(parents=True);(a/'same.txt').write_text('old');(a/'other.txt').write_text('other');(a/'unknown').mkdir();n=Path('/workspace/agent-space/artifacts');n.mkdir(parents=True);(n/'same.txt').write_text('new');d=p/'profile/Default';d.mkdir(parents=True);(d/'Preferences').write_text(json.dumps({'download':{'default_directory':str(a),'prompt_for_download':False}}))")
   observed=self.client.snapshot(page_id='',recent_tasks_limit=None)
-  self.assertTrue(observed.get('page_id'),observed)
+  self.assertTrue(observed.get('page',{}).get('page_id'),observed)
   self.python("from pathlib import Path;import json;p=Path('/workspace/.agent-space/desktop');n=Path('/workspace/agent-space/artifacts');assert (n/'same.txt').read_text()=='new';assert (n/'other.txt').read_text()=='other';assert len([f for f in n.glob('*same.txt') if f.read_text()=='old'])==1;assert (p/'artifacts/unknown').is_dir();assert not (p/'artifacts/same.txt').exists();assert not Path('/workspace/agent-space/README.md').exists();assert json.loads((p/'profile/Default/Preferences').read_text())['download']['default_directory']==str(n)")
   result,reply=self.client.act([{'do':'wait','secs':1}])
   self.assertFalse(reply.get('isError'),result)
@@ -69,7 +69,7 @@ class WorkspaceLayout(unittest.TestCase):
    self.assertFalse(result.get('isError'),text(result))
    self.assertTrue(any(c.get('text')=='Exit code: 0' for c in result['content']),result)
   run("from pathlib import Path;import json;p=Path('/workspace/.agent-space/desktop');d=p/'profile/Default';d.mkdir(parents=True);(p/'artifacts').write_text('user-owned');Path('/workspace/my-downloads').mkdir();(d/'Preferences').write_text(json.dumps({'download':{'default_directory':'/workspace/my-downloads'}}))")
-  observed=client.snapshot();self.assertTrue(observed.get('page_id'))
+  observed=client.snapshot();self.assertTrue(observed.get('page',{}).get('page_id'))
   run("from pathlib import Path;import json;p=Path('/workspace/.agent-space/desktop');assert json.loads((p/'profile/Default/Preferences').read_text())['download']['default_directory']=='/workspace/my-downloads';assert (p/'artifacts').read_text()=='user-owned';assert not Path('/workspace/agent-space/README.md').exists()")
 
 if __name__=='__main__':unittest.main(verbosity=2)

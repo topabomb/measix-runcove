@@ -1,0 +1,47 @@
+{
+  "fixture": "fixed synthetic add-content menu: snapshot, click, unchanged snapshot",
+  "tokenizer": "o200k_base",
+  "scope": "Worker observation payloads with new public field projection; excludes task envelopes (including legacy value wrapper), timing/control fields, and tool schemas.",
+  "variants": {
+    "old": {
+      "calls": 3,
+      "steps": [
+        {
+          "utf8_bytes": 200,
+          "tokens": 54
+        },
+        {
+          "utf8_bytes": 815,
+          "tokens": 225
+        },
+        {
+          "utf8_bytes": 491,
+          "tokens": 135
+        }
+      ],
+      "total_tokens": 414
+    },
+    "new": {
+      "calls": 3,
+      "steps": [
+        {
+          "utf8_bytes": 220,
+          "tokens": 58
+        },
+        {
+          "utf8_bytes": 545,
+          "tokens": 150
+        },
+        {
+          "utf8_bytes": 117,
+          "tokens": 26
+        }
+      ],
+      "total_tokens": 234
+    }
+  },
+  "baseline_git": "2142934158b09ee2b804853b786b7c4d1ad7d550",
+  "current_source_digest": "7341c72ce25e8f88c7ab63221e4de28488c76bf356180a9a6564f7cb1855a2a1",
+  "normalization": "Random refs replaced consistently with e0000000001-style identifiers; synthetic page ID and URL; compact JSON encoding.",
+  "limits": "One synthetic fixture, not an Agent success-rate or production workload evaluation."
+}

@@ -79,7 +79,7 @@ class DavCapacityVM(unittest.TestCase):
                 value, result = client.finish(client.tool("browser_snapshot", {}))
             self.assertFalse(result.get("isError"), value)
             self.assertEqual(value["state"], "succeeded")
-            self.assertTrue(value["value"]["page_id"])
+            self.assertTrue(value["page"]["page_id"])
             self.assertEqual(value["control"]["mode"], "AI")
 
         try:

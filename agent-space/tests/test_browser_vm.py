@@ -38,14 +38,14 @@ class BrowserQualification(unittest.TestCase):
    if name=='desktop':
     self.assertTrue({'browser_snapshot','browser_act','browser_read','screen_observe'}<=tools.keys())
     (Q/'browser-tools.json').write_text(json.dumps([tools[key] for key in ['browser_snapshot','browser_act','browser_read','screen_observe']],ensure_ascii=False,indent=2)+'\n')
-  observed=self.client.snapshot(recent_tasks_limit=10);self.assertTrue(observed.get('page_id'));self.assertNotIn('health',observed);self.assertLessEqual(len(observed['recent_tasks']),10)
+  observed=self.client.snapshot(recent_tasks_limit=10);self.assertTrue(observed.get('page',{}).get('page_id'));self.assertNotIn('health',observed);self.assertLessEqual(len(observed['recent_tasks']),10)
   for name,args in [('browser_act',{'code':'return 1'}),('browser_act',{'actions':[{'do':'wait','secs':1},{'do':'click','ref':'bad'}]}),('browser_snapshot',{'recent_tasks_limit':11}),('browser_read',{'query':'a','extract':'fields'}),('browser_act',{'op':'wait','task_id':'missing','actions':[{'do':'navigate','mode':'reload'}]})]:
    with self.assertRaises(RuntimeError):self.client.tool(name,args)
   began=time.monotonic();value,_=self.act([{'do':'wait','secs':1}],page_id='missing-page')
-  self.assertGreaterEqual(time.monotonic()-began,1);self.assertEqual(value['value']['completed'],1);self.assertNotIn('page_id',value['value']);self.assertNotIn('elements',value['value'])
+  self.assertGreaterEqual(time.monotonic()-began,1);self.assertEqual(value['completed_steps'],1);self.assertNotIn('page',value);self.assertNotIn('observation',value)
   self.assertEqual(text(self.client.tool('browser_act',{'op':'wait','task_id':value['task_id'],'wait_secs':0})),value)
  def test_02_upload_download_and_private_paths(self):
-  view=self.client.snapshot();file_ref=element(view,'button','Upload fixture') if 'button "Upload fixture"' in view['elements'] else element(view,'textbox','Upload fixture')
+  view=self.client.snapshot();file_ref=element(view,'button','Upload fixture') if 'button "Upload fixture"' in view['observation'] else element(view,'textbox','Upload fixture')
   self.act([{'do':'upload','ref':file_ref,'paths':['/workspace/qualification/private uploads/原生 reference.bin']},{'do':'wait','text':'sha256'}])
   read=self.client.read_browser();self.assertIn(hashlib.sha256(b'u'*1048576).hexdigest(),read['text'])
   view=self.client.snapshot();value,_=self.act([{'do':'download','ref':element(view,'link','Download')}])
@@ -58,19 +58,19 @@ class BrowserQualification(unittest.TestCase):
   self.assertEqual(started['state'],'running',started)
   value,reply=self.client.finish(self.client.tool('browser_act',{'op':'cancel','task_id':started['task_id']}));self.assertEqual(value['state'],'cancelled');self.assertTrue(reply.get('isError'))
   value,_=self.act([{'do':'wait','secs':9},{'do':'wait','text':'Never appears','timeout_secs':1}],success=False)
-  self.assertEqual(value['state'],'failed');self.assertEqual(value['failed_step']['index'],1);self.assertEqual(value['error']['code'],'TIMEOUT');self.assertEqual(value['side_effects'],'not_started')
+  self.assertEqual(value['state'],'failed');self.assertEqual(value['failed_step']['step_number'],2);self.assertEqual(value['error']['code'],'TIMEOUT');self.assertEqual(value['side_effects'],'not_started')
   self.assertEqual(text(self.client.tool('browser_act',{'op':'wait','task_id':value['task_id'],'wait_secs':0})),value)
   # Browser/user text never controls the supervisor's cleanup decision.
   value,_=self.act([{'do':'wait','text':'CLEANUP_UNCONFIRMED','timeout_secs':1}],success=False)
   self.assertEqual(value['error']['code'],'TIMEOUT');self.assertNotEqual(value.get('cleanup_confirmed'),False)
   self.act([{'do':'wait','secs':1}])
  def test_04_target_selection_and_tabs(self):
-  original=self.client.snapshot()['page_id'];value,_=self.act([{'do':'tab','action':'new','url':'data:text/html,<title>Other tab</title><button>Other</button>'}]);other=value['value']['page_id']
+  original=self.client.snapshot()['page']['page_id'];value,_=self.act([{'do':'tab','action':'new','url':'data:text/html,<title>Other tab</title><button>Other</button>'}]);other=value['page']['page_id']
   self.assertNotEqual(other,original)
   value,_=self.act([{'do':'navigate','url':'data:text/html,<title>Selected target</title><button>Selected</button>'}],page_id=original)
-  self.assertEqual(value['value']['title'],'Selected target')
-  self.act([{'do':'tab','action':'focus','page_id':other}]);self.assertEqual(self.client.snapshot()['page_id'],other)
-  self.act([{'do':'tab','action':'close','page_id':other}]);self.assertEqual(self.client.snapshot()['page_id'],original)
+  self.assertEqual(value['page']['title'],'Selected target')
+  self.act([{'do':'tab','action':'focus','page_id':other}]);self.assertEqual(self.client.snapshot()['page']['page_id'],other)
+  self.act([{'do':'tab','action':'close','page_id':other}]);self.assertEqual(self.client.snapshot()['page']['page_id'],original)
  def test_05_identity_window_and_unicode(self):
   expected=1001 if TARGET=='standalone' else 0
   readback=self.client.good('bash',{'cmd':"python3 -c \"import os;from pathlib import Path;rows=[]\nfor p in Path('/proc').glob('[0-9]*/cmdline'):\n try:\n  a=p.read_bytes().split(bytes([0]));name=Path(os.fsdecode(a[0])).name\n  if name in ['chrome','Xtigervnc','lxqt-session','qterminal']:rows.append((name,int(next(x for x in (p.parent/'status').read_text().splitlines() if x.startswith('Uid:')).split()[1]),b'--no-sandbox' in a))\n except OSError:pass\nassert rows and all(x[1]=="+str(expected)+" for x in rows),rows;assert any(x[0]=='chrome' and x[2]=="+str(expected==0)+" for x in rows);print('identity verified')\""})
@@ -98,10 +98,10 @@ class BrowserQualification(unittest.TestCase):
   self.act([{'do':'wait','text':'sha256'}]);self.assertIn(hashlib.sha256(b'u'*1048576).hexdigest(),self.client.read_browser()['text'])
   value,_=self.act([{'do':'click','image_id':frame['image_id'],'x':10,'y':10}],success=False);self.assertEqual(value['error']['code'],'STALE_OBSERVATION')
  def test_07_unresponsive_tab_observation_and_explicit_close(self):
-  value,_=self.act([{'do':'tab','action':'new','url':'http://127.0.0.1:8124/'}]);target=value['value']['page_id']
+  value,_=self.act([{'do':'tab','action':'new','url':'http://127.0.0.1:8124/'}]);target=value['page']['page_id']
   # Inject a frozen renderer through CDP; the product has no arbitrary JS tool.
   self.client.good('bash',{'cmd':"node -e "+shlex.quote("(async()=>{const t=(await(await fetch('http://127.0.0.1:9222/json/list')).json()).find(t=>t.id==="+json.dumps(target)+");const w=new WebSocket(t.webSocketDebuggerUrl);w.onopen=()=>{w.send(JSON.stringify({id:1,method:'Runtime.evaluate',params:{expression:'while(true){}'}}));setTimeout(()=>process.exit(),300)};})();")})
-  observed=self.client.snapshot(page_id=target);self.assertFalse(observed['health']['page']);self.assertEqual(observed['page_id'],target)
+  observed=self.client.snapshot(page_id=target);self.assertFalse(observed['health']['page']);self.assertEqual(observed['page']['page_id'],target)
   self.client.good('screen_observe',{'view':'desktop'})
   self.act([{'do':'tab','action':'close','page_id':target}],page_id=target)
   self.assertNotIn('health',self.client.snapshot())

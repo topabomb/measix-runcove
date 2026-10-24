@@ -119,6 +119,7 @@ pub struct AgentSpaceMcpServer {
     identity: Mutex<Option<BoundIdentity>>,
     pub tool_router: ToolRouter<Self>,
     browser: std::sync::atomic::AtomicBool,
+    feedback: Mutex<crate::browser_feedback::Feedback>,
 }
 
 impl AgentSpaceMcpServer {
@@ -151,7 +152,33 @@ impl AgentSpaceMcpServer {
             identity: Mutex::new(None),
             tool_router: Self::tool_router(),
             browser: std::sync::atomic::AtomicBool::new(false),
+            feedback: Mutex::new(crate::browser_feedback::Feedback::default()),
         }
+    }
+
+    async fn browser_feedback(
+        &self,
+        result: Result<serde_json::Value, agent_engine::engine::EngineError>,
+    ) -> CallToolResult {
+        let transport_error = result.is_err();
+        let mut value = match result {
+            Ok(value) => value,
+            Err(error) => {
+                let message = match &error {
+                    agent_engine::engine::EngineError::Other(message) => message.clone(),
+                    _ => error.to_string(),
+                };
+                serde_json::from_str(&message).unwrap_or_else(
+                    |_| json!({"error":browser_error(&message),"side_effects":"unknown"}),
+                )
+            }
+        };
+        self.feedback.lock().await.accept(&mut value);
+        let mut response = browser_result(Ok(value));
+        if transport_error {
+            response.is_error = Some(true);
+        }
+        response
     }
 
     async fn recheck_bound(&self) -> Result<(), McpError> {
@@ -460,14 +487,20 @@ impl AgentSpaceMcpServer {
         }
         let hub = self.desktop().await?;
         let session = self.ensure_session().await?;
-        let args = json!({"view":params.view,"diff":params.diff.unwrap_or(false),"ref":params.r#ref,"image":params.image.unwrap_or(false),"text":params.text.unwrap_or(false),"recent_tasks_limit":params.recent_tasks_limit.unwrap_or(0)});
-        Ok(browser_result(
-            hub.browser(session, "snapshot", args, params.page_id, 60)
-                .await,
-        ))
+        let mut args = json!({"view":params.view,"diff":params.diff.unwrap_or(false),"ref":params.r#ref,"image":params.image.unwrap_or(false),"text":params.text.unwrap_or(false),"recent_tasks_limit":params.recent_tasks_limit.unwrap_or(0)});
+        self.feedback
+            .lock()
+            .await
+            .prepare(&mut args, params.page_id.as_deref());
+        Ok(self
+            .browser_feedback(
+                hub.browser(session, "snapshot", args, params.page_id, 60)
+                    .await,
+            )
+            .await)
     }
     #[tool(
-        description = "Execute consecutive browser or desktop steps in order in one actions batch, with page feedback at the end. Use observed refs; end the batch when later targets need fresh refs. To pause, use actions:[{\"do\":\"wait\",\"secs\":5}]; for a page condition use text or gone. While state=running, use op=wait with the same task_id; op=cancel requests cancellation. Inspect page feedback to confirm website outcomes before submitting again."
+        description = "Execute browser or desktop steps in order, with page feedback at the end of the batch. Use op=wait or op=cancel with task_id for an existing task."
     )]
     async fn browser_act(
         &self,
@@ -479,27 +512,35 @@ impl AgentSpaceMcpServer {
             .map_err(|e| McpError::invalid_params(e, None))?;
         let hub = self.desktop().await?;
         match params.op.unwrap_or(ActAction::Execute) {
-            ActAction::Wait | ActAction::Cancel => Ok(browser_result(
-                hub.task(
-                    params.task_id.as_deref().unwrap(),
-                    params.wait_secs.unwrap_or(30),
-                    matches!(params.op, Some(ActAction::Cancel)),
-                )
-                .await,
-            )),
-            ActAction::Execute => {
-                let session = self.ensure_session().await?;
-                let args = json!({"actions":params.actions.unwrap(),"then":params.then,"action_timeout_secs":params.action_timeout_secs});
-                Ok(browser_result(
-                    hub.browser(
-                        session,
-                        "act",
-                        args,
-                        params.page_id,
-                        params.timeout_secs.unwrap_or(120),
+            ActAction::Wait | ActAction::Cancel => Ok(self
+                .browser_feedback(
+                    hub.task(
+                        params.task_id.as_deref().unwrap(),
+                        params.wait_secs.unwrap_or(30),
+                        matches!(params.op, Some(ActAction::Cancel)),
                     )
                     .await,
-                ))
+                )
+                .await),
+            ActAction::Execute => {
+                let session = self.ensure_session().await?;
+                let mut args = json!({"actions":params.actions.unwrap(),"then":params.then,"action_timeout_secs":params.action_timeout_secs});
+                self.feedback
+                    .lock()
+                    .await
+                    .prepare(&mut args, params.page_id.as_deref());
+                Ok(self
+                    .browser_feedback(
+                        hub.browser(
+                            session,
+                            "act",
+                            args,
+                            params.page_id,
+                            params.timeout_secs.unwrap_or(120),
+                        )
+                        .await,
+                    )
+                    .await)
             }
         }
     }
@@ -1237,6 +1278,7 @@ fn browser_result(
                 |_| json!({"error":browser_error(&message),"side_effects":"unknown"}),
             );
             compact_browser_feedback(&mut value);
+            crate::browser_feedback::project(&mut value);
             return CallToolResult::error(vec![Content::text(value.to_string())]);
         }
     };
@@ -1264,6 +1306,7 @@ fn browser_result(
     if let Some(object) = value.as_object_mut() {
         object.remove("captures");
     }
+    crate::browser_feedback::project(&mut value);
     let failed = value.get("error").is_some()
         || matches!(
             value["state"].as_str(),
@@ -1438,6 +1481,41 @@ fn shell_escape(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[tokio::test]
+    async fn browser_feedback_preserves_transport_failure_even_without_an_error_field() {
+        use agent_engine::engine::{mock::MockEngine, EngineError, WorkspaceOpts};
+        let config = Arc::new(toml::from_str::<Config>(include_str!("../../config.toml")).unwrap());
+        let sessions = Arc::new(SessionManager::new(
+            Arc::new(MockEngine::new()),
+            1,
+            WorkspaceOpts {
+                image: "mock".into(),
+                cpus: 1,
+                memory_mib: 256,
+                shell: "/bin/bash".into(),
+                volumes: vec![],
+                network_access: Default::default(),
+                outbound_proxy: None,
+                max_tcp_connections: None,
+                max_udp_connections: None,
+            },
+        ));
+        let server = AgentSpaceMcpServer::new(config, sessions);
+        let response = server
+            .browser_feedback(Err(EngineError::Other(
+                json!({"value":{"completed":1,"of":2}}).to_string(),
+            )))
+            .await;
+        assert_eq!(response.is_error, Some(true));
+        let body: serde_json::Value = serde_json::from_str(
+            serde_json::to_value(response).unwrap()["content"][0]["text"]
+                .as_str()
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(body["completed_steps"], 1);
+    }
+
     #[test]
     fn tool_result_budget_counts_base64_json_and_framing_without_truncation() {
         use base64::Engine;
@@ -1479,11 +1557,11 @@ mod tests {
         assert_eq!(value["duration_secs"], 2.1);
         assert!(value.get("phase").is_none());
         assert!(value.get("side_effects").is_none());
-        let mut failed = json!({"state":"failed","side_effects":"may_have_occurred","cleanup_confirmed":false,"failed_step":{"index":1},"error":{"code":"PAGE_LIMIT_REACHED","message":"full"}});
+        let mut failed = json!({"state":"failed","side_effects":"may_have_occurred","cleanup_confirmed":false,"failed_step":{"step_number":2},"error":{"code":"PAGE_LIMIT_REACHED","message":"full"}});
         compact_browser_feedback(&mut failed);
         assert_eq!(failed["side_effects"], "may_have_occurred");
         assert_eq!(failed["cleanup_confirmed"], false);
-        assert_eq!(failed["failed_step"]["index"], 1);
+        assert_eq!(failed["failed_step"]["step_number"], 2);
         assert!(failed["error"]["message"]
             .as_str()
             .unwrap()
@@ -1526,23 +1604,25 @@ mod tests {
         );
         assert_eq!(body["side_effects"], "may_have_occurred");
         assert_eq!(body["cleanup_confirmed"], false);
-        assert_eq!(body["value"]["partial"], true);
+        assert_eq!(body["partial"], true);
         assert_eq!(body["files"][0]["path"], "/workspace/result.txt");
         assert_eq!(
             body["files"][1],
             json!({"path":"/workspace/image.png","size":"1.5 KiB","format":"PNG"})
         );
         assert_eq!(
-            body["value"]["downloads"][0],
+            body["downloads"][0],
             json!({"path":"/workspace/image.png","size":"1.5 KiB","format":"PNG","url":"https://example.test/image.png"})
         );
-        assert_eq!(body["value"]["fields"][0]["value"], "3000");
+        assert_eq!(body["fields"][0]["value"], "3000");
         assert_eq!(wire["content"][1]["type"], "image");
-        let success = browser_result(Ok(json!({"state":"succeeded","value":long})));
+        let success = browser_result(Ok(
+            json!({"state":"succeeded","value":{"observation":long}}),
+        ));
         let wire = serde_json::to_value(success).unwrap();
         let body: serde_json::Value =
             serde_json::from_str(wire["content"][0]["text"].as_str().unwrap()).unwrap();
-        assert_eq!(body["value"].as_str().unwrap().len(), 8000);
+        assert_eq!(body["observation"].as_str().unwrap().len(), 8000);
     }
 
     #[test]

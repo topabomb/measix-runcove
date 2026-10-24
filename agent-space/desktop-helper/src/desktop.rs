@@ -36,6 +36,10 @@ pub fn install_sources() -> anyhow::Result<()> {
             include_str!("../../guest/desktop/observation.cjs"),
         ),
         (
+            "semantic-observation.cjs",
+            include_str!("../../guest/desktop/semantic-observation.cjs"),
+        ),
+        (
             "browser-tools.cjs",
             include_str!("../../guest/desktop/browser-tools.cjs"),
         ),

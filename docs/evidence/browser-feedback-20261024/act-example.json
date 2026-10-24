@@ -1,0 +1,31 @@
+{
+  "request": {
+    "actions": [
+      {
+        "do": "click",
+        "ref": "egPi0tf49YU"
+      },
+      {
+        "do": "wait",
+        "text": "Choose item"
+      }
+    ]
+  },
+  "response": {
+    "completed_steps": 2,
+    "control": {
+      "mode": "AI"
+    },
+    "duration_secs": 1.2,
+    "observation_diff": "+ euNk8P4bCMk menu \"Actions menu\"\n+   eg898nMIa72 menuitem \"Choose item\"",
+    "page": {
+      "page_id": "D4EE2F794A2F4AAB0E547C3AFBEF4543",
+      "title": "Floating panels",
+      "url": "http://127.0.0.1:8125/panels"
+    },
+    "started_at": "2026-10-24T07:53:26Z",
+    "state": "succeeded",
+    "task_id": "81326e06-c6b7-4fee-8854-ccadade9d832",
+    "total_steps": 2
+  }
+}

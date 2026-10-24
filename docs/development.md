@@ -44,6 +44,8 @@ python3 docker/test_package.py
 
 浏览器 worker 的子进程错误边界由 `tests/browser_worker_errors.node.cjs` 单独覆盖：在 Workspace 镜像中将 `guest/desktop` 挂到 `/opt/agent-space/desktop`、`tests` 挂到 `/tests`，执行 `node --test /tests/browser_worker_errors.node.cjs`。该测试注入观察子进程故障，不启动 Chromium；真实浏览器、坐标和 DPR 回归见 `tests/browser_tools.node.cjs` 及两目标共享资格套件。
 
+语义树与差异的纯计算回归为 `node --test tests/semantic_observation.node.cjs`，覆盖同源文字去重、旧描述、上下文、重排和截断。连接隔离、旧任务重放与公开响应格式由 MCP 单元测试和 `tests/test_browser_structured_vm.py` 的真实连接回归共同覆盖；后者同时保存 `observation-feedback.json` 请求/响应样本。比较 token 时固定夹具、调用数和 tokenizer，分别记录首次快照、动作反馈与空差异；夹具测量不替代真实 Agent 工作流评估。
+
 资源紧张时使用 `CARGO_BUILD_JOBS=2 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_INCREMENTAL=0`，不要并行运行完整构建或 VM 生命周期套件。UI 在 `desktop-ui/` 使用 `npm ci`、`npm run build` 和 Playwright；运行真实 UI 套件前准备匹配浏览器、系统运行库和字体。源码检查不替代真实 HTTP、文件、桌面和迁移验证。
 
 ## 按变更选择回归

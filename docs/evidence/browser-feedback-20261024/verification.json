@@ -1,0 +1,377 @@
+{
+  "date": "2026-10-24",
+  "baseline_git": "2142934158b09ee2b804853b786b7c4d1ad7d550",
+  "source_digest": "7341c72ce25e8f88c7ab63221e4de28488c76bf356180a9a6564f7cb1855a2a1",
+  "scope": "Local source and isolated development-assets browser-tool regressions; no production deployment or release image qualification.",
+  "checks": {
+    "workspace-lib": {
+      "log": "agent-space/target/browser-feedback-workspace-lib.log",
+      "sha256": "c62db3c00d9c61d59ae2b6ffa053bb3c54a74eb6a7a9ce3c904385a7b81e3851",
+      "summary": [
+        "test result: ok. 92 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 45.32s",
+        "test result: ok. 37 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.57s",
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s"
+      ]
+    },
+    "rust-final": {
+      "log": "agent-space/target/browser-feedback-rust-final.log",
+      "sha256": "b9178e5732237ff5b299da89e4316ea5827429d47869a118f2b631c75efd1d5b",
+      "summary": [
+        "test result: ok. 38 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.02s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s"
+      ]
+    },
+    "standalone-rust-final": {
+      "log": "agent-space/target/browser-feedback-standalone-rust-final.log",
+      "sha256": "ef23bfac8d8735ad4484a63c38bf3b7ec2ad848db3a209bea01195234905f5ac",
+      "summary": [
+        "test result: ok. 38 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.02s",
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s"
+      ]
+    },
+    "helper-final": {
+      "log": "agent-space/target/browser-feedback-helper-final.log",
+      "sha256": "bb52ea9fa2300a08959952e9a4666b56c38e2032d8b45c93f52fe8bf796dba15",
+      "summary": [
+        "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.06s"
+      ]
+    },
+    "clippy-final": {
+      "log": "agent-space/target/browser-feedback-clippy-final.log",
+      "sha256": "7e7de636341daa70f5237d1f8892ba36c7c0f1e51120fbeb3d3589abd8838d62",
+      "summary": []
+    },
+    "standalone-clippy-final": {
+      "log": "agent-space/target/browser-feedback-standalone-clippy-final.log",
+      "sha256": "a8ac46634f26964917234d5fc27d74cec6725aabfd8bb1cdc36f1d3cabf99cb6",
+      "summary": []
+    },
+    "semantic-final": {
+      "log": "agent-space/target/browser-feedback-semantic-final.log",
+      "sha256": "0d54ea6ba39a47f2d2e2e7e8b20a598939f2891432dec548436188986e73e120",
+      "summary": [
+        "# tests 6",
+        "# pass 6",
+        "# fail 0",
+        "# skipped 0"
+      ]
+    },
+    "node-final": {
+      "log": "agent-space/target/browser-feedback-node-final.log",
+      "sha256": "e33f4d06ee8429b9dec81727e8f15b2e8682e05db1351f229f6b30f90cae9179",
+      "summary": [
+        "# tests 38",
+        "# pass 37",
+        "# fail 0",
+        "# skipped 1"
+      ]
+    },
+    "node-dpr-final": {
+      "log": "agent-space/target/browser-feedback-node-dpr-final.log",
+      "sha256": "8392bec4cd93150ad963ef7ecc0c6ccacda93a8fd7112aa287e102cd71e35cea",
+      "summary": [
+        "# tests 2",
+        "# pass 2",
+        "# fail 0",
+        "# skipped 0"
+      ]
+    },
+    "managed": {
+      "log": "agent-space/target/browser-feedback-managed.log",
+      "sha256": "8511476ade8de90f5517cc722fe4e78a712af4c32884f34c51335fc83e873772",
+      "summary": [
+        "Ran 8 tests in 0.010s",
+        "OK"
+      ]
+    },
+    "exec": {
+      "log": "agent-space/target/browser-feedback-exec.log",
+      "sha256": "0c73cd82e05535c6e787b04f1c0f12e420996116147bc5da9152be5210f22a87",
+      "summary": [
+        "Ran 5 tests in 0.640s",
+        "OK"
+      ]
+    },
+    "standalone-dependencies": {
+      "log": "agent-space/target/browser-feedback-standalone-deps.log",
+      "sha256": "f4e83a66c05625eb001e97962c5a88ad368929e48361050d9813448727fcd507",
+      "microsandbox_or_libkrun_present": false
+    }
+  },
+  "qualifications": {
+    "standalone": {
+      "target": "standalone",
+      "scope": "development assets",
+      "image": "runcove-workspace:build",
+      "image_id": "sha256:76ffec5356255e77465e4e957612044707d93da89698fa4ce2d2b04c348a663a",
+      "source_digest": "7341c72ce25e8f88c7ab63221e4de28488c76bf356180a9a6564f7cb1855a2a1",
+      "binaries_sha256": {
+        "runcove-standalone": "f7898715531ad027e260104c1ff54e95c91ca9a79191ee0a9621a3da35a0c439",
+        "agent-space-static-http": "63f6476c1f7e702d3fd87466d62008dcdf5dc5a44bdae3b471bf867484e6bf9b",
+        "agent-space-webdav": "e8529c5cf2d8d68ab55da6619b183864428ea46a4afa5fbd0a47b3e3400007e7",
+        "agent-space-desktop": "2ab27e56139e8a3bb0cf26699b723cb13c21d699c160807dd1c6dd40c9bc834b"
+      },
+      "checks": [
+        "starts_without_kvm_msb_or_docker_socket",
+        "single_space_routes_have_no_management_or_user_selection",
+        "shared_nine_tools_and_nonroot_secret_isolation",
+        "profile_preparation_cannot_follow_user_links_with_root_privileges",
+        "real_shared_desktop_screenshot",
+        "root_task_owner_keeps_final_results_without_following_user_paths",
+        "dav_workbench_and_mcp_edits_share_writable_user_ownership",
+        "artifact_listing_respects_payload_permissions_through_user_symlinks",
+        "publication_uses_single_space_address",
+        "stopped_data_child_dies_with_killed_control_owner_and_helper_recovers",
+        "shared_test_browser_vm.py",
+        "shared_test_browser_structured_vm.py",
+        "shared_test_browser_pages_vm.py",
+        "shared_test_media_vm.py",
+        "shared_test_browser_profiles_vm.py",
+        "rewritten_host_workbench_preserves_own_origin_and_nonce_checks",
+        "lost_desktop_owner_blocks_recreation_and_control_until_container_restart",
+        "active_mcp_sse_closes_on_graceful_shutdown",
+        "graceful_restart_preserves_workspace_and_expires_page_session",
+        "reduced_page_limit_after_restart_preserves_profile_and_existing_pages"
+      ],
+      "passed": true,
+      "cleanup_passed": true,
+      "full": false,
+      "shared_full": false,
+      "suite_logs": {
+        "test_browser_pages_vm.py.log": "22d2cfebf7b0da0148e22112c1649352dc63e47d81641a57f1b09ab0e8cc7b16",
+        "test_browser_profiles_vm.py.log": "8e27d8b4e7a7f595f1b3f1b3f23ab2acbb8d61323e0acbab32f9080c4bdce284",
+        "test_browser_structured_vm.py.log": "04f96be2724e92a1437b8d08748bac126eb37ebfebc3d8f4203a4be92eae67cb",
+        "test_browser_vm.py.log": "62d73fcaff07041a580e334c11c5c8a329877d87ec8f7f3303570894920e54f5",
+        "test_media_vm.py.log": "f467693bb55524803dafd4635c38f7e86feb2b2eb0d6fc819296edaddf36dd85"
+      },
+      "page_limit_restart": {
+        "initial_limit": 4,
+        "restarted_limit": 1,
+        "restored_pages": 4,
+        "restored_after_profile_picker": true,
+        "clean_profile_verified": true,
+        "restored_urls_match": true,
+        "new_page_error": "PAGE_LIMIT_REACHED",
+        "existing_page_navigation_and_close": true
+      },
+      "original_report": "agent-space/target/standalone-verification/runcove-qualify-1c0b0a892b/result.json",
+      "original_report_sha256": "b52787d6383c6d4b0ba28ccd3a4d544002fd46e2c7ba88c5745599807ccd144b",
+      "suite_results": {
+        "test_browser_vm.py.log": {
+          "sha256": "62d73fcaff07041a580e334c11c5c8a329877d87ec8f7f3303570894920e54f5",
+          "summary": [
+            "Ran 11 tests in 130.976s",
+            "OK (skipped=1)"
+          ]
+        },
+        "test_media_vm.py.log": {
+          "sha256": "f467693bb55524803dafd4635c38f7e86feb2b2eb0d6fc819296edaddf36dd85",
+          "summary": [
+            "Ran 10 tests in 98.759s",
+            "OK"
+          ]
+        },
+        "test_browser_profiles_vm.py.log": {
+          "sha256": "8e27d8b4e7a7f595f1b3f1b3f23ab2acbb8d61323e0acbab32f9080c4bdce284",
+          "summary": [
+            "Ran 1 test in 333.023s",
+            "OK"
+          ]
+        },
+        "test_browser_pages_vm.py.log": {
+          "sha256": "22d2cfebf7b0da0148e22112c1649352dc63e47d81641a57f1b09ab0e8cc7b16",
+          "summary": [
+            "Ran 4 tests in 71.785s",
+            "OK"
+          ]
+        },
+        "test_browser_structured_vm.py.log": {
+          "sha256": "04f96be2724e92a1437b8d08748bac126eb37ebfebc3d8f4203a4be92eae67cb",
+          "summary": [
+            "Ran 14 tests in 296.148s",
+            "OK"
+          ]
+        }
+      }
+    },
+    "server": {
+      "target": "server",
+      "scope": "development assets",
+      "image": "runcove-server:runcove-38ddc5f7700bf5d2",
+      "image_id": "sha256:932d905bdc34f99160776980d7b9d3ca470c5903af26600649f33dcf86cc4e5a",
+      "source_digest": "7341c72ce25e8f88c7ab63221e4de28488c76bf356180a9a6564f7cb1855a2a1",
+      "binaries_sha256": {
+        "agent-space-mcp": "780721726f38d39368fe8a04fffb61d2d9b6ad0d3680c8e2eea25b3cb7b6d7b5",
+        "agent-space-static-http": "63f6476c1f7e702d3fd87466d62008dcdf5dc5a44bdae3b471bf867484e6bf9b",
+        "agent-space-webdav": "e8529c5cf2d8d68ab55da6619b183864428ea46a4afa5fbd0a47b3e3400007e7",
+        "agent-space-desktop": "2ab27e56139e8a3bb0cf26699b723cb13c21d699c160807dd1c6dd40c9bc834b"
+      },
+      "checks": [
+        "shared_test_browser_vm.py",
+        "shared_test_browser_structured_vm.py",
+        "shared_test_browser_pages_vm.py",
+        "shared_test_media_vm.py",
+        "shared_test_browser_profiles_vm.py",
+        "reduced_page_limit_after_restart_preserves_profile_and_existing_pages"
+      ],
+      "passed": true,
+      "cleanup_passed": true,
+      "full": false,
+      "shared_full": false,
+      "suite_logs": {
+        "test_browser_pages_vm.py.log": "793903e6f3de009c89e58d5c0f4c3f5384e131f77e2bc689512d808aff1d2557",
+        "test_browser_profiles_vm.py.log": "9e59dee6d50c6009bf8a19f2535e50ce6aafb5d09aa10692da23491fdeaf231d",
+        "test_browser_structured_vm.py.log": "75010252a8628ef8320b4f54c30c3829eb8be0c6615d810a5d60bf49fcde5511",
+        "test_browser_vm.py.log": "1c5f66391e6dfc68e24320d82c49fabea7e5fd846a9100408c5823c7514fe4ab",
+        "test_media_vm.py.log": "f58ffd6f222ae15c58d0a6a5b9023949fef31c095a398ec976f833fd3fa6ec36"
+      },
+      "page_limit_restart": {
+        "initial_limit": 4,
+        "restarted_limit": 1,
+        "restored_pages": 4,
+        "restored_after_profile_picker": true,
+        "clean_profile_verified": true,
+        "restored_urls_match": true,
+        "new_page_error": "PAGE_LIMIT_REACHED",
+        "existing_page_navigation_and_close": true
+      },
+      "original_report": "agent-space/target/server-desktop-verification/runcove-desktop-065a64e016/result.json",
+      "original_report_sha256": "dd15802d0edd3a709f73155e65c47c8689b3f41261addd685c826c044da1e4e1",
+      "suite_results": {
+        "test_browser_vm.py.log": {
+          "sha256": "1c5f66391e6dfc68e24320d82c49fabea7e5fd846a9100408c5823c7514fe4ab",
+          "summary": [
+            "Ran 11 tests in 166.684s",
+            "OK"
+          ]
+        },
+        "test_media_vm.py.log": {
+          "sha256": "f58ffd6f222ae15c58d0a6a5b9023949fef31c095a398ec976f833fd3fa6ec36",
+          "summary": [
+            "Ran 10 tests in 116.814s",
+            "OK"
+          ]
+        },
+        "test_browser_profiles_vm.py.log": {
+          "sha256": "9e59dee6d50c6009bf8a19f2535e50ce6aafb5d09aa10692da23491fdeaf231d",
+          "summary": [
+            "Ran 1 test in 348.935s",
+            "OK"
+          ]
+        },
+        "test_browser_pages_vm.py.log": {
+          "sha256": "793903e6f3de009c89e58d5c0f4c3f5384e131f77e2bc689512d808aff1d2557",
+          "summary": [
+            "Ran 4 tests in 94.035s",
+            "OK"
+          ]
+        },
+        "test_browser_structured_vm.py.log": {
+          "sha256": "75010252a8628ef8320b4f54c30c3829eb8be0c6615d810a5d60bf49fcde5511",
+          "summary": [
+            "Ran 14 tests in 364.548s",
+            "OK"
+          ]
+        }
+      }
+    },
+    "standalone-basic": {
+      "target": "standalone",
+      "scope": "development assets",
+      "image": "runcove-workspace:build",
+      "image_id": "sha256:76ffec5356255e77465e4e957612044707d93da89698fa4ce2d2b04c348a663a",
+      "source_digest": "7341c72ce25e8f88c7ab63221e4de28488c76bf356180a9a6564f7cb1855a2a1",
+      "binaries_sha256": {
+        "runcove-standalone": "f7898715531ad027e260104c1ff54e95c91ca9a79191ee0a9621a3da35a0c439",
+        "agent-space-static-http": "63f6476c1f7e702d3fd87466d62008dcdf5dc5a44bdae3b471bf867484e6bf9b",
+        "agent-space-webdav": "e8529c5cf2d8d68ab55da6619b183864428ea46a4afa5fbd0a47b3e3400007e7",
+        "agent-space-desktop": "2ab27e56139e8a3bb0cf26699b723cb13c21d699c160807dd1c6dd40c9bc834b"
+      },
+      "checks": [
+        "starts_without_kvm_msb_or_docker_socket",
+        "single_space_routes_have_no_management_or_user_selection",
+        "shared_nine_tools_and_nonroot_secret_isolation",
+        "profile_preparation_cannot_follow_user_links_with_root_privileges",
+        "real_shared_desktop_screenshot",
+        "root_task_owner_keeps_final_results_without_following_user_paths",
+        "dav_workbench_and_mcp_edits_share_writable_user_ownership",
+        "artifact_listing_respects_payload_permissions_through_user_symlinks",
+        "publication_uses_single_space_address",
+        "stopped_data_child_dies_with_killed_control_owner_and_helper_recovers",
+        "rewritten_host_workbench_preserves_own_origin_and_nonce_checks",
+        "lost_desktop_owner_blocks_recreation_and_control_until_container_restart",
+        "active_mcp_sse_closes_on_graceful_shutdown",
+        "graceful_restart_preserves_workspace_and_expires_page_session"
+      ],
+      "passed": true,
+      "cleanup_passed": true,
+      "full": false,
+      "shared_full": false,
+      "original_report": "agent-space/target/standalone-verification/runcove-qualify-06723b1347/result.json",
+      "original_report_sha256": "1c3e684246a263264b461f3d8cf9ca596f6775c6daf9fb85639a49ade9f44e69",
+      "suite_results": {}
+    }
+  },
+  "iterations": [
+    {
+      "case": "Legacy response assertions",
+      "outcome": "Migrated media, profile, restart and lifecycle consumers to page.page_id / observation / completed_steps; final reruns passed."
+    },
+    {
+      "case": "Native dialog accessible name",
+      "outcome": "Supplemented missing AX name using observed aria-labelledby/aria-label; dedicated and complete Chromium reruns passed."
+    },
+    {
+      "case": "Transient headed Chromium dialog stall",
+      "outcome": "One earlier full run blocked in native-dialog observation and later navigation; isolated test and subsequent full reruns passed. Root cause not established; not claimed eliminated."
+    },
+    {
+      "case": "Server initial wrong baseline image",
+      "image_id": "sha256:a79b393e7966c3a52620e033d0b37fd9d3be1fbc7e10770cc93f32392ba8e3eb",
+      "outcome": "Old MSB 0.7.2 baseline failed before readiness. Retried on MSB 0.7.9 image. Original cleanup skipped exited failure container; verified its identity and manually removed container, anonymous log volume and dedicated data volume."
+    },
+    {
+      "case": "Earlier standalone tools run",
+      "outcome": "Browser/structured/pages/media/profiles suites passed on earlier binary; post-restart assertion still used old page_id. Not counted as final qualification; current source rerun replaces it."
+    },
+    {
+      "case": "DPR-specific test selection",
+      "outcome": "Default Chromium suite skips dedicated DPR2 case; that case passed separately at DEVICE_SCALE=2. An initial broad DPR2 filter also selected a DPR1-sized giant-page fixture and exceeded the image budget; it is not counted as a DPR2 pass."
+    }
+  ],
+  "test_sources_sha256": {
+    "agent-space/tests/browser_bridge.py": "d1a3d1e93c049843b0c7eaf57db7d108664de1076632f9a6290bff53e8166308",
+    "agent-space/tests/browser_client.py": "8fffe053439cebd55df9d3781c859e9a89ec612995995a62e5c5911d69f8e9a7",
+    "agent-space/tests/browser_tools.node.cjs": "657361130498d381975ba72302ebd73cd9322fec797827d59a6dfa1624507bf6",
+    "agent-space/tests/browser_worker_errors.node.cjs": "51e93f64b708204afbb1818ccb9479d2e09beddb667adf160c3ad44c11849916",
+    "agent-space/tests/semantic_observation.node.cjs": "e61be24fc3f966c9b22bbf996dff5d6ae0e82d54132f0bb9d7e37408a1b8bb67",
+    "agent-space/tests/test_bash_vm.py": "2ee38a8d135211ffd01b2bb54d3dc36a248030037fd30af6344cd9638a8e5ee7",
+    "agent-space/tests/test_browser_lifecycle_vm.py": "66c752046175134b3c132351c561d79c09dffc0d7a75726f9d39494e73d48817",
+    "agent-space/tests/test_browser_pages_vm.py": "a6016285de5d2d5ce91597bbc59378df3165c458a5bcd6c7ec9ae689d50bd10d",
+    "agent-space/tests/test_browser_profiles_vm.py": "0b36d3e3a93fcf40b8c878cfff93793ad3804224aecb59bcf7beb2d7b2765089",
+    "agent-space/tests/test_browser_structured_vm.py": "1a6a184d2d657cc3962c3eaa63bd408bb15bd16bed0ff91d8204cdd58967f095",
+    "agent-space/tests/test_browser_vm.py": "090c6a8323235ce2984a4741c2974390d5e1ffb8dfedd0258e035224bf433448",
+    "agent-space/tests/test_dav_capacity_vm.py": "0274271eddc0bc525b546c6a80dd3e11d37510af994a9a3b8f79a9f12fe437fe",
+    "agent-space/tests/test_dav_restart_vm.py": "99f21fff88a67966ad9dddc5bd577e81d85a53918a379b36527526b900dca603",
+    "agent-space/tests/test_desktop_files_vm.py": "857a51369320451b30e311da08083bd336c8d4a37a5c45cdd3d7a910f34cacc4",
+    "agent-space/tests/test_exec_owner.py": "eaffa0acb0cb6c8b0f3d7115d2fd5cc8d52a03727f9aaf8876637e75ead200be",
+    "agent-space/tests/test_failed_probe.py": "7955b323767598d0eb6cefa6bad963b3387ec334461e2db40155f8aa87d5b2ec",
+    "agent-space/tests/test_file_concurrency_vm.py": "c8dd516d215b707a8ec197add7c2a705cf1597fbbeedef2c14cc184e2ec3faca",
+    "agent-space/tests/test_file_operations.py": "2f5f1258513911e1c8f9c1f2b20f6a82dc5d75e5dbbcd5e40b0a76a3a9d7ed4e",
+    "agent-space/tests/test_file_read.py": "aa83039ce95c786639a66e92ee6b94c44791d102e09c6c9b263fed3c6d4f848a",
+    "agent-space/tests/test_managed_cleanup.py": "480be827daedf52f8bdf6d116f82ffe647ca9b8789bcbe7b4659c68dc2c222b3",
+    "agent-space/tests/test_media_vm.py": "1ebc1dc0d715a27fd7101effb78bd8074f6dccc4d55db45edf1ab5fc72bc5bfa",
+    "agent-space/tests/test_migration_cli.py": "bc188a89ee1a81c382aa83ff3c147fb440efcd40e2518d5eab4139137c951d22",
+    "agent-space/tests/test_msb_patches.py": "4b77bc61dceb8893d58656807e74955f5218d8c0b4027e5df2c6668f024ca48a",
+    "agent-space/tests/test_tmpfs.py": "0fec75c19d889916175c567f89f59a9af38a7466110de090f0d9df79401e9154",
+    "agent-space/tests/test_tool_errors_vm.py": "5abe77bd0c360a735a2bcc16d0d7dfe75bf84e360196905787e414b4a8f5f768",
+    "agent-space/tests/test_workspace_layout_vm.py": "0ef7e3859502a6a20c0c3aaa6848d0ecba377878b5418c14f5f3314729920a64",
+    "agent-space/tests/test_workspace_transfer.py": "761d71336df7b3b11e13056146d81f2199657d72d69ac117febb5a2f5a390175"
+  },
+  "boundaries": [
+    "Tools-only qualification deliberately omits full file-flow, standalone lifecycle suite and desktop UI interaction suite.",
+    "No final release images, offline packages or production rollout were performed.",
+    "Token fixture comparison is not a model workflow evaluation.",
+    "One DPR2-specific case skipped by the default headed run passed in its dedicated run; skip is not counted as a pass."
+  ]
+}

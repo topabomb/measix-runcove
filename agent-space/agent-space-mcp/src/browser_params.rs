@@ -23,7 +23,7 @@ pub struct SnapshotParams {
     pub diff: Option<bool>,
     #[serde(default, deserialize_with = "publish_params::optional_string")]
     #[schemars(
-        description = "Element ref from an observation. Scope the element list and optional text to its subtree. Default: whole page. Floating panels and images remain page-wide. Excludes diff=true."
+        description = "Element ref from an observation. Scope the observation to its subtree. Default: whole page. Images remain page-wide. Excludes diff=true."
     )]
     pub r#ref: Option<String>,
     #[serde(default)]
@@ -32,9 +32,7 @@ pub struct SnapshotParams {
     )]
     pub image: Option<bool>,
     #[serde(default)]
-    #[schemars(
-        description = "Include up to 40 lines of page text within the selected scope; default false."
-    )]
+    #[schemars(description = "Include long page text excerpts in the observation; default false.")]
     pub text: Option<bool>,
     #[serde(default)]
     #[schemars(range(min = 0, max = 10))]
@@ -400,7 +398,7 @@ pub struct ActParams {
     #[serde(default, deserialize_with = "optional_steps")]
     #[schemars(length(min = 1, max = 20))]
     #[schemars(
-        description = "Ordered steps for execute. Element interactions auto-wait. If a step changes later targets, end the batch and use fresh refs from its feedback. Validated before execution; a runtime failure stops without undoing completed steps. Requires AI control."
+        description = "Ordered steps for execute. Element interactions auto-wait. Validated before execution; a runtime failure stops without undoing completed steps. Requires AI control."
     )]
     pub actions: Option<Vec<ActStep>>,
     #[serde(default, deserialize_with = "publish_params::optional_string")]
@@ -410,7 +408,7 @@ pub struct ActParams {
     pub page_id: Option<String>,
     #[serde(default, deserialize_with = "publish_params::optional_choice")]
     #[schemars(
-        description = "Page feedback: usually omit for default diff; snapshot returns the full view, none omits feedback. Failures retain completed results and available observations."
+        description = "End-of-batch feedback: diff (default), snapshot, or none. Diff compares the previous returned observation; without a usable baseline, returns a snapshot. Failures may include a diagnostic observation."
     )]
     pub then: Option<ActThen>,
     #[serde(default)]

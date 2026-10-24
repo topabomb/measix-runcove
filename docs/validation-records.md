@@ -6,6 +6,28 @@
 
 公开 Git 历史从整理后的首次提交开始，未保留此前的私有开发历史。下列旧报告及其证据中的 Git SHA 是当时输入的标识，不能在公开仓库中检出，也不能据此复现旧构建；源码摘要和镜像 ID 继续标识原始验证对象。首次提交包含之后的修复和文档整理，不能直接沿用旧镜像的资格结论；发布前仍须按当前源码重新构建并验证。
 
+## 浏览器语义反馈统一（2026-10-24）
+
+四个浏览器工具和16种动作保持，公开响应移除 value 包装，采用 completed_steps/total_steps、page、observation/observation_diff；失败步骤从1计数。控件、独立文字和真实浮层合入一棵有界语义树，差异包含旧行、新行及归属上下文；删除重复 text_added 与 CSS 浮层列表。基准改为每个 MCP 连接持有，旧任务和其他连接不会覆盖它；导航、重排、截断或缺少可靠基准时回退快照。完整语义见[浏览器合同](browser-desktop.md)，公开输入说明保持克制。
+
+最终构建输入摘要 `7341c72ce25e8f88c7ab63221e4de28488c76bf356180a9a6564f7cb1855a2a1`。Rust workspace 库回归、最终 MCP 38项及实际 HTTP 合同5项（默认/无默认特性各验证）、desktop helper 9项、语义树6项、managed cleanup 8项、exec owner 5项通过；workspace all-targets 和 Standalone lib/bins Clippy、格式与语法检查通过，Standalone normal/build 依赖不含 MSB/libkrun。完整 Chromium 套件37项通过、1项高DPI专用用例跳过，该用例另在DPR2环境通过。
+
+同一最终源码和冻结二进制通过两入口的独立 tools-only 开发资产资格：Server 40项共享浏览器/媒体/资料测试通过；Standalone 39项通过、1项 Server 专属隔离用例按范围跳过。两入口均执行真实60秒等待、取消、300秒资料恢复和降低额度后的重启恢复；Standalone 另通过14项容器、权限、根任务归属及重启检查。所有本次资格容器和卷已清理。该范围不包含完整文件流、独立生命周期和真实桌面 UI 套件，不等于完整镜像发布资格；没有发布镜像、离线包或部署生产。
+
+验收期间迁移了仍读取旧字段的媒体、资料及重启检查器；补齐原生 dialog 缺失 AX 名称时的 aria-labelledby/aria-label 语义。一次早期 Chromium 完整运行在原生对话框观察处阻塞，随后单项和完整重跑均通过，根因未定位，不声称已消除此偶发问题。首次 Server 演练误选升级前基线镜像，启动前置失败，清理后改用0.7.9镜像通过；失败轮次未计作通过。完整证据保留各轮次边界。
+
+固定菜单夹具的三次观察使用 o200k_base 计数，由414降为234 token；首次快照略增，动作反馈及空差异下降。对照保持调用数相同并归一化随机身份，未包含任务外壳（含旧 value 包装）、耗时/控制字段与工具描述；它只代表该夹具，不代表通用网页收益或 Agent 成功率。
+
+[实际 browser_act 请求与返回](evidence/browser-feedback-20261024/act-example.json) · [验证输入、结果与边界](evidence/browser-feedback-20261024/verification.json) · [固定夹具计数](evidence/browser-feedback-20261024/metrics.json) · [旧反馈](evidence/browser-feedback-20261024/old-public.json) · [新反馈](evidence/browser-feedback-20261024/new-public.json)。
+
+### 全部变更复审与候选构建
+
+按原始目标逐项复审全部待提交变更，修正跨区域移除项的排列、面板分组误带无关兄弟节点、并发/跨连接差异使用不匹配基准、名称补全覆盖原角色/状态和超长标签，以及纯等待旧字段断言。相关差异回退快照时使用任务已保存的树，不重新执行动作或观察。
+
+复审源码摘要 `36fb4b2c8a1708f37a21bd5df1b1e2f96d484935f38a1a08648673407eb76745`。MCP 库39项与HTTP合同5项在默认/无默认特性下通过；语义回归9项通过；完整Chromium回归37项通过、1项DPR专用用例按范围跳过，名称补全的最终改动另通过菜单/嵌套浮层及原生/Shadow DOM对话框两项实机用例。Clippy、格式和语法检查通过。release候选由现有受审Docker构建链生成，实际链接SQLite 3.51.3；首次构建期间追加名称保留修正，因此只采用冻结最终源码后的第二次候选。
+
+上方两入口完整tools-only记录保留原源码身份，不冒充本次复审修正后的整套重跑；本次以针对性复验及后续实际生产工具检查覆盖新增修正。见[复审及候选证据](evidence/browser-feedback-20261024/review.json)。
+
 ## MSB 0.7.9 升级交付（2026-10-23）
 
 SDK、CLI、agent-client 统一锁定 0.7.9，两个 vendor 副本以官方 crate 为基础，仅保留配对的 Linux 生命周期临时补丁。上游已覆盖的 relay 回补、0.7.2 专用 CLI 修复工具及对应 Docker stage 已删除。SQLite 3.51.3 仍保留：上游内置 3.46.0 尚未修复独立的 WAL-reset 问题；来源、价值及逐项撤销条件统一见[运行时维护](runtime.md)。

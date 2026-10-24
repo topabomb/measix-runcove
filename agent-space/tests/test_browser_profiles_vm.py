@@ -49,9 +49,9 @@ state.write_text(json.dumps(data))""")
    until=time.monotonic()+10
    while True:
     value=client.snapshot()
-    if value.get('page_id') and value.get('browser_ui')!='profile_picker':break
+    if value.get('page',{}).get('page_id') and value.get('browser_ui')!='profile_picker':break
     self.assertLess(time.monotonic(),until,value);time.sleep(.1)
-   view=client.navigate('http://127.0.0.1:8124/');selected_id=view['page_id']
+   view=client.navigate('http://127.0.0.1:8124/');selected_id=view['page']['page_id']
    client.fixture_js("await page.evaluate(()=>localStorage.setItem('page-profile-fixture','selected'));return true;",selected_id)
    api('/control',{'mode':'HUMAN'})
    observed,_=client.finish(client.tool('browser_snapshot',{}));self.assertEqual(observed['control']['mode'],'HUMAN')
@@ -73,14 +73,14 @@ state.write_text(json.dumps(data))""")
    self.assertGreater(time.monotonic()-started,285)
    python(f"from pathlib import Path;import json;state=json.loads((Path({root!r})/'Local State').read_text());assert state['was']['restarted'] is True;assert state['profile']['show_picker_on_startup'] is True")
    value=client.snapshot();self.assertEqual(sorted(t['url'] for t in client.snapshot(view='tabs')['tabs']),before)
-   self.assertEqual(client.fixture_js("return await page.evaluate(()=>localStorage.getItem('page-profile-fixture'));",value['page_id']),'selected')
+   self.assertEqual(client.fixture_js("return await page.evaluate(()=>localStorage.getItem('page-profile-fixture'));",value['page']['page_id']),'selected')
    python(f"from pathlib import Path;import json;state=json.loads((Path({root!r})/'Local State').read_text());assert state['profile']['show_picker_on_startup'] is True")
    print('PASS idle wake restores profiles and selection without changing picker preference',flush=True)
    node(close);self.assertEqual(client.snapshot().get('browser_ui'),'profile_picker')
    node(close)
    python(f"from pathlib import Path;import json;p=Path({root!r})/'Local State';data=json.loads(p.read_text());data['profile']['show_picker_on_startup']=False;data['profile']['last_used']={fixture!r};p.write_text(json.dumps(data))")
    value=client.snapshot();self.assertTrue(client.snapshot(view='tabs')['tabs'])
-   self.assertEqual(client.fixture_js("return await page.evaluate(()=>localStorage.getItem('page-profile-fixture'));",value['page_id']),'selected')
+   self.assertEqual(client.fixture_js("return await page.evaluate(()=>localStorage.getItem('page-profile-fixture'));",value['page']['page_id']),'selected')
   finally:
    api('/control',{'mode':'AI'});node(close)
    python(f"from pathlib import Path;import shutil;p=Path({root!r});backup=p/'page-quota-local-state.backup';(p/'Local State').write_bytes(backup.read_bytes());backup.unlink();shutil.rmtree(p/{fixture!r})")

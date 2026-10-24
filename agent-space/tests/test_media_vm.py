@@ -69,7 +69,7 @@ class MediaQualification(unittest.TestCase):
 
  def test_02_screenshots_semantics_and_intervals(self):
   self.client.navigate('data:text/html,<title>Observe fixture</title><button>Continue</button>')
-  dom=self.client.snapshot();self.assertIn('elements',dom);self.assertNotIn('recent_tasks',dom)
+  dom=self.client.snapshot();self.assertIn('observation',dom);self.assertNotIn('recent_tasks',dom)
   recent=self.client.snapshot(recent_tasks_limit=1);self.assertEqual(len(recent['recent_tasks']),1)
   for view in ['page','desktop']:
    value,reply=self.finish(self.client.tool('screen_observe',{'view':view,'count':3,'interval_secs':1}))
@@ -82,7 +82,7 @@ class MediaQualification(unittest.TestCase):
    self.assertNotIn('files',value)
    frames=value['frames'];self.assertEqual([f['index'] for f in frames],[1,2,3])
    self.assertTrue(all(b['elapsed_secs']-a['elapsed_secs']>=0.89 for a,b in zip(frames,frames[1:])))
-  after=self.client.snapshot();self.assertEqual(dom['page_id'],after['page_id'])
+  after=self.client.snapshot();self.assertEqual(dom['page']['page_id'],after['page']['page_id'])
   value,reply=self.finish(self.client.tool('screen_observe',{'view':'desktop','count':8,'interval_secs':0,'page_id':'missing'}))
   self.assertFalse(reply.get('isError'),value);self.assertEqual(value['captured_count'],8)
 
@@ -205,14 +205,14 @@ class MediaQualification(unittest.TestCase):
    self.assertEqual(self.client.tool('browser_act',{'op':'wait','task_id':value['task_id'],'wait_secs':0}),reply)
 
  def test_04b_closed_target_preserves_frames_without_switching_tabs(self):
-  target=self.client.snapshot()['page_id']
+  target=self.client.snapshot()['page']['page_id']
   value=text(self.client.tool('screen_observe',{'view':'page','page_id':target,'count':8,'interval_secs':3,'save_original':True}))
   self.assertEqual(value['state'],'running',value)
   task=value['task_id']
   self.client.act([{'do':'tab','action':'new'},{'do':'tab','action':'close','page_id':target}],page_id=target)
   value,reply=self.finish(self.client.tool('browser_act',{'op':'wait','task_id':task}))
   self.assertEqual(value['state'],'failed',value);self.assertEqual(value['error']['code'],'PAGE_NOT_FOUND')
-  self.assertEqual(value['page_id'],target);self.assertGreaterEqual(value['captured_count'],1)
+  self.assertEqual(value['page']['page_id'],target);self.assertGreaterEqual(value['captured_count'],1)
   self.assertEqual(len(value['files']),value['captured_count'])
   self.assertEqual(value['captured_count'],len([c for c in reply['content'] if c['type']=='image']))
 
@@ -230,7 +230,7 @@ class MediaQualification(unittest.TestCase):
    self.assertIn('T',state['text'])
   finally:
    self.client.tool('bash',{'cmd':"python3 -c \"import os,signal;from pathlib import Path;p=Path('/workspace/qualification/stopped-browser.pid');os.kill(int(p.read_text()),signal.SIGCONT) if p.exists() else None\""})
-  self.assertTrue(self.client.snapshot().get('page_id'))
+  self.assertTrue(self.client.snapshot().get('page',{}).get('page_id'))
 
  def test_06_parallel_images_and_mcp_cancellation_behind_a_file_lock(self):
   root='/workspace/qualification/media/'

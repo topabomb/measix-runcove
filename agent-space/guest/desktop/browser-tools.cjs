@@ -5,9 +5,9 @@ const fs = require("node:fs"),
   path = require("node:path"),
   crypto = require("node:crypto");
 const { pageCapture, clipText } = require("./observation.cjs");
+const semantic = require("./semantic-observation.cjs");
 const PIN = "runcove.browser.ref.v1",
-  DOC = "runcove.browser.document.v1",
-  BASE = "runcove.browser.snapshot.v1";
+  DOC = "runcove.browser.document.v1";
 const INTERACTIVE = new Set([
   "button",
   "link",
@@ -55,8 +55,7 @@ const TEXTUAL = new Set([
   "definition",
   "code",
 ]);
-const MAX_NODES = 600,
-  MAX_LINES = 150;
+const MAX_NODES = 600;
 const REF_RE = /^e[A-Za-z0-9_-]{10}$/;
 const STEP_FIELDS = {
   click: ["ref", "image_id", "x", "y", "button", "double"],
@@ -205,7 +204,7 @@ function classify(e, page) {
       message:
         "Target is covered by " +
         cover[1] +
-        "; inspect the returned layers and act on the covering panel first.",
+        "; inspect the current observation for the covering element.",
     };
   if (/Timeout|timed out/i.test(m))
     return {
@@ -302,46 +301,7 @@ async function view(page, boxes = false) {
         if (n.ref) refs.set(n.ref, n);
       }),
     );
-  const lines = selected
-    .filter(
-      (n) =>
-        n.ref &&
-        (INTERACTIVE.has(n.role) ||
-          CONTEXT.has(n.role) ||
-          n.attrs.cursor === "pointer"),
-    )
-    .map((n) => {
-      let s =
-        n.ref +
-        " " +
-        n.role +
-        (n.name ? " " + JSON.stringify(clipText(n.name, 120)) : "");
-      if (n.text && n.text !== n.name)
-        s += " =" + JSON.stringify(clipText(n.text, 180));
-      for (const a of [
-        "checked",
-        "disabled",
-        "expanded",
-        "pressed",
-        "selected",
-        "level",
-      ])
-        if (n.attrs[a] !== undefined)
-          s += " [" + a + (n.attrs[a] === true ? "" : "=" + n.attrs[a]) + "]";
-      const frames = framePath(n);
-      if (frames.length) s += " (iframe " + frames.join("/") + ")";
-      return s;
-    });
-  const texts = nodes
-    .filter((n) => (TEXTUAL.has(n.role) || n.text) && (n.text || n.name))
-    .map((n) => clipText(n.text || n.name, 300));
-  return {
-    nodes,
-    refs,
-    lines,
-    texts,
-    truncated: candidates.length > MAX_NODES,
-  };
+  return { nodes, refs, truncated: candidates.length > MAX_NODES };
 }
 function subtree(v, ref) {
   const root = v.refs.get(ref);
@@ -358,88 +318,7 @@ function subtree(v, ref) {
     ...v,
     nodes: v.nodes.filter(inside),
     refs: new Map([...v.refs].filter(([, n]) => inside(n))),
-    lines: v.lines.filter((l) => inside(v.refs.get(l.split(" ")[0]))),
-    texts: v.nodes
-      .filter((n) => inside(n) && (TEXTUAL.has(n.role) || n.text))
-      .map((n) => clipText(n.text || n.name, 300))
-      .filter(Boolean),
   };
-}
-function rendered(v) {
-  return {
-    elements: v.lines.slice(0, MAX_LINES).join("\n"),
-    element_count: v.lines.length,
-    truncated: v.truncated || v.lines.length > MAX_LINES,
-  };
-}
-async function baseline(page) {
-  return bounded(
-    page.evaluate((key) => document[Symbol.for(key)] || null, BASE),
-    3000,
-  );
-}
-async function present(page, v, mode = "snapshot", save = true) {
-  const previous = await baseline(page),
-    doc = await documentId(page),
-    url = page.url();
-  let result;
-  if (
-    mode === "diff" &&
-    previous &&
-    previous.document === doc &&
-    previous.url === url
-  ) {
-    const before = new Map(previous.lines.map((l) => [l.split(" ")[0], l])),
-      after = new Map(v.lines.map((l) => [l.split(" ")[0], l]));
-    const added = [],
-      removed = [],
-      changed = [],
-      textAdded = v.texts.filter((t) => !previous.texts.includes(t)),
-      textRemoved = previous.texts.filter((t) => !v.texts.includes(t));
-    for (const [r, l] of after) {
-      if (!before.has(r)) added.push(l);
-      else if (before.get(r) !== l) changed.push(l);
-    }
-    for (const r of before.keys()) if (!after.has(r)) removed.push(r);
-    result = {
-      diff: {
-        added: added.slice(0, 150),
-        removed: removed.slice(0, 150),
-        changed: changed.slice(0, 150),
-        text_added: textAdded.slice(0, 40),
-        text_removed: textRemoved.slice(0, 40),
-        truncated:
-          v.truncated ||
-          added.length > 150 ||
-          removed.length > 150 ||
-          changed.length > 150 ||
-          textAdded.length > 40 ||
-          textRemoved.length > 40,
-      },
-    };
-    if (
-      !added.length &&
-      !removed.length &&
-      !changed.length &&
-      !textAdded.length &&
-      !textRemoved.length
-    )
-      result.diff.unchanged = true;
-  } else result = mode === "none" ? {} : rendered(v);
-  if (save)
-    await bounded(
-      page.evaluate(
-        ([key, state]) => {
-          document[Symbol.for(key)] = state;
-        },
-        [
-          BASE,
-          { document: doc, url, lines: v.lines, texts: v.texts.slice(0, 600) },
-        ],
-      ),
-      3000,
-    );
-  return result;
 }
 async function layers(page) {
   const all = [];
@@ -448,8 +327,6 @@ async function layers(page) {
     const frameLayers = await bounded(
       frame.evaluate(
         ([pin, doc, interactive]) => {
-          const clip = (text, max) =>
-            Array.from(String(text)).slice(0, max).join("");
           const visible = (e) => {
             const b = e.getBoundingClientRect(),
               s = getComputedStyle(e);
@@ -476,7 +353,7 @@ async function layers(page) {
           const elements = descendants(document);
           const controlled = new Set(
             elements.flatMap((e) =>
-              (e.getAttribute("aria-controls") || "")
+              (e.getAttribute("aria-expanded") === "true" ? e.getAttribute("aria-controls") || "" : "")
                 .split(/\s+/)
                 .filter(Boolean),
             ),
@@ -485,34 +362,21 @@ async function layers(page) {
             ["dialog", "alertdialog", "menu", "listbox", "tooltip"].includes(
               e.getAttribute("role"),
             ) || e.matches('dialog[open],:popover-open,[aria-modal="true"]');
-          const candidates = elements
-            .filter((e) => {
-              if (!visible(e)) return false;
-              const style = getComputedStyle(e);
-              return (
-                semantic(e) ||
-                controlled.has(e.id) ||
-                (["fixed", "absolute"].includes(style.position) &&
-                  // Application shells repeat the entire page; real menus,
-                  // dialogs and controlled panels above remain observable.
-                  !e.matches('nav,header,aside,main,[role="navigation"],[role="main"],[role="banner"]') &&
-                  !e.querySelector('nav,header,aside,main,[role="navigation"],[role="main"]') &&
-                  e.querySelector(
-                    'button,input,a,[role="button"],[role="menuitem"]',
-                  ))
-              );
-            })
-            .sort((a, b) => Number(semantic(b)) - Number(semantic(a)));
+          const candidates = elements.filter(e => visible(e) && (semantic(e) || controlled.has(e.id)));
           return {
             truncated: candidates.length > 20,
             rows: candidates.slice(0, 20).map((e) => {
-              const r = e.getBoundingClientRect();
-              const text = e.innerText ?? e.textContent ?? "";
+              const generation = (document[Symbol.for(doc)] ||= crypto.randomUUID());
+              if (!e[Symbol.for(pin)] || e[Symbol.for(pin)].document !== generation) {
+                const bytes = crypto.getRandomValues(new Uint8Array(8));
+                e[Symbol.for(pin)] = {document: generation, ref: "e" + btoa(String.fromCharCode(...bytes)).replace(/\+/g,"-").replace(/\//g,"_").slice(0,10)};
+              }
               const refs = descendants(e, true)
                 .filter((n) => n === e || n.matches('button,input,textarea,select,a[href],[contenteditable="true"]') || interactive.includes(n.getAttribute("role")))
                 .map((n) => n[Symbol.for(pin)])
                 .filter((p) => p?.document === document[Symbol.for(doc)]);
               return {
+                ref: e[Symbol.for(pin)].ref,
                 role:
                   e.getAttribute("role") ||
                   (e.tagName === "DIALOG" ? "dialog" : "panel"),
@@ -527,16 +391,11 @@ async function layers(page) {
                     .join(" ")
                     .trim()
                     .slice(0, 200),
-                ...(text ? { text: clip(text, 300) } : {}),
                 modal:
                   e.getAttribute("aria-modal") === "true" ||
                   e.matches(":modal"),
-                position: getComputedStyle(e).position,
-                z_index: getComputedStyle(e).zIndex,
-                coordinate_space: "frame_css",
-                box: { x: r.x, y: r.y, width: r.width, height: r.height },
-                ...(refs.length ? { refs: refs.slice(0, 20).map((p) => p.ref) } : {}),
-                ...(text.length > 300 || refs.length > 20 ? { truncated: true } : {}),
+                refs: refs.slice(0, 600).map(p => p.ref),
+                ...(refs.length > 600 ? { truncated: true } : {}),
               };
             }),
           };
@@ -544,7 +403,7 @@ async function layers(page) {
         [PIN, DOC, [...INTERACTIVE]],
       ),
       3000,
-    ).catch(() => ({ rows: [], truncated: true }));
+    );
     incomplete ||= frameLayers.truncated;
     all.push(
       ...frameLayers.rows.map((r) => ({
@@ -1047,16 +906,13 @@ function compactObservation(value) {
     }
   }
   if (!value.truncated) delete value.chars;
-  for (const key of ["truncated", "text_truncated", "layers_truncated", "iframe"])
+  for (const key of ["truncated", "iframe"])
     if (value[key] === false) delete value[key];
-  for (const key of ["layers", "frame_path"])
+  for (const key of ["frame_path"])
     if (Array.isArray(value[key]) && value[key].length === 0) delete value[key];
-  for (const key of ["matches", "fields", "tables", "layers"])
+  for (const key of ["matches", "fields", "tables"])
     for (const item of value[key] || []) compactObservation(item);
-  if (value.diff) {
-    for (const key of Object.keys(value.diff))
-      if (value.diff[key] === false || (Array.isArray(value.diff[key]) && !value.diff[key].length)) delete value.diff[key];
-  }
+
   return value;
 }
 
@@ -1106,21 +962,23 @@ async function run(task, env) {
     };
   };
   const observe = async (mode, scope) => {
-    const p = await getPage(),
+    const p = await getPage(), beforeDocument = await documentId(p),
       v = await view(p);
     const selected = scope ? subtree(v, scope) : v;
+    const panels = scope ? {} : await layers(p);
+    const tree = semantic.build(selected.nodes, INTERACTIVE, panels.layers || [], selected.truncated || panels.layers_truncated, args.text === true);
+    const document = await documentId(p), url = p.url();
+    if (beforeDocument !== document) throw fault("STALE_OBSERVATION", "Document changed during observation.");
+    const identity = { document, url, mode: args.text ? "text" : "compact" };
+    const previous = args._baselines?.[current];
+    const feedback = semantic.present(tree, previous, mode, identity);
     return compactObservation({
       ...(await metadata()),
       url: p.url(),
       title: await bounded(p.title(), 3000).catch(() => ""),
-      ...(await present(p, selected, mode, !scope)),
-      ...(await layers(p)),
-      ...(args.text
-        ? {
-            text: selected.texts.slice(0, 40),
-            text_truncated: selected.texts.length > 40,
-          }
-        : {}),
+      ...feedback,
+      ...(!scope ? { _observation: { ...identity, ...tree, page_id: current,
+        order: args._observation_order || 0, base_order: previous?.order || 0, scope: args._observation_scope } } : {}),
       ...(args.image ? { image: await capture(p, env.output, selected) } : {}),
     });
   };
@@ -1555,7 +1413,7 @@ async function run(task, env) {
     } catch (e) {
       failure = {
         ...classify(e, page),
-        index,
+        step_number: index + 1,
         do: a.do,
         ...(a.ref ? { ref: a.ref } : {}),
       };
@@ -1577,17 +1435,17 @@ async function run(task, env) {
       };
     } catch (e) {
       Object.assign(result, await metadata().catch(() => ({})));
-      result.observe_error = classify(e, page);
+      result.observation_error = classify(e, page);
     }
   } else if (page || observeTab) Object.assign(result, await metadata().catch(() => ({})));
   for (const hook of hooks.values()) await hook.finish(result);
 
   if (failure) {
-    const { index, do: action, ref, ...error } = failure;
+    const { step_number, do: action, ref, ...error } = failure;
     return {
       value: result,
       error,
-      failed_step: { index, do: action, ...(ref ? { ref } : {}) },
+      failed_step: { step_number, do: action, ...(ref ? { ref } : {}) },
       side_effects: started || mutated ? "may_have_occurred" : "not_started",
     };
   }
