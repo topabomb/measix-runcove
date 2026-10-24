@@ -193,7 +193,7 @@ pub enum ActStep {
         )]
         to_y: Option<f64>,
     },
-    /// Upload files from the connected Runcove space through a page's file input or file chooser.
+    /// Set a file input directly, or click the referenced element and select files in its file chooser.
     Upload {
         #[schemars(
             description = "Observed ref of a file input or an element that opens a file chooser."

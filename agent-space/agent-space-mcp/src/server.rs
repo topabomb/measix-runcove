@@ -482,7 +482,7 @@ impl AgentSpaceMcpServer {
             .await)
     }
     #[tool(
-        description = "Execute browser or desktop steps in order, with page feedback at the end of the batch. Use op=wait or op=cancel with task_id for an existing task. A running task continues in the background; do not resubmit its actions."
+        description = "Execute browser or desktop steps in order, with page feedback at the end of the batch. Use op=wait or op=cancel with task_id for an existing task. A running task continues in the background; do not resubmit its actions. Use the upload action to select files from the connected Runcove space for a website."
     )]
     async fn browser_act(
         &self,
