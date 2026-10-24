@@ -2,7 +2,7 @@
   "date": "2026-10-24",
   "build": {
     "source_digest": "667c8c8284f47a3a3c7954a67cdc971cdcf76b44aa2e6c1e3a632bdd13308864",
-    "builder_image": "sha256:7e42b4313c4927fd7068546b866eeb08758500970f58811c462e77cdfc6748f3",
+    "builder_image": "sha256:cc59e1a31c5166a1b4843feca5507ad27a45daf595fde26b3e317d92f150dbc0",
     "base_build": {
       "source_digest": "6d9cf80e3b5a7762c2a1133f96b34f43b38f070dce4d64a9c9fd2dacd0bd2a35",
       "builder_image": "sha256:a30a57e93e07e1dc082cafee8160b1818cbb90f555e222366ef85f721a4a9389",
@@ -24,7 +24,7 @@
     },
     "binaries_sha256": {
       "agent-space-mcp": "f477499781bacea8e139a73b650c7587568f0cca10773f40efc8bee3c8c23b8d",
-      "agent-space-desktop": "8e1d3fbeae3c7785e973064e7dfc667d19b190bd65199f2dfb262fdc98c64d8c"
+      "agent-space-desktop": "042e566d81c07734435904ff8c413936630e08c0628704095b7172d04fecb94b"
     },
     "sqlite_link": "3.51.3 verified by docker/verify-sqlite-link.py"
   },
@@ -35,5 +35,6 @@
     "chromium_batch_feedback_regression": "passed",
     "format_diff_python_syntax": "passed"
   },
-  "scope": "Targeted validation, not full browser qualification or full image release. First Chromium attempt used a page-free timer and was corrected to a page condition to actually exercise observation."
+  "scope": "Targeted validation, not full browser qualification or full image release. First Chromium attempt used a page-free timer and was corrected to a page condition to actually exercise observation.",
+  "build_correction": "Initial --bin selected MCP only; corrected to explicitly build both MCP and desktop helper. Final build identity above includes rebuilt helper."
 }
