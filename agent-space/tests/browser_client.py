@@ -78,7 +78,7 @@ def text(result):
  except json.JSONDecodeError:return {'text':raw}
 
 def image_dimensions(reply):
- """Inspect returned WebP bytes; geometry is intentionally absent from MCP text."""
+ """Decode actual WebP dimensions independently of the reported metadata."""
  data=base64.b64decode(next(c['data'] for c in reply['content'] if c['type']=='image'))
  assert data[:4]==b'RIFF' and data[8:12]==b'WEBP'
  offset=12

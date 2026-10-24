@@ -16,6 +16,7 @@ class MediaQualification(unittest.TestCase):
  @classmethod
  def setUpClass(cls):
   cls.client=Client('desktop');cls.client.initialize()
+  cls.client.navigate('data:text/html,<title>Media qualification</title>')
 
  @classmethod
  def finish(cls,reply):
@@ -41,7 +42,7 @@ class MediaQualification(unittest.TestCase):
     self.assertEqual(images[0]['mimeType'],'image/webp')
     base64.b64decode(images[0]['data'],validate=True)
     self.assertLessEqual(max(image_dimensions(reply)),2560)
-    self.assertEqual(set(text(reply)),{'path','size','format'});self.assertEqual(text(reply)['format'],'WebP')
+    self.assertEqual((text(reply)['width'],text(reply)['height']),image_dimensions(reply));self.assertEqual(set(text(reply)),{'path','width','height','format'} | ({'original_width','original_height'} if file=='transparent.png' else set()));self.assertEqual(text(reply)['format'],'WebP')
     self.assertNotIn('data',text(reply));self.assertNotIn('structuredContent',reply)
     if file=='wrong-extension.txt':
      expected=meta['sha256']
@@ -67,6 +68,12 @@ class MediaQualification(unittest.TestCase):
    if name=='custom':
     with self.assertRaisesRegex(RuntimeError,'not enabled'):client.tool('screen_observe',{'view':'desktop'})
 
+ def test_01b_write_returns_utf8_size_bytes(self):
+  path='/workspace/qualification/size.txt'
+  reply=self.client.tool('write',{'path':path,'content':'你好\n'})
+  self.assertFalse(reply.get('isError'))
+  self.assertEqual(text(reply),{'path':path,'size_bytes':7})
+
  def test_02_screenshots_semantics_and_intervals(self):
   self.client.navigate('data:text/html,<title>Observe fixture</title><button>Continue</button>')
   dom=self.client.snapshot();self.assertIn('observation',dom);self.assertNotIn('recent_tasks',dom)
@@ -85,6 +92,34 @@ class MediaQualification(unittest.TestCase):
   after=self.client.snapshot();self.assertEqual(dom['page']['page_id'],after['page']['page_id'])
   value,reply=self.finish(self.client.tool('screen_observe',{'view':'desktop','count':8,'interval_secs':0,'page_id':'missing'}))
   self.assertFalse(reply.get('isError'),value);self.assertEqual(value['captured_count'],8)
+
+ def test_02a_desktop_native_resolution(self):
+  self.client.navigate('data:text/html,<title>Native resolution</title>')
+  initial,reply=self.finish(self.client.tool('screen_observe',{'view':'desktop'}))
+  old=(initial['frames'][0]['width'],initial['frames'][0]['height'])
+  def resize(width,height):
+   script="import ctypes as c; x=c.CDLL('libX11.so.6'); r=c.CDLL('libXrandr.so.2'); x.XOpenDisplay.argtypes=[c.c_char_p]; x.XOpenDisplay.restype=c.c_void_p; d=x.XOpenDisplay(b':1'); assert d; x.XDefaultRootWindow.argtypes=[c.c_void_p]; x.XDefaultRootWindow.restype=c.c_ulong; r.XRRSetScreenSize.argtypes=[c.c_void_p,c.c_ulong,c.c_int,c.c_int,c.c_int,c.c_int]; r.XRRSetScreenSize(d,x.XDefaultRootWindow(d),%d,%d,800,450); x.XSync.argtypes=[c.c_void_p,c.c_int]; x.XSync(d,0); print('RESIZED')"%(width,height)
+   result=self.client.tool('bash',{'cmd':'python3 -c '+shlex.quote(script)})
+   self.assertIn('RESIZED',text(result)['text'])
+  try:
+   resize(3200,1800)
+   self.client.fixture_js("await page.setContent('<button style=\"position:fixed;left:100px;top:100px;width:200px;height:100px\" onclick=\"document.title=String(12345)\">Native target</button>');return true;")
+   point=self.client.fixture_js("return await page.locator('button').evaluate(e=>{const r=e.getBoundingClientRect();return {x:screenX+r.x+r.width/2,y:screenY+outerHeight-innerHeight+r.y+r.height/2};});")
+   value,reply=self.finish(self.client.tool('screen_observe',{'view':'desktop','count':2,'interval_secs':0,'save_original':True}))
+   self.assertFalse(reply.get('isError'),value)
+   images=[c for c in reply['content'] if c['type']=='image']
+   for frame,img in zip(value['frames'],images):
+    self.assertEqual((frame['width'],frame['height']),(3200,1800))
+    self.assertEqual(image_dimensions({'content':[img]}),(3200,1800))
+    self.assertNotIn('original_width',frame);self.assertNotIn('original_height',frame)
+   self.assertEqual(self.client.tool('browser_act',{'op':'wait','task_id':value['task_id'],'wait_secs':0}),reply)
+   clicked,clicked_reply=self.client.act([{'do':'click','image_id':value['frames'][-1]['image_id'],**point}])
+   self.assertFalse(clicked_reply.get('isError'),clicked);self.assertEqual(self.client.fixture_js('return await page.title();'),'12345')
+   saved=self.client.tool('read',{'path':value['files'][0]['path'],'multimodal':True})
+   self.assertEqual((text(saved)['original_width'],text(saved)['original_height']),(3200,1800))
+   self.assertEqual(image_dimensions(saved),(2560,1440))
+  finally:
+   resize(*old)
 
  def test_02b_original_screenshots_are_downloadable_and_keep_capture_bytes(self):
   tools=self.client.call('tools/list',{})['tools']
@@ -108,8 +143,8 @@ class MediaQualification(unittest.TestCase):
     self.assertEqual(str(Path(path).parent),directory or '/workspace/agent-space/artifacts')
     self.assertRegex(Path(path).name,r'^screen-[0-9A-Za-z]{10}\.png$')
     self.assertEqual(file['frame_index'],frame['index']);self.assertEqual(file['image_id'],frame['image_id'])
-    self.assertEqual(set(file),{'path','image_id','frame_index','size','format'});self.assertEqual(file['format'],'PNG')
-    self.assertEqual(set(frame),{'index','image_id','size','format'} | ({'elapsed_secs'} if count>1 else set()))
+    self.assertEqual(set(file),{'path','image_id','frame_index','format'});self.assertEqual(file['format'],'PNG')
+    self.assertEqual(set(frame),{'index','image_id','width','height','format'} | ({'elapsed_secs'} if count>1 else set()))
     saved=self.client.tool('read',{'path':path,'multimodal':True})
     self.assertFalse(saved.get('isError'),text(saved))
     image=next(c for c in saved['content'] if c['type']=='image')
@@ -202,6 +237,8 @@ class MediaQualification(unittest.TestCase):
     value=text(reply);self.assertEqual(value['state'],'running',value);reply=self.client.tool('browser_act',{'op':'cancel','task_id':value['task_id']})
    value,reply=self.finish(reply);self.assertTrue(reply.get('isError'),value);self.assertEqual(value['state'],{'failure':'failed','timeout':'timed_out','cancel':'cancelled'}[ending]);self.assertEqual(len(value['files']),1,value)
    self.assertFalse(any(c['type']=='image' for c in reply['content']))
+   self.assertIs(type(value['files'][0]['size_bytes']),int);self.assertGreater(value['files'][0]['size_bytes'],0)
+   self.assertNotIn('bytes',value['files'][0]);self.assertNotIn('size',value['files'][0])
    self.assertEqual(self.client.tool('browser_act',{'op':'wait','task_id':value['task_id'],'wait_secs':0}),reply)
 
  def test_04b_closed_target_preserves_frames_without_switching_tabs(self):
@@ -278,7 +315,7 @@ time.sleep(5)
   for tool,args in [('browser_snapshot',{'image':True}),('screen_observe',{'view':'page','save_original':True})]:
    value,reply=self.finish(self.client.tool(tool,args));self.assertFalse(reply.get('isError'),value)
    data=value.get('value',value);frame=data['image'] if tool=='browser_snapshot' else data['frames'][0]
-   self.assertEqual(image_dimensions(reply)[0],2560);self.assertEqual(frame['format'],'WebP')
+   self.assertEqual(image_dimensions(reply)[0],2560);self.assertEqual(frame['format'],'WebP');self.assertEqual((frame['width'],frame['height']),image_dimensions(reply));self.assertEqual(frame['original_width'],3000);self.assertGreater(frame['original_height'],0)
    image=next(c for c in reply['content'] if c['type']=='image');self.assertEqual(image['mimeType'],'image/webp')
    (Q/('text-'+tool+'.webp')).write_bytes(base64.b64decode(image['data']))
    (Q/('text-'+tool+'.json')).write_text(json.dumps({'geometry':frame,'bytes':len(base64.b64decode(image['data'])),'files':data.get('files',[])},indent=2))

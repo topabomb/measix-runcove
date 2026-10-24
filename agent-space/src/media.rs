@@ -44,17 +44,15 @@ pub struct Picture {
 }
 
 impl Picture {
-    /// Public image metadata excludes the geometry kept by capture owners.
+    /// Dimensions describe the returned image in pixels.
     pub fn summary(&self) -> serde_json::Value {
-        serde_json::json!({"size": size_label(self.bytes.len()), "format": "WebP"})
-    }
-}
-
-pub fn size_label(bytes: usize) -> String {
-    match bytes {
-        0..=1023 => format!("{bytes} B"),
-        1024..=1_048_575 => format!("{:.1} KiB", bytes as f64 / 1024.0),
-        _ => format!("{:.1} MiB", bytes as f64 / 1_048_576.0),
+        let mut value =
+            serde_json::json!({"width": self.width, "height": self.height, "format": "WebP"});
+        if self.resized {
+            value["original_width"] = self.original_width.into();
+            value["original_height"] = self.original_height.into();
+        }
+        value
     }
 }
 
@@ -86,6 +84,15 @@ fn first<'a>(decoder: impl AnimationDecoder<'a>) -> anyhow::Result<DynamicImage>
 }
 
 pub fn process(bytes: Vec<u8>, output_budget: Option<usize>) -> anyhow::Result<Picture> {
+    process_with_resize(bytes, output_budget, true)
+}
+
+/// Desktop observations retain native pixels; other views use the shared resize policy.
+pub fn process_with_resize(
+    bytes: Vec<u8>,
+    output_budget: Option<usize>,
+    resize: bool,
+) -> anyhow::Result<Picture> {
     anyhow::ensure!(
         bytes.len() <= SOURCE_LIMIT,
         "IMAGE_TOO_LARGE: source exceeds 10 MiB"
@@ -158,9 +165,9 @@ pub fn process(bytes: Vec<u8>, output_budget: Option<usize>) -> anyhow::Result<P
         orientation_corrected,
         first_frame_only,
     };
-    // Every image entry point uses one resize and one encoding policy.
+    // Apply at most one resize; desktop observations preserve native pixels.
     // Do not shrink again or lower quality when the remaining budget is small.
-    if oriented.0.max(oriented.1) > MAX_EDGE {
+    if resize && oriented.0.max(oriented.1) > MAX_EDGE {
         image = image.resize(MAX_EDGE, MAX_EDGE, FilterType::CatmullRom);
     }
     picture.width = image.width();
@@ -232,14 +239,39 @@ mod tests {
                 .pixels()
                 .zip(expected.pixels())
                 .all(|(a, b)| a[3] == b[3]));
-            assert_eq!(
-                output.summary(),
-                serde_json::json!({"size":size_label(output.bytes.len()),"format":"WebP"})
-            );
+            let summary = output.summary();
+            assert_eq!(summary["width"], output.width);
+            assert_eq!(summary["height"], output.height);
+            assert_eq!(summary.get("original_width").is_some(), output.resized);
+            assert_eq!(summary.get("original_height").is_some(), output.resized);
+            assert!(summary.get("size").is_none());
         }
-        assert_eq!(size_label(1023), "1023 B");
-        assert_eq!(size_label(1536), "1.5 KiB");
-        assert_eq!(size_label(1_048_576), "1.0 MiB");
+    }
+    #[test]
+    fn desktop_preserves_native_dimensions_and_budget() {
+        let source = encode(DynamicImage::new_rgb8(3200, 1800), ImageFormat::Png);
+        let desktop = process_with_resize(source.clone(), None, false).unwrap();
+        assert_eq!(
+            image_codec::load_from_memory(&desktop.bytes)
+                .unwrap()
+                .width(),
+            3200
+        );
+        assert_eq!(
+            desktop.summary(),
+            serde_json::json!({"width":3200,"height":1800,"format":"WebP"})
+        );
+        assert!(
+            process_with_resize(source.clone(), Some(desktop.bytes.len() - 1), false)
+                .unwrap_err()
+                .to_string()
+                .contains("IMAGE_BUDGET_EXCEEDED")
+        );
+        let page = process(source, None).unwrap();
+        assert_eq!(
+            page.summary(),
+            serde_json::json!({"width":2560,"height":1440,"original_width":3200,"original_height":1800,"format":"WebP"})
+        );
     }
     #[test]
     fn one_resize_same_quality_for_files_and_sequences() {

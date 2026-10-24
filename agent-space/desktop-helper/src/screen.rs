@@ -224,9 +224,10 @@ async fn capture_sequence(
             None
         };
         let budget = agent_engine::media::OUTPUT_LIMIT - image_bytes;
+        let resize = params.view != "desktop";
         let processed = tokio::task::spawn_blocking(move || {
             let _permit = permit;
-            agent_engine::media::process(raw, Some(budget))
+            agent_engine::media::process_with_resize(raw, Some(budget), resize)
         })
         .await?;
         let picture = match processed {
@@ -285,7 +286,6 @@ async fn save_frame(
         })?;
     file["frame_index"] = json!(index + 1);
     file["image_id"] = capture["capture"]["image_id"].clone();
-    file["size"] = json!(agent_engine::media::size_label(bytes.len()));
     file["format"] = json!("PNG");
     let object = file.as_object_mut().unwrap();
     object.remove("bytes");
@@ -403,7 +403,7 @@ mod image_tests {
     use tokio_util::sync::CancellationToken;
 
     #[tokio::test]
-    async fn snapshot_images_keep_geometry_private_on_success_and_failure() {
+    async fn snapshot_images_report_dimensions_and_clear_failed_captures() {
         let job = Job {
             id: "image-test".into(),
             finished: Mutex::new(None),
@@ -422,10 +422,12 @@ mod image_tests {
         assert_eq!(success["captures"][0]["width"], 2560);
         assert!(success["captures"][0]["scale"].as_f64().unwrap() < 1.0);
         let image = success["value"]["image"].as_object().unwrap();
-        assert_eq!(image.len(), 3);
+        assert_eq!(image.len(), 6);
         assert_eq!(image["image_id"], "public-image");
         assert_eq!(image["format"], "WebP");
-        assert!(image["size"].as_str().unwrap().ends_with(" B"));
+        assert_eq!(image["width"], 2560);
+        assert!(image.get("original_width").is_some());
+        assert!(image.get("size").is_none());
         for cancelled in [false, true] {
             if cancelled {
                 job.cancel.cancel();

@@ -1,0 +1,52 @@
+{
+  "date": "2026-10-25",
+  "source_digest": "7c16c092f5ba2aa732d68b12c09b6956627ae35e649e800db5debea901ca0466",
+  "release_candidate": {
+    "source_digest": "7c16c092f5ba2aa732d68b12c09b6956627ae35e649e800db5debea901ca0466",
+    "builder_image": "sha256:edd7a3fa1c7f589a82145c3eb589f237267cf36fb19f64657194e7ca67429260",
+    "base_builder": "runcove-task-final-builder",
+    "binaries_sha256": {
+      "agent-space-mcp": "6297f2d7b71a119d7e3d0f995d6b520ea0d7b75a3f4a18d4aa939cc7f32b67f7",
+      "agent-space-desktop": "5d3e06a75d3d28693ce791305f5abf544587ad934b7b1474d785722d18a1c3dd"
+    },
+    "sqlite_link": "3.51.3 verified in builder",
+    "working_tree": true
+  },
+  "checks": {
+    "engine_unit_tests": 96,
+    "mcp_unit_tests": 44,
+    "desktop_helper_unit_tests": 9,
+    "mcp_http_contract_tests": 5,
+    "python_file_tests": 9,
+    "clippy": "PASS",
+    "rustfmt": "PASS",
+    "python_syntax": "PASS",
+    "git_diff_check": "PASS",
+    "helper_embedded_sources": {
+      "observe-worker.cjs": true,
+      "browser-worker.cjs": true,
+      "observation.cjs": true,
+      "artifacts.cjs": true,
+      "semantic-observation.cjs": true,
+      "timing.cjs": true,
+      "browser-tools.cjs": true
+    }
+  },
+  "qualification": {
+    "server": "server.json",
+    "standalone": "standalone.json"
+  },
+  "initial_attempt": {
+    "accepted": false,
+    "cleanup_passed": true,
+    "issues": [
+      "Media fixture assumed a running browser; setup now navigates explicitly.",
+      "Single --bin build left a stale debug desktop helper. Final Server qualification uses hash-checked release candidates directly."
+    ],
+    "resolution": "Final Server 12 and Standalone 8 media tests passed."
+  },
+  "not_executed": [
+    "Full release image build and complete unrelated lifecycle/UI/large-file qualification"
+  ],
+  "passed": true
+}

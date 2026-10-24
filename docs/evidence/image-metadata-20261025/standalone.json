@@ -1,0 +1,51 @@
+{
+  "target": "standalone",
+  "scope": "Isolated image metadata regression; release candidate desktop helper, current no-default-features Standalone",
+  "image": "runcove-workspace:build",
+  "checks": [
+    "starts_without_kvm_msb_or_docker_socket",
+    "single_space_routes_have_no_management_or_user_selection",
+    "shared_nine_tools_and_nonroot_secret_isolation",
+    "profile_preparation_cannot_follow_user_links_with_root_privileges",
+    "real_shared_desktop_screenshot",
+    "root_task_owner_keeps_final_results_without_following_user_paths",
+    "dav_workbench_and_mcp_edits_share_writable_user_ownership",
+    "artifact_listing_respects_payload_permissions_through_user_symlinks",
+    "publication_uses_single_space_address",
+    "stopped_data_child_dies_with_killed_control_owner_and_helper_recovers",
+    "fixture_setup",
+    "shared_test_media_vm.py",
+    "rewritten_host_workbench_preserves_own_origin_and_nonce_checks",
+    "lost_desktop_owner_blocks_recreation_and_control_until_container_restart",
+    "active_mcp_sse_closes_on_graceful_shutdown",
+    "graceful_restart_preserves_workspace_and_expires_page_session",
+    "reduced_page_limit_after_restart_preserves_profile_and_existing_pages"
+  ],
+  "passed": true,
+  "image_id": "sha256:76ffec5356255e77465e4e957612044707d93da89698fa4ce2d2b04c348a663a",
+  "source_digest": "7c16c092f5ba2aa732d68b12c09b6956627ae35e649e800db5debea901ca0466",
+  "binaries_sha256": {
+    "runcove-standalone": "605fb7bd5bdd043b836db9f0d135347840498063d0369256ba8167cdac679353",
+    "agent-space-static-http": "7fbce63047acdacad4ae943f097aa5b97eb5bdc0455adcfd3c4eed448f4b951d",
+    "agent-space-webdav": "647aaaffcc102b9e18704b2dc34e3a8fed4000863128365c9fae9cd931a4e7bc",
+    "agent-space-desktop": "5d3e06a75d3d28693ce791305f5abf544587ad934b7b1474d785722d18a1c3dd"
+  },
+  "suite_logs": {
+    "test_media_vm.py.log": "6373d1f314d10a7a7589fe4b51bbae16cdc003b9f019cefd5e5fc371810e7e26"
+  },
+  "full": false,
+  "shared_full": false,
+  "tools_only": true,
+  "page_limit_restart": {
+    "initial_limit": 4,
+    "restarted_limit": 1,
+    "restored_pages": 4,
+    "restored_after_profile_picker": true,
+    "clean_profile_verified": true,
+    "restored_urls_match": true,
+    "new_page_error": "PAGE_LIMIT_REACHED",
+    "existing_page_navigation_and_close": true
+  },
+  "cleanup_passed": true,
+  "media_tests_passed": 8
+}

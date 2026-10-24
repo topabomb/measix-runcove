@@ -50,7 +50,7 @@ class BrowserQualification(unittest.TestCase):
   self.act([{'do':'upload','ref':file_ref,'paths':['/workspace/qualification/private uploads/原生 reference.bin']},{'do':'wait','text':'sha256'}])
   read=self.client.read_browser();self.assertIn(hashlib.sha256(b'u'*1048576).hexdigest(),read['text'])
   view=self.client.snapshot();value,_=self.act([{'do':'download','ref':element(view,'link','Download')}])
-  file=value['files'][0];self.assertEqual(file['bytes'],65536)
+  file=value['files'][0];self.assertEqual(file['size_bytes'],65536)
   readback=self.client.good('bash',{'cmd':'sha256sum '+shlex.quote(file['path'])})
   self.assertIn(hashlib.sha256(bytes([123])*65536).hexdigest(),json.dumps(readback))
  def test_03_deadline_cancellation_and_stable_late_failure(self):

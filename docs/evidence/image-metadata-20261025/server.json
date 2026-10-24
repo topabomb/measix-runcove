@@ -1,0 +1,28 @@
+{
+  "target": "server",
+  "image": "runcove-server:runcove-38ddc5f7700bf5d2",
+  "image_id": "sha256:932d905bdc34f99160776980d7b9d3ca470c5903af26600649f33dcf86cc4e5a",
+  "scope": "Isolated image metadata regression; release candidate desktop helper and MCP",
+  "full": false,
+  "shared_full": false,
+  "checks": [
+    "fixture_setup",
+    "shared_test_media_vm.py"
+  ],
+  "passed": true,
+  "source_digest": "7c16c092f5ba2aa732d68b12c09b6956627ae35e649e800db5debea901ca0466",
+  "binaries_sha256": {
+    "agent-space-mcp": "6297f2d7b71a119d7e3d0f995d6b520ea0d7b75a3f4a18d4aa939cc7f32b67f7",
+    "agent-space-static-http": "7fbce63047acdacad4ae943f097aa5b97eb5bdc0455adcfd3c4eed448f4b951d",
+    "agent-space-webdav": "647aaaffcc102b9e18704b2dc34e3a8fed4000863128365c9fae9cd931a4e7bc",
+    "agent-space-desktop": "5d3e06a75d3d28693ce791305f5abf544587ad934b7b1474d785722d18a1c3dd"
+  },
+  "suite_logs": {
+    "test_media_vm.py.log": "8e125dc7b894f7c2100b79cc52d17a2ac8af3b4eae179184142216911b556916"
+  },
+  "page_limit_restart": {
+    "scope": "not repeated; no profile changes"
+  },
+  "cleanup_passed": true,
+  "media_tests_passed": 12
+}

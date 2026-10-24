@@ -545,7 +545,7 @@ impl AgentSpaceMcpServer {
         ))
     }
     #[tool(
-        description = "Capture unannotated page or desktop images. Page captures cover the currently rendered full document; use browser_read for long text. For native browser UI use view=desktop. Supports timed sequences and saving originals. Use returned image_id and image-pixel coordinates for actions. While state=running, retrieve the same task with browser_act(op=\"wait\")."
+        description = "Capture unannotated page or desktop images. Page captures cover the currently rendered full document; use browser_read for long text. For native browser UI use view=desktop, which preserves desktop pixel dimensions. Supports timed sequences and saving originals. Use returned image_id and image-pixel coordinates for actions. While state=running, retrieve the same task with browser_act(op=\"wait\")."
     )]
     async fn screen_observe(
         &self,
@@ -932,7 +932,7 @@ impl AgentSpaceMcpServer {
 
     #[instrument(skip(self, params), fields(workspace), level = "info")]
     #[tool(
-        description = "Create a UTF-8 text file or replace its entire contents. Creates missing parent directories and returns the bytes written. Empty content is rejected."
+        description = "Create a UTF-8 text file or replace its entire contents. Creates missing parent directories and returns path and size_bytes. Empty content is rejected."
     )]
     async fn write(
         &self,
@@ -951,11 +951,9 @@ impl AgentSpaceMcpServer {
 
         match session.exec_file(&cmd, self.default_exec_timeout()).await {
             Ok(result) if result.exit_code == 0 => {
-                Ok(CallToolResult::success(vec![Content::text(format!(
-                    "Wrote {} bytes to {}",
-                    result.stdout.trim(),
-                    params.path
-                ))]))
+                Ok(CallToolResult::success(vec![Content::text(
+                    json!({"path": params.path, "size_bytes": params.content.len()}).to_string(),
+                )]))
             }
             Ok(result) => Ok(CallToolResult::error(vec![Content::text(compact_error(
                 &format!("write failed: {}", result.stderr),
@@ -1363,10 +1361,10 @@ fn compact_browser_feedback(value: &mut serde_json::Value) {
     // Normalize only these owned lists; page fields may legitimately have the
     // same names as image metadata.
     if let Some(items) = value.get_mut("files") {
-        compact_image_files(items);
+        compact_file_records(items);
     }
     if let Some(items) = value.pointer_mut("/value/downloads") {
-        compact_image_files(items);
+        compact_file_records(items);
     }
     if let Some(object) = value.as_object_mut() {
         object.remove("phase");
@@ -1395,7 +1393,7 @@ fn compact_browser_feedback(value: &mut serde_json::Value) {
         );
     }
 }
-fn compact_image_files(value: &mut serde_json::Value) {
+fn compact_file_records(value: &mut serde_json::Value) {
     let Some(items) = value.as_array_mut() else {
         return;
     };
@@ -1403,6 +1401,9 @@ fn compact_image_files(value: &mut serde_json::Value) {
         let Some(object) = item.as_object_mut() else {
             continue;
         };
+        if let Some(bytes) = object.remove("bytes").and_then(|v| v.as_u64()) {
+            object.insert("size_bytes".into(), json!(bytes));
+        }
         let format = match object.get("mime_type").and_then(|v| v.as_str()) {
             Some("image/png") => "PNG",
             Some("image/jpeg") => "JPEG",
@@ -1410,12 +1411,6 @@ fn compact_image_files(value: &mut serde_json::Value) {
             Some("image/gif") => "GIF",
             _ => continue,
         };
-        if let Some(bytes) = object.remove("bytes").and_then(|v| v.as_u64()) {
-            object.insert(
-                "size".into(),
-                json!(agent_engine::media::size_label(bytes as usize)),
-            );
-        }
         object.insert("format".into(), json!(format));
         object.remove("mime_type");
         if object.contains_key("path") {
@@ -1607,6 +1602,24 @@ mod tests {
     }
 
     #[test]
+    fn file_records_use_integer_bytes_without_rewriting_page_data() {
+        let mut value = json!({"files":[{"path":"/empty.txt","bytes":0,"mime_type":"text/plain"}],"value":{"downloads":[{"path":"/file.bin","bytes":65536}],"fields":[{"size":"1 KiB","bytes":1024}]}});
+        compact_browser_feedback(&mut value);
+        assert_eq!(
+            value["files"][0],
+            json!({"path":"/empty.txt","size_bytes":0,"mime_type":"text/plain"})
+        );
+        assert_eq!(
+            value["value"]["downloads"][0],
+            json!({"path":"/file.bin","size_bytes":65536})
+        );
+        assert_eq!(
+            value["value"]["fields"][0],
+            json!({"size":"1 KiB","bytes":1024})
+        );
+    }
+
+    #[test]
     fn browser_errors_preserve_effects_cleanup_and_available_outputs() {
         let long = "x".repeat(8000);
         let result = browser_result(Ok(json!({"task_id":"id","state":"failed",
@@ -1628,11 +1641,11 @@ mod tests {
         assert_eq!(body["files"][0]["path"], "/workspace/result.txt");
         assert_eq!(
             body["files"][1],
-            json!({"path":"/workspace/image.png","size":"1.5 KiB","format":"PNG"})
+            json!({"path":"/workspace/image.png","size_bytes":1536,"format":"PNG"})
         );
         assert_eq!(
             body["downloads"][0],
-            json!({"path":"/workspace/image.png","size":"1.5 KiB","format":"PNG","url":"https://example.test/image.png"})
+            json!({"path":"/workspace/image.png","size_bytes":1536,"format":"PNG","url":"https://example.test/image.png"})
         );
         assert_eq!(body["fields"][0]["value"], "3000");
         assert_eq!(wire["content"][1]["type"], "image");
