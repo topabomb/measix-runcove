@@ -162,7 +162,9 @@ class StructuredBrowser(unittest.TestCase):
   self.client.navigate('http://127.0.0.1:8125/table');table=self.client.read_browser(extract='table');self.assertNotIn('truncated',table);self.assertEqual(len(table['tables'][0]['rows']),30)
  def test_screenshot_coordinates_and_navigation_invalidation(self):
   self.client.navigate('http://127.0.0.1:8125/canvas');value,reply=self.client.finish(self.client.tool('browser_snapshot',{'image':True}));view=value;image=view['image']
-  width,height=image_dimensions(reply);self.assertEqual(set(image),{'image_id','size','format'});self.assertLessEqual(max(width,height),2560)
+  width,height=image_dimensions(reply)
+  self.assertEqual(set(image),{'image_id','width','height','format'})
+  self.assertEqual((image['width'],image['height']),(width,height));self.assertLessEqual(max(width,height),2560)
   box=self.client.fixture_js("return await page.locator('canvas').boundingBox();")
   document=self.client.fixture_js('return await page.evaluate(()=>({width:Math.max(innerWidth,document.documentElement.scrollWidth),height:Math.max(innerHeight,document.documentElement.scrollHeight)}));')
   self.act([{'do':'click','image_id':image['image_id'],'x':(box['x']+340)*width/document['width'],'y':(box['y']+140)*height/document['height']}]);self.assertIn('seat booked',self.client.read_browser()['text'])

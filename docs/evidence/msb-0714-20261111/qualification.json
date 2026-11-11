@@ -1,0 +1,186 @@
+{
+  "date": "2026-11-11",
+  "environment": "isolated Docker Desktop Linux x86_64 with real KVM, synthetic data",
+  "candidate": {
+    "image_id": "sha256:c12677aba31b35d883f6518558bfeafe7b1c20ae3f61514055da73dd0d4d7b00",
+    "image_tag": "runcove-server:qa-msb0714-final",
+    "source_revision": "21da861109c0ea4cb508568ff48dac60cf64a37c",
+    "source_sha256": "dd5df21fee8133efc3ddaadb687d37726d4399632d800050a9a89d1f7b5f33ae",
+    "microsandbox": "0.7.14",
+    "upstream_source_revision": "60fc5071b34e6cc2671c84c8dc07709795d45d27",
+    "upstream_source_archive_sha256": "7b733474c8b540f53854f85c476ebe397392c023335eb7faab27bf6e93098a66",
+    "sqlite_static_version": "3.51.3",
+    "msb_sha256": "6e95a6e5a9dbc21cde55d1f24bcde997424cefb5849f2d0f0b35959c7bdee716",
+    "agentd_sha256": "743ba6497d7006838e1276bc4965b524ca6718a638d613e9cfc8240c8f5f5276",
+    "firmware_sha256": "e5480f2feb911c5d9a508559cc13e35983c9811acc2f136e24bb8040461a7a52",
+    "workspace_reference": "runcove/runcove-workspace@sha256:c69285f71d590f6a03e472a181a77207b9cee2ee704a9c5eb038885c4a596400"
+  },
+  "baseline": {
+    "qualification_image_id": "sha256:440b6acbfadfe199141cf2341f75e600c91f1864ecfd14f849679a9d22babe9d",
+    "production_base_image_id": "sha256:932d905bdc34f99160776980d7b9d3ca470c5903af26600649f33dcf86cc4e5a",
+    "microsandbox": "msb 0.7.9",
+    "production_hashes_matched": 7,
+    "qualification_data": "synthetic",
+    "production_updated": false
+  },
+  "verification": {
+    "upgrade_and_cold_rollback": {
+      "checks": [
+        "original_credentials_and_identity",
+        "workspace_profile_and_files",
+        "legacy_workspace_disk_resource_summary",
+        "legacy_storage_protected_layout",
+        "new_server_tools_desktop_dav_publish",
+        "restart_persistence",
+        "isolated_complete_backup_rollback"
+      ],
+      "backup_sha256": "ce8ebb69f511bc3f2969811f8acf4912ed2df229dc195c201313d83520845d19",
+      "cleanup_passed": true
+    },
+    "creation_interruption": [
+      "real_service_sigkill_during_named_disk_format",
+      "durable_provisional_volume_and_non_destructive_activation_refusal",
+      "sdk_cleans_provisional_disk_and_original_credential_recreates_space"
+    ],
+    "lifecycle": {
+      "checks": [
+        "three protocol versions negotiate exactly and discover complete tools in their HTTP sessions",
+        "image/version, helper, and five-tool contract are exact; metadata does not wake VM",
+        "finite keepalive protects idle VM, get does not extend it, expiry reclaims VM and invalidates URL",
+        "real VM 4 MiB upload/download hashes match; app Authorization and query survive, publication key stays on Host",
+        "same-name file/directory/port replacement preserves URL, Basic realm and credentials; failed preparation keeps old service",
+        "file/directory/port coexist with independent paths and credentials, automatic auth, ranges, stable retry and scoped close; app survives",
+        "configured fallback and manual bash timeout both use seconds",
+        "direct file URL and bash/read/write/edit resume a paused VM; publication identity is preserved",
+        "in-flight command survives both short reclamation thresholds",
+        "same MCP session wakes a stopped VM and retains both disks",
+        "original MCP session still executes after 310s idle",
+        "Host restart invalidates all publication state; old URL does not wake the VM",
+        "graceful container restart preserves root disk and workspace volume",
+        "fresh image initializes state and serves a managed user without Hub",
+        "disable closes publications and new token restores retained workspace files",
+        "managed delete removes its sandbox and named volume from the runtime catalog"
+      ],
+      "idle_seconds": 310,
+      "cleanup_passed": true
+    },
+    "desktop": {
+      "checks": [
+        "shared_test_browser_vm.py",
+        "shared_test_browser_structured_vm.py",
+        "shared_test_browser_pages_vm.py",
+        "shared_test_media_vm.py",
+        "shared_test_browser_profiles_vm.py",
+        "shared_test_desktop_files_vm.py",
+        "shared_test_browser_lifecycle_vm.py",
+        "shared_real_vnc_keyboard_clipboard_viewers_responsive_and_idle",
+        "reduced_page_limit_after_restart_preserves_profile_and_existing_pages"
+      ],
+      "coverage_complete": true,
+      "cleanup_passed": true,
+      "lifecycle_report_sha256": "508bb5211b5312d4acf042c539a01b654feaaefd8bccba419c6a36dae8be8702",
+      "verification_runs": [
+        {
+          "passed_scope": "seven shared Python VM suites",
+          "report_sha256": "4606c3c050e6c581bbfa9d924eb8ece6fb3bb983157595f0950def7283ca6b40"
+        },
+        {
+          "passed_scope": "full Playwright UI and page-limit restart",
+          "report_sha256": "c41fb82aed92ddafc18696cf80ef248ec495cb336470b7fc999abfbec3f2f135"
+        }
+      ]
+    },
+    "dav_restart": {
+      "checks": [
+        "abrupt_container_exit_leaves_original_sandbox_crashed",
+        "first_concurrent_dav_recovers_crashed_vm_with_live_recycled_pid",
+        "graceful_container_restart_preserves_original_space_and_files",
+        "dav_resumes_existing_paused_vm",
+        "abrupt_container_exit_recovers_original_paused_vm",
+        "cached_runtime_recovers_after_unexpected_vm_process_exit",
+        "failed_dav_helper_start_is_retryable_without_recreating_vm",
+        "startup_deadline_and_backend_failure_release_terminal_capacity_then_retry",
+        "cancelled_first_dav_waiter_can_retry_and_retains_one_runtime_owner",
+        "guest_stall_deadline_is_retryable_and_retains_resident_capacity",
+        "original_mcp_and_dav_credentials_remain_valid",
+        "failure_logs_include_stage_identity_and_elapsed_time"
+      ],
+      "first_dav_seconds": 1.6182718410000234,
+      "cleanup_passed": true
+    },
+    "dav_large": {
+      "checks": [
+        "image, cached and running real VM executables match the runtime manifest",
+        "4 GiB sparse file HEAD, length and ETag through public DAV",
+        "cross-2-GiB, final byte/tail, open/suffix/huge-end ranges and current If-Match",
+        "unsatisfiable range returns 416 and complete representation length",
+        "empty file and malformed decimal ranges use ordinary GET semantics",
+        "full 4 GiB HTTP read checked byte-for-byte with bounded client memory",
+        "60 cancelled uploads mixed with downloads retain original file, VM/helper identity and healthy MCP/DAV",
+        "paced real download lasts over 30 seconds and multiple 5-second idle intervals",
+        "synchronized real guest truncate yields incomplete HTTP body, not padded success",
+        "premature EOF diagnostic is present in bounded guest log",
+        "old If-Match rejects modified file with 412 without replacement content",
+        "unconsumed real download expires at configured idle timeout",
+        "80 cancelled real downloads release guest file descriptors and connection slots",
+        "DAV revocation interrupts real in-flight download",
+        "space disable interrupts real in-flight download"
+      ],
+      "full_read": {
+        "bytes": 4294967296,
+        "seconds": 7.760077519000333
+      },
+      "runtime_executables_verified": 3,
+      "cleanup_passed": true
+    },
+    "storage_failure": {
+      "checks": [
+        "real 8 MiB filesystem ENOSPC returns 507",
+        "failed overwrite preserves original bytes",
+        "temporary upload cleanup permits next write",
+        "early rejected PUT response and fixed total drain deadline"
+      ],
+      "attempts": 20,
+      "cleanup_passed": true
+    },
+    "sqlite": {
+      "roundsCompleted": 10,
+      "sandboxCount": 2,
+      "volumeCount": 2,
+      "databaseMalformedLogCount": 0,
+      "cleanup_passed": true
+    },
+    "source_checks": {
+      "upstream_rust": {
+        "passed": 344,
+        "ignored": 8
+      },
+      "workspace_rust": {
+        "passed": 345,
+        "ignored": 0
+      },
+      "python": {
+        "test_exec_owner.py": 5,
+        "test_file_read.py": 3,
+        "test_managed_cleanup.py": 8,
+        "test_msb_patches.py": 4,
+        "test_package.py": 5,
+        "test_verify_dav_large.py": 3,
+        "test_verify_protocol.py": 8,
+        "test_workspace_transfer.py": 9
+      },
+      "passed": [
+        "locked_workspace_check",
+        "workspace_clippy_all_targets",
+        "standalone_no_default_features_build_and_clippy",
+        "standalone_normal_build_graph_without_msb_or_libkrun",
+        "format",
+        "diff_check"
+      ]
+    },
+    "verification_harness": {
+      "snapshot_dimensions_write_size_and_flattened_task_response_contract_updated": true,
+      "desktop_ui_rebuilt_files_matching_image": 9
+    }
+  }
+}

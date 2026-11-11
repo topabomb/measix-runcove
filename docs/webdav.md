@@ -163,7 +163,7 @@ VM 为 Running 不代表缓存 TCP AgentClient 可用；MCP exec 使用独立连
 
 已发送响应头后正文断开，以传输错误结束，后续建连确认缓存关闭后进入上述恢复路径。HTTP 请求发送后不自动重试，包括 PUT/MOVE/DELETE；不确定提交结果由客户端核对。
 
-TCP 写 EOF 使用 H2G BulkFinish 半关闭，继续接收响应；读 EOF 要经过 offset 校验。普通 terminal 后不再补发取消，读 EOF/terminal 后不再发消费 credit。取消中或已退休 correlation 的迟到 G2H finish 由固定 msb 运行时补丁处理，未知 correlation 和正常流校验保留。补丁范围及上游撤销步骤见 [运行时维护](runtime.md#relay)。
+TCP 写 EOF 使用 H2G BulkFinish 半关闭，继续接收响应；读 EOF 要经过 offset 校验。普通 terminal 后不再补发取消，读 EOF/terminal 后不再发消费 credit。取消中或已退休 correlation 的迟到 G2H finish 由 MSB 的 relay 实现处理，未知 correlation 和正常流校验保留。版本和回归范围见[运行时维护](runtime.md)。
 
 取消信号包含请求断开、DAV key 失效、账号/空间失效、Host shutdown。信号必须覆盖建连、上传、等待响应头和响应正文，并能主动关闭 guest TCP；不能只在客户端下一次读取响应时才发现撤销。Guest 观察连接关闭后取消未完成操作、清理暂存；已经提交的操作按上一节处理。启动中的请求被取消也必须留下可核验/清理的实例归属，不能产生遗失 helper。
 

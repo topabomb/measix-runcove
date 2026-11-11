@@ -8,7 +8,7 @@ microsandbox 是本项目使用的上游 microVM 运行时；其 CLI/SDK 负责 
 
 - SDK、agent-client 和 CLI 锁定 `0.7.14`，Cargo 精确依赖与 `Cargo.lock` 一起维护，构建使用 `--locked`。版本锁定不表示它是上游最新版。
 - [`msb-runtime.sha256`](../agent-space/msb-runtime.sha256) 校验官方种子 CLI/libkrunfw。种子 CLI 用于导出 guest 镜像，不能代表最终 VM 程序。
-- SDK 的 `vendor/microsandbox`、`vendor/microsandbox-runtime` 是官方 crate 的审计副本，通过 Cargo 覆盖应用生命周期补丁。Docker 在固定官方源码及锁文件上重编译 CLI；源码归档、crate、副本树、补丁及每个修改文件的输入/结果摘要由 [`manifest.json`](../agent-space/docker/patches/manifest.json) 核验。
+- SDK 的 `vendor/microsandbox`、`vendor/microsandbox-runtime` 是官方 crate 的审计副本，通过 Cargo 覆盖应用生命周期与存储预览补丁。Docker 在固定官方源码及锁文件上重编译 CLI；源码归档、crate、副本树、补丁及每个修改文件的输入/结果摘要由 [`manifest.json`](../agent-space/docker/patches/manifest.json) 核验。
 - [`apply-msb-patch.py`](../agent-space/docker/apply-msb-patch.py) 拒绝版本或内容不匹配，不允许模糊应用。服务与 CLI 均静态链接 SQLite 3.51.3；guest 保持匹配的官方来源。
 - 镜像 `/opt/agent-space/runtime.json` 保存来源、补丁及最终哈希，`msb.sha256` 校验实际 CLI。entrypoint 覆盖数据卷中的旧缓存。验收须核对运行 VM 的 `/proc/<pid>/exe`，不能只检查 `/usr/local/bin/msb` 或种子摘要。
 
@@ -16,13 +16,13 @@ microsandbox 是本项目使用的上游 microVM 运行时；其 CLI/SDK 负责 
 
 ### Linux 运行身份
 
-[`msb-0.7.14-lifecycle.patch`](../agent-space/docker/patches/msb-0.7.9-lifecycle.patch) 配对修改 SDK 和 runtime。官方 0.7.14 启动终态 sandbox 时可能等待被无关进程复用的历史 PID，`connect_or_start` 又可在终态持续重试 `SandboxStillRunning`，使请求超时且没有新 VM run。
+[`msb-0.7.14-lifecycle.patch`](../agent-space/docker/patches/msb-0.7.14-lifecycle.patch) 配对修改 SDK 和 runtime。官方 0.7.14 启动终态 sandbox 时可能等待被无关进程复用的历史 PID，`connect_or_start` 又可在终态持续重试 `SandboxStillRunning`，使请求超时且没有新 VM run。v0.7.14 新增的旧盘迁移和显式恢复也会被裸历史 PID 阻断。
 
 统一观察器用 pidfd 固定观察对象；继承 fd 99 与预期 lifecycle lock 的 dev/ino 一致才证明所有权。明确的其他程序、其他空间或非首领线程可证明旧 PID 已被复用；进程退出为非活跃，无法证明则报错。锁文件名、墙钟差和裸 PID 存活均不足以证明身份。
 
 启动忽略已证明复用的历史 PID，但保留原 `run.pid`；SDK 查询和 runtime 维护沿原有锁、重读及终态收敛流程更新状态。`connect_or_start` 只对权威状态确实为 Starting/Running 的并发启动继续观察；终态错误返回调用方。Agent Space 仅调用 SDK 公共 API，不修改 MSB 表、历史 PID、退出原因或 schema。
 
-补丁只覆盖 Linux start/reconcile 和对应重试，不声称修复所有信号发送路径；旧版缺 fd 99、inode 不符等不确定身份保守报错。Windows/macOS 保持上游行为。真实 PID 复用已在隔离旧镜像复现；原事故 PID 131 的历史归属及最初 VM 退出原因仍未知。
+Linux 的目标盘迁移、显式恢复和私有预览沿用此观察器，保留原有生命周期锁、相关盘写者与磁盘准入检查。旧版缺 fd 99、inode 不符等不确定身份保守报错，Windows/macOS 沿用原有进程检查。原事故 PID 131 的历史归属及最初 VM 退出原因仍未知。
 
 ### 存储预览的内容校验
 
@@ -50,7 +50,7 @@ v0.7.14 使用文件身份、大小及时间戳判断临时预览盘是否被修
 
 | 问题 | 上游状态与本地处理 |
 |---|---|
-| [#1642 运行身份](https://github.com/superradcompany/microsandbox/issues/1642) | Open；[#1685](https://github.com/superradcompany/microsandbox/pull/1685) 仍为 Draft。v0.7.14 的 Linux 终态启动仍等待裸历史 PID，`connect_or_start` 仍吞掉 `SandboxStillRunning`。现有补丁在 v0.7.14 上重制，保留真实 PID 复用与 SDK/runtime 回归 |
+| [#1642 运行身份](https://github.com/superradcompany/microsandbox/issues/1642) | Open；[#1685](https://github.com/superradcompany/microsandbox/pull/1685) 仍为 Draft。v0.7.14 的 Linux 终态启动仍等待裸历史 PID，`connect_or_start` 仍吞掉 `SandboxStillRunning`。本地补丁覆盖 SDK/runtime 收敛及新存储准入，保留真实 PID 复用与 SDK/runtime 回归 |
 | [#1826 部分帧读取](https://github.com/superradcompany/microsandbox/issues/1826) | [#1838](https://github.com/superradcompany/microsandbox/pull/1838)，commit `8e419cb`，已收录 v0.7.9；目标源码 relay 回归通过。已撤销本地回补，保留候选镜像 DAV/VM 验收门槛 |
 | [#1801 迟到 finish](https://github.com/superradcompany/microsandbox/issues/1801) | [#1816](https://github.com/superradcompany/microsandbox/pull/1816)，commit `e5f72485`，已收录 v0.7.9；退休、取消中及 incarnation 隔离回归通过。已撤销本地回补 |
 | [#1709 SQLite 锁](https://github.com/superradcompany/microsandbox/issues/1709) | [#1766](https://github.com/superradcompany/microsandbox/pull/1766)，commit `c5c3fa7`，已收录 v0.7.8/v0.7.9。v0.7.9 的锁保留、跨进程确认写入、SHM 生命周期和替换检测回归通过；SDK 已更新；上游仍内置 SQLite 3.46.0，因独立 WAL-reset 缺陷保留双端 SQLite 3.51.3 构建约束 |
@@ -68,7 +68,7 @@ v0.7.9 的固定输入及已验证范围见[验证记录](validation-records.md#
 ## 升级与逐项撤销
 
 1. 对照目标发布的实际源码、SDK/CLI/guest 兼容性及每项修复，更新锁文件、源码/种子/副本/补丁摘要。剩余补丁重新审查并生成匹配版本，不能绕过旧版本拒绝检查。
-2. 生命周期修补须同时覆盖 terminal run 身份、SDK/runtime 收敛和终态错误返回。串行运行身份回归及 [`test_dav_restart_vm.py`](../agent-space/tests/test_dav_restart_vm.py)：旧发布镜像创建的原盘、真实 PID 复用、无关进程存活、历史 PID/双盘保留、并发首次 DAV 单次启动、暂停异常重启、失败/取消恢复、容量和不确定身份。
+2. 生命周期修补须同时覆盖 terminal run 身份、SDK/runtime 收敛、终态错误返回和目标盘存储准入。串行运行身份回归及 [`test_dav_restart_vm.py`](../agent-space/tests/test_dav_restart_vm.py)：旧发布镜像创建的原盘、真实 PID 复用、无关进程存活、历史 PID/双盘保留、并发首次 DAV 单次启动、暂停异常重启、失败/取消恢复、容量和不确定身份。
 3. 两项 relay 修补分别运行上表语义回归，再做并发 DAV 上传/PROPFIND、GET 摘要/Range、4 GiB 读取、取消及缓存断连恢复。SDK/MCP 成功不能代替文件验收。
 4. 数据库修复须核对 identity capture/verify/Drop 不释放 SQLite 锁，替换检测仍有效；验证多进程确认写入不丢失、SHM 不提前删除及真实 VM 停止/重启。同时确认上游内置 SQLite 已修复 WAL-reset，满足上文条件再撤销自备 SQLite 构建，不能因 MSB Issue 关闭直接移除。
 5. 每项独立撤销。两个 relay hunk 都不需要时才删除 relay patch/manifest 条目；两个 MSB vendor 无必要修改时才撤销 Cargo 覆盖；全部补丁及覆盖退出后才能删除相应审计步骤，语义回归继续保留。

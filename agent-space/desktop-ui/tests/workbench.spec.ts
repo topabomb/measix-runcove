@@ -33,8 +33,8 @@ async function finish(name:string,args:unknown){
  while(result.state==='running')result=await tool('browser_act',{op:'wait',task_id:result.task_id});
  return result;
 }
-async function snapshot(view?:'tabs'){const result=await finish('browser_snapshot',{view});expect(result.state,JSON.stringify(result)).toBe('succeeded');return result.value;}
-async function act(actions:unknown[],args:Record<string,unknown>={}){const result=await finish('browser_act',{actions,...args});expect(result.state,JSON.stringify(result)).toBe('succeeded');return result.value;}
+async function snapshot(view?:'tabs'){const result=await finish('browser_snapshot',{view});expect(result.state,JSON.stringify(result)).toBe('succeeded');return result;}
+async function act(actions:unknown[],args:Record<string,unknown>={}){const result=await finish('browser_act',{actions,...args});expect(result.state,JSON.stringify(result)).toBe('succeeded');return result;}
 async function resetBrowser(){const v=await snapshot('tabs'),keep=v.tabs[0].page_id;return act([...v.tabs.slice(1).map((p:any)=>({do:'tab',action:'close',page_id:p.page_id})),{do:'tab',action:'focus',page_id:keep},{do:'navigate',url:'http://127.0.0.1:8124/'}],{page_id:keep});}
 // Test fixture setup/readback is deliberately outside the public browser API.
 async function fixture(code:string){
@@ -91,7 +91,7 @@ test('real VNC keyboard, clipboard, English UI and a second viewer',async({brows
  // Allow the remote compositor to apply the delivered pointer focus change.
  await page.waitForTimeout(200);
  await page.keyboard.type('vnc keyboard123',{delay:30});
- const clipboardValue=async()=>{const result=await finish('browser_read',{extract:'fields'});return result.value?.fields.find((f:any)=>f.name==='Clipboard fixture')?.value;};
+ const clipboardValue=async()=>{const result=await finish('browser_read',{extract:'fields'});return result.fields.find((f:any)=>f.name==='Clipboard fixture')?.value;};
  await expect.poll(clipboardValue).toBe('vnc keyboard123');
  await page.getByRole('button',{name:'剪贴板',exact:true}).click();
  await page.getByRole('textbox',{name:'本机 → 远程桌面',exact:true}).fill('中文 hello 🙂');
@@ -148,7 +148,7 @@ test('human takeover allows basic tools and workspace uploads',async({browser})=
  await page.getByRole('button',{name:'接管操作',exact:true}).click();
  await expect(page.getByText('你正在操作',{exact:true})).toBeVisible();
  const path='/workspace/human-file-'+Date.now()+'.txt';
- expect(JSON.stringify(await tool('write',{path,content:'old-value'}))).toContain('Wrote');
+ expect(await tool('write',{path,content:'old-value'})).toEqual({path,size_bytes:9});
  expect(JSON.stringify(await tool('edit',{path,old_text:'old-value',new_text:'new-value'}))).toContain('Replaced');
  expect(JSON.stringify(await tool('read',{path}))).toContain('new-value');
  expect(JSON.stringify(await tool('bash',{cmd:'echo basic-tools-remain-available'}))).toContain('basic-tools-remain-available');
