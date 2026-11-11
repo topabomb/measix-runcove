@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl patch python3 pkg-config libcap-ng-dev libdbus-1-dev libgcc-s1 && \
     rm -rf /var/lib/apt/lists/*
 
-# microsandbox 0.7.9 locks libsqlite3-sys 0.30.1, whose bundled SQLite is
+# microsandbox 0.7.14 locks libsqlite3-sys 0.30.1, whose bundled SQLite is
 # 3.46.0. It predates the WAL-reset corruption fix in 3.51.3. Build the
 # fixed amalgamation with the same options as libsqlite3-sys and link it
 # statically, so the running binary cannot fall back to the older system lib.
@@ -81,8 +81,8 @@ RUN python3 /build/docker/verify-sqlite-link.py /out/agent-space-mcp && \
 # ---- Stage 2: Rebuild the pinned VM executable with audited lifecycle patch ----
 # SQLite defenses must be present in every writer, including `msb machine`.
 FROM builder AS runtime-builder
-ARG MSB_SOURCE_REVISION=ec5c6ecf0065bacaffc1b3752f3580ba20e1d179
-ARG MSB_SOURCE_SHA256=2f72dc50692c6e89585874ae38162ae4d3e589b0a7e6eea908e7669293d3ecb6
+ARG MSB_SOURCE_REVISION=60fc5071b34e6cc2671c84c8dc07709795d45d27
+ARG MSB_SOURCE_SHA256=7b733474c8b540f53854f85c476ebe397392c023335eb7faab27bf6e93098a66
 RUN curl --fail --location --retry 3 --silent --show-error \
       "https://github.com/superradcompany/microsandbox/archive/${MSB_SOURCE_REVISION}.tar.gz" -o /tmp/msb-source.tar.gz && \
     echo "${MSB_SOURCE_SHA256}  /tmp/msb-source.tar.gz" | sha256sum -c - && \
@@ -120,8 +120,8 @@ RUN --mount=type=cache,id=runcove-server-registry,target=/usr/local/cargo/regist
     python3 /build/docker/verify-sqlite-link.py /out/msb && \
     ! ldd /out/msb | grep -q libsqlite3 && \
     strip /out/msb && \
-    /out/msb --version | grep -Fx 'msb 0.7.9'
-RUN python3 -c 'import hashlib,json,os,pathlib; p=pathlib.Path("/out/msb"); m=json.loads(pathlib.Path("/build/docker/patches/manifest.json").read_text()); pathlib.Path("/build/runtime.json").write_text(json.dumps({"microsandbox":"0.7.9","sqlite":"3.51.3","source_revision":os.environ["MSB_SOURCE_REVISION"],"source_archive_sha256":os.environ["MSB_SOURCE_SHA256"],"sdk_source_modified":True,"runtime_source_modified":True,"runtime_patch":m,"profile":"release","msb_sha256":hashlib.file_digest(p.open("rb"),"sha256").hexdigest()},indent=2)+"\n")'
+    /out/msb --version | grep -Fx 'msb 0.7.14'
+RUN python3 -c 'import hashlib,json,os,pathlib; p=pathlib.Path("/out/msb"); m=json.loads(pathlib.Path("/build/docker/patches/manifest.json").read_text()); pathlib.Path("/build/runtime.json").write_text(json.dumps({"microsandbox":"0.7.14","sqlite":"3.51.3","source_revision":os.environ["MSB_SOURCE_REVISION"],"source_archive_sha256":os.environ["MSB_SOURCE_SHA256"],"sdk_source_modified":True,"runtime_source_modified":True,"runtime_patch":m,"profile":"release","msb_sha256":hashlib.file_digest(p.open("rb"),"sha256").hexdigest()},indent=2)+"\n")'
 RUN printf '%s  bin/msb\n' "$(sha256sum /out/msb | cut -d' ' -f1)" > /build/msb.sha256
 
 # Record the matched desktop helper, embedded workers and UI release assets.
@@ -137,7 +137,7 @@ RUN python3 /build/docker/release-metadata.py --target server --bins /out --ui /
     --output /build/release.json
 
 # ---- Stage 3: Runtime ----
-# Keep the deployment base stable; the bundled msb 0.7.9 runtime supports it.
+# Keep the deployment base stable; the bundled msb 0.7.14 runtime supports it.
 FROM ubuntu:24.04
 
 # Version stamp for the bundled microsandbox libkrunfw. The entrypoint uses

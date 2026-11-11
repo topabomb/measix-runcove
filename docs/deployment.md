@@ -8,7 +8,7 @@
 | Runcove Workspace | MSB VM 使用的空间 rootfs，自身不包含 MSB；可由 Server 离线携带 |
 | Runcove Standalone | 一个容器直接运行一个使用者的一个空间，无 MSB/KVM 依赖；不支持配置多个空间 |
 
-镜像资格平台为 Linux/amd64；Server 锁定 microsandbox 0.7.9 并需要宿主 `/dev/kvm`。管理与外部集成合同见[接入参考](server-api.md)。
+镜像资格平台为 Linux/amd64；Server 锁定 microsandbox 0.7.14 并需要宿主 `/dev/kvm`。管理与外部集成合同见[接入参考](server-api.md)。
 
 每次部署只有一个生效的 TOML 文件；示例是模板，环境变量只提供凭据值。配置不热加载，未知字段、错误类型和冲突的新旧名称在启动前拒绝。
 

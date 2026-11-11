@@ -12,7 +12,7 @@
 [package]
 edition = "2024"
 name = "microsandbox"
-version = "0.7.9"
+version = "0.7.14"
 authors = ["Super Rad Company <development@superrad.company>"]
 build = "build.rs"
 autolib = false
@@ -94,6 +94,10 @@ required-features = ["local"]
 [[test]]
 name = "api_compat"
 path = "tests/api_compat.rs"
+
+[[test]]
+name = "attach_output"
+path = "tests/attach_output.rs"
 
 [[test]]
 name = "child_reaping"
@@ -223,6 +227,10 @@ path = "tests/tls.rs"
 name = "tls_intercept"
 path = "tests/tls_intercept.rs"
 
+[[test]]
+name = "windows_whp"
+path = "tests/windows_whp.rs"
+
 [dependencies.anyhow]
 version = "1.0"
 optional = true
@@ -286,62 +294,62 @@ optional = true
 version = "0.2"
 
 [dependencies.microsandbox-agent-client]
-version = "=0.7.9"
+version = "=0.7.14"
 features = [
     "named-pipe",
     "uds",
 ]
 
 [dependencies.microsandbox-control-client]
-version = "=0.7.9"
+version = "=0.7.14"
 features = [
     "named-pipe",
     "uds",
 ]
 
 [dependencies.microsandbox-db]
-version = "=0.7.9"
+version = "=0.7.14"
 optional = true
 
 [dependencies.microsandbox-filesystem]
-version = "=0.7.9"
+version = "=0.7.14"
 optional = true
 default-features = false
 
 [dependencies.microsandbox-image]
-version = "=0.7.9"
+version = "=0.7.14"
 optional = true
 
 [dependencies.microsandbox-metrics]
-version = "=0.7.9"
+version = "=0.7.14"
 optional = true
 
 [dependencies.microsandbox-migration]
-version = "=0.7.9"
+version = "=0.7.14"
 optional = true
 
 [dependencies.microsandbox-network]
-version = "=0.7.9"
+version = "=0.7.14"
 optional = true
 default-features = false
 
 [dependencies.microsandbox-protocol]
-version = "=0.7.9"
+version = "=0.7.14"
 
 [dependencies.microsandbox-protocol-client]
-version = "=0.7.9"
+version = "=0.7.14"
 
 [dependencies.microsandbox-runtime]
-version = "=0.7.9"
+version = "=0.7.14"
 features = ["client"]
 optional = true
 default-features = false
 
 [dependencies.microsandbox-types]
-version = "=0.7.9"
+version = "=0.7.14"
 
 [dependencies.microsandbox-utils]
-version = "=0.7.9"
+version = "=0.7.14"
 
 [dependencies.nix]
 version = "0.31"
@@ -381,7 +389,7 @@ features = [
 optional = true
 
 [dependencies.russh]
-version = "0.64.0"
+version = "0.65.0"
 optional = true
 
 [dependencies.russh-sftp]
@@ -449,7 +457,7 @@ version = "3.15"
 version = "2.0"
 
 [dependencies.tokio]
-version = "1.52"
+version = "1.53.3"
 features = [
     "fs",
     "io-util",
@@ -480,7 +488,7 @@ features = [
 version = "0.1"
 
 [dependencies.typed-path]
-version = "0.12"
+version = "0.13"
 
 [dependencies.zeroize]
 version = "1.8"
@@ -503,10 +511,10 @@ version = "0.21.0"
 features = ["serde"]
 
 [dev-dependencies.microsandbox-db]
-version = "=0.7.9"
+version = "=0.7.14"
 
 [dev-dependencies.microsandbox-network]
-version = "=0.7.9"
+version = "=0.7.14"
 default-features = false
 
 [dev-dependencies.rcgen]
@@ -527,7 +535,7 @@ default-features = false
 version = "3.15"
 
 [dev-dependencies.tokio]
-version = "1.52"
+version = "1.53.3"
 features = [
     "fs",
     "io-util",
@@ -557,7 +565,7 @@ version = "1.0"
 features = ["zlib-rs"]
 
 [build-dependencies.microsandbox-utils]
-version = "=0.7.9"
+version = "=0.7.14"
 
 [build-dependencies.tar]
 version = "0.4"

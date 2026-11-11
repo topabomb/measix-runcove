@@ -1,49 +1,49 @@
 {
-  "version": "0.7.9",
-  "source_revision": "ec5c6ecf0065bacaffc1b3752f3580ba20e1d179",
-  "source_archive_sha256": "2f72dc50692c6e89585874ae38162ae4d3e589b0a7e6eea908e7669293d3ecb6",
+  "version": "0.7.14",
+  "source_revision": "60fc5071b34e6cc2671c84c8dc07709795d45d27",
+  "source_archive_sha256": "7b733474c8b540f53854f85c476ebe397392c023335eb7faab27bf6e93098a66",
   "patches": [
     {
       "id": "lifecycle",
-      "patch": "msb-0.7.9-lifecycle.patch",
-      "patch_sha256": "d6d040d7eaa8692673d367e3dce0c6d9d41b439755f9e1081706003caad229fb",
+      "patch": "msb-0.7.14-lifecycle.patch",
+      "patch_sha256": "c39d24052403dd05864220027b4ae354983ced4cbd75006e332d738a85da13a0",
       "files": [
         {
           "file": "sdk/rust/lib/backend/local/sandbox/mod.rs",
-          "original_sha256": "98636a498187bd924e35e69b143925f23465f5e3ec39be996c60f3c9b24f283e",
-          "patched_sha256": "e43c20a34014a5e83e5a5917d1c8b005d03cb0cc75b9540f86988613cab37e7d"
+          "original_sha256": "c444659f73264045df013a9bdb1982ecdbaeebdd3cd5e90958833edd2584c800",
+          "patched_sha256": "9ba34df4b77874e7d2d1192cb066a01639bbb9408e11538ed49652a95504c6fc"
         },
         {
           "file": "sdk/rust/lib/sandbox/handle.rs",
-          "original_sha256": "c96f53be303bf3416cc8fa1e384134cec3558f4fc892694872a077eb48ff8929",
-          "patched_sha256": "b12c06518bea40295573596f5c428c70d3fddfc5a777f1a26c4ce7605a1a39cf"
+          "original_sha256": "59d617bfa38b97961551d79b1501f258f012f0bfa0e6eb3190f5699968143155",
+          "patched_sha256": "532ac3aa6a60351b6273e0e56344057a2ac078e149c56a2dfda14069d2b7eec1"
         },
         {
           "file": "crates/runtime/lib/client/ipc.rs",
-          "original_sha256": "ccb542ddcc2510446414cc64f2ac74e03d322f348b070451ff5a945b7c39074e",
-          "patched_sha256": "b5cb53c559ea618228490de490e05793a14f627d8f9cc308fed4b4a67e68db66"
+          "original_sha256": "a8b44805d38dd5cd6ab89a2a93bbd4d193242d5d7511ab5862f1763f50bfdcbf",
+          "patched_sha256": "7bb62fc0abd63e3edc858d44c957d86b1603e455257efba05e936b439e0b96aa"
         },
         {
           "file": "crates/runtime/lib/client/maintenance.rs",
-          "original_sha256": "1ecba32c3f8fe7e9752a48a7068999df33f1bd8e1c0767f41dffd9bde4a5be8e",
-          "patched_sha256": "b3925755ee428cbd99b349d67a0f98c65e8059267c8ab69eb3e2d549e3a2665b"
+          "original_sha256": "3d7b092da04c300f07350df97c75c9b3468ea951ba6088c12f194b28efc8f09a",
+          "patched_sha256": "d323991e2cf240b5401a6962bea3a072aace89faf563c10db352f1b7d11ba9f7"
         },
         {
           "file": "sdk/rust/lib/backend/local/sandbox/create.rs",
-          "original_sha256": "d017b50560100d79886c57b8091fa3744789091e077fb067a5fe4d82a47f4fac",
-          "patched_sha256": "eb1d05daf8773e06b81b414e48e4771a7eb5fd5a6cd0b026dafe1885c8025ac7"
+          "original_sha256": "1e66feb63a4eca7f783b914a7fe17ea7d8dd836817f406114b101c665de11982",
+          "patched_sha256": "5b9a59273ea80b8da844dd8e87a40ae5601bc174e794eadd6c2335e95156e322"
         }
       ]
     }
   ],
   "vendored_crates": {
     "microsandbox": {
-      "crate_sha256": "3c84ee01eee4b5c808253299823254a2ee39b5bb1059ae5672a3ebfb0a7ae622",
-      "tree_sha256": "39de74194f1d1940c209c437b6ca16c565e2c2c7b5acea2bbb573aa7e8e46d1b"
+      "crate_sha256": "e0b26f0e6af173169b927ec8c69d9e8ed19a61847137616d8f4957ed885adb07",
+      "tree_sha256": "6ed124cbd466af160cee00d9220e972bf8e074b7e9f1eac808081a7e57141a98"
     },
     "microsandbox-runtime": {
-      "crate_sha256": "59aa2eb3cca712d407f67cca18b227ce5cd26759baae3d70d324503bbfa522f3",
-      "tree_sha256": "1224452aaba9c6ed3142509b5e2632581e7f56f68b5240b922de57b87845e684"
+      "crate_sha256": "c90bc46d76b257f81ff9919d82f596ebc6264f5be229b9b2fdba329f37d082fa",
+      "tree_sha256": "3f6a89bd34461798899d264bb1706bb0062507a652e4b9336f4b570f6e07fc40"
     }
   }
 }

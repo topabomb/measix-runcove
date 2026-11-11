@@ -1,6 +1,6 @@
 {
   "git": {
-    "sha1": "9e8862dde646ec0f7aca98019ada42316f5afc2e"
+    "sha1": "60fc5071b34e6cc2671c84c8dc07709795d45d27"
   },
   "path_in_vcs": "crates/runtime"
 }

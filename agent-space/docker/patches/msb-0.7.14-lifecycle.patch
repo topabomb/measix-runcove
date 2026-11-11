@@ -1,6 +1,6 @@
 --- a/sdk/rust/lib/backend/local/sandbox/mod.rs
 +++ b/sdk/rust/lib/backend/local/sandbox/mod.rs
-@@ -173,6 +173,13 @@
+@@ -180,6 +180,13 @@
                          .transpose()?
                          .unwrap_or(false));
                  }
@@ -14,7 +14,7 @@
                  Ok(!Self::pid_has_exited(pid))
              };
              let start = std::time::Instant::now();
-@@ -739,6 +746,13 @@
+@@ -771,6 +778,13 @@
              .as_ref()
              .and_then(|run| run.pid)
              .is_some_and(Self::pid_is_alive);
@@ -28,7 +28,7 @@
          #[cfg(windows)]
          if let (Some((_, sandboxes_dir)), Some(run)) = (socket_roots, &run)
              && let Some(owner) = crate::runtime::ownership::recorded_owner(
-@@ -848,6 +862,13 @@
+@@ -880,6 +894,13 @@
  
          #[allow(unused_mut)]
          let mut alive = run.pid.is_some_and(Self::pid_is_alive);
@@ -42,7 +42,7 @@
          #[cfg(windows)]
          if let Some((_, sandboxes_dir)) = socket_roots
              && let Some(owner) = crate::runtime::ownership::recorded_owner(
-@@ -1556,6 +1577,31 @@
+@@ -1584,6 +1605,31 @@
  // Tests
  //--------------------------------------------------------------------------------------------------
  
@@ -74,7 +74,7 @@
  #[cfg(test)]
  mod tests {
      use std::fs;
-@@ -1654,6 +1700,10 @@
+@@ -1682,6 +1728,10 @@
          );
          let pools = backend.db().await.unwrap();
          let name = "resident";
@@ -85,7 +85,7 @@
          let id = LocalBackend::insert_sandbox_record(pools.write(), &test_config(name))
              .await
              .unwrap();
-@@ -2063,6 +2113,9 @@
+@@ -2090,6 +2140,9 @@
                  .await
                  .is_err()
          );
@@ -95,7 +95,7 @@
          let mut child = Command::new("sleep").arg("30").spawn().unwrap();
          let pid = child.id() as i32;
          run_entity::Entity::insert(run_entity::ActiveModel {
-@@ -2530,4 +2583,139 @@
+@@ -2557,4 +2610,139 @@
          unsafe { libc::kill(live_pid, libc::SIGKILL) };
          waiter.join().unwrap();
      }
@@ -237,7 +237,7 @@
  }
 --- a/sdk/rust/lib/sandbox/handle.rs
 +++ b/sdk/rust/lib/sandbox/handle.rs
-@@ -519,7 +519,15 @@
+@@ -534,7 +534,15 @@
                          // Another caller may have started the same persisted
                          // sandbox after our refresh. Observe that transition
                          // and converge instead of exposing the race.
@@ -256,7 +256,7 @@
                  }
 --- a/crates/runtime/lib/client/ipc.rs
 +++ b/crates/runtime/lib/client/ipc.rs
-@@ -977,6 +977,100 @@
+@@ -1009,6 +1009,100 @@
  fn unix_socket_path_capacity() -> usize {
      let storage = unsafe { std::mem::zeroed::<libc::sockaddr_un>() };
      storage.sun_path.len()
@@ -357,7 +357,7 @@
  }
  
  //--------------------------------------------------------------------------------------------------
-@@ -1492,3 +1586,85 @@
+@@ -1580,3 +1674,85 @@
          }
      }
  }
@@ -445,7 +445,7 @@
 +}
 --- a/crates/runtime/lib/client/maintenance.rs
 +++ b/crates/runtime/lib/client/maintenance.rs
-@@ -829,13 +829,15 @@
+@@ -839,13 +839,15 @@
          return Ok(false);
      };
  
@@ -468,9 +468,21 @@
          return Ok(false);
      }
  
+@@ -1409,7 +1411,10 @@
+         #[cfg(unix)]
+         let dead_sockets = seed_socket_artifacts(dir.path(), &run_dir, "dead");
+ 
+-        // An active VM's trampoline must survive the sweep.
++        // An active VM's trampoline must survive the sweep. Its lifecycle lock,
++        // rather than a bare live PID, establishes a running owner on Linux.
++        #[cfg(unix)]
++        let _live_owner = crate::ipc::acquire_lifecycle_guard(&run_dir, "live").unwrap();
+         #[cfg(unix)]
+         let live = insert_sandbox(&db, "live", SandboxStatus::Running, false).await;
+         #[cfg(unix)]
 --- a/sdk/rust/lib/backend/local/sandbox/create.rs
 +++ b/sdk/rust/lib/backend/local/sandbox/create.rs
-@@ -3699,6 +3699,9 @@
+@@ -4094,6 +4094,9 @@
              .await
              .unwrap();
  

@@ -1,5 +1,5 @@
 # Official SDK seed inputs (CLI for guest-image export, plus libkrunfw).
 # The deployed VM executable is rebuilt with SQLite 3.51.3; its checksum is
 # recorded separately in /opt/agent-space/runtime.json and msb.sha256.
-ec9ccdefa4b63ae6417cb5e496e46f0eedc8c1e6f702d975728ce877d9a09bbb  bin/msb
-3854efcd3fe625528fa00207d97586d9790db8c436bb6881a43986604336d18e  lib/libkrunfw.so.5.6.1
+cd9fa9270987f1627cf1fd04205e5e9d8ad3d3075ffc0e98236a2398d8636f3e  bin/msb
+e5480f2feb911c5d9a508559cc13e35983c9811acc2f136e24bb8040461a7a52  lib/libkrunfw.so.5.6.1

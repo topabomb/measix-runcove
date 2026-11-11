@@ -12,7 +12,7 @@
 [package]
 edition = "2024"
 name = "microsandbox-runtime"
-version = "0.7.9"
+version = "0.7.14"
 authors = ["Super Rad Company <development@superrad.company>"]
 build = false
 autolib = false
@@ -112,45 +112,45 @@ optional = true
 version = "0.2"
 
 [dependencies.microsandbox-agent-client]
-version = "=0.7.9"
+version = "=0.7.14"
 optional = true
 
 [dependencies.microsandbox-db]
-version = "=0.7.9"
+version = "=0.7.14"
 
 [dependencies.microsandbox-filesystem]
-version = "=0.7.9"
+version = "=0.7.14"
 optional = true
 default-features = false
 
 [dependencies.microsandbox-image]
-version = "=0.7.9"
+version = "=0.7.14"
 optional = true
 
 [dependencies.microsandbox-metrics]
-version = "=0.7.9"
+version = "=0.7.14"
 optional = true
 
 [dependencies.microsandbox-network]
-version = "=0.7.9"
+version = "=0.7.14"
 optional = true
 default-features = false
 
 [dependencies.microsandbox-protocol]
-version = "=0.7.9"
+version = "=0.7.14"
 
 [dependencies.microsandbox-types]
-version = "=0.7.9"
+version = "=0.7.14"
 
 [dependencies.microsandbox-utils]
-version = "=0.7.9"
+version = "=0.7.14"
 
 [dependencies.microsandbox-vsock]
-version = "=0.7.9"
+version = "=0.7.14"
 optional = true
 
 [dependencies.msb_krun]
-version = "=0.1.41"
+version = "=0.1.45"
 features = ["blk"]
 optional = true
 
@@ -205,7 +205,7 @@ optional = true
 version = "2.0"
 
 [dependencies.tokio]
-version = "1.52"
+version = "1.53.3"
 features = [
     "fs",
     "io-util",
@@ -239,22 +239,22 @@ features = [
 ]
 
 [dev-dependencies.microsandbox-control-client]
-version = "=0.7.9"
+version = "=0.7.14"
 
 [dev-dependencies.microsandbox-migration]
-version = "=0.7.9"
+version = "=0.7.14"
 
 [dev-dependencies.microsandbox-protocol-client]
-version = "=0.7.9"
+version = "=0.7.14"
 
 [dev-dependencies.msb_krun_utils]
-version = "=0.1.41"
+version = "=0.1.45"
 
 [dev-dependencies.tempfile]
 version = "3.15"
 
 [dev-dependencies.tokio]
-version = "1.52"
+version = "1.53.3"
 features = [
     "fs",
     "io-util",
@@ -271,12 +271,12 @@ features = [
 ]
 
 [target."cfg(unix)".dependencies.microsandbox-agent-client]
-version = "=0.7.9"
+version = "=0.7.14"
 features = ["uds"]
 optional = true
 
 [target."cfg(windows)".dependencies.microsandbox-agent-client]
-version = "=0.7.9"
+version = "=0.7.14"
 features = ["named-pipe"]
 optional = true
 
@@ -288,6 +288,7 @@ features = [
     "Win32_Security_Authorization",
     "Win32_Storage_FileSystem",
     "Win32_System_Kernel",
+    "Win32_System_Memory",
     "Win32_System_SystemInformation",
     "Win32_System_Threading",
 ]
