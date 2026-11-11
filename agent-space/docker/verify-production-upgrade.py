@@ -90,7 +90,7 @@ def main():
    current(c,'browser_act',actions=[{'do':'navigate','url':'http://127.0.0.1:8128/?seed=1'}])
   original=snapshot(source);original_hash=hashlib.sha256(json.dumps(original,sort_keys=True).encode()).hexdigest();stop(source)
   backup=root/'complete-data.tar.gz'
-  docker('run','--rm','--entrypoint','tar','-v',data+':/data:ro','-v',str(root)+':/backup',a.old_image,'czf','/backup/'+backup.name,'-C','/data','.',timeout=600)
+  docker('run','--rm','--entrypoint','tar','-v',data+':/data:ro','-v',str(root)+':/backup',a.old_image,'--sparse','--numeric-owner','-czf','/backup/'+backup.name,'-C','/data','.',timeout=600)
   report['backup_sha256']=hashlib.file_digest(backup.open('rb'),'sha256').hexdigest();report['original_state_sha256']=original_hash
   # Preview and apply conversion using read-only input and a separate output.
   converted=root/'new.toml'
@@ -99,10 +99,19 @@ def main():
    assert json.loads(result)['applied']==apply
    if not apply:assert not converted.exists()
   candidate_data=volume('candidate')
-  docker('run','--rm','--entrypoint','tar','-v',candidate_data+':/data','-v',str(root)+':/backup:ro',a.old_image,'xzf','/backup/'+backup.name,'-C','/data',timeout=600)
+  docker('run','--rm','--entrypoint','tar','-v',candidate_data+':/data','-v',str(root)+':/backup:ro',a.old_image,'--numeric-owner','-xzf','/backup/'+backup.name,'-C','/data',timeout=600)
   candidate,port,dav_port=launch(a.image,candidate_data,converted,'candidate')
   current_tools={'bash','read','write','edit','web_publish','browser_snapshot','browser_act','browser_read','screen_observe'}
   c=verify_space(candidate,port,dav_port,token,dav_token,original,current_tools);check('original_credentials_and_identity');check('workspace_profile_and_files')
+  detail=admin(port,'GET','/desktop')
+  resources=detail['resources']
+  assert resources['allocation']['workspaceCapacityBytes']['value']==8192*1024*1024,resources
+  assert resources['disk']['status']=='current',resources
+  check('legacy_workspace_disk_resource_summary')
+  diagnosis=json.loads(docker('exec',candidate,'msb','doctor','--sandbox',detail['sandboxName'],'--format','json'))
+  disk_state,=diagnosis['sandboxes']
+  assert disk_state['status']=='ready' and disk_state['protection_registered'],disk_state
+  check('legacy_storage_protected_layout')
   publication=json.loads(c.tool('web_publish',action='publish',name='migration',file='/workspace/runcove-migration-marker'))
   assert '/u/desktop/pub/migration/' in json.dumps(publication)
   c.tool('write',path='/workspace/candidate-only',content='preserve candidate separately')
@@ -111,7 +120,7 @@ def main():
   c=client(port,token);assert 'workspace-before' in c.tool('read',path='/workspace/runcove-migration-marker');assert snapshot(candidate)==original
   check('restart_persistence');stop(candidate)
   rollback_data=volume('rollback')
-  docker('run','--rm','--entrypoint','tar','-v',rollback_data+':/data','-v',str(root)+':/backup:ro',a.old_image,'xzf','/backup/'+backup.name,'-C','/data',timeout=600)
+  docker('run','--rm','--entrypoint','tar','-v',rollback_data+':/data','-v',str(root)+':/backup:ro',a.old_image,'--numeric-owner','-xzf','/backup/'+backup.name,'-C','/data',timeout=600)
   rollback,port,dav_port=launch(a.old_image,rollback_data,cfg,'rollback');c=client(port,token)
   verify_space(rollback,port,dav_port,token,dav_token,original,original_tools,bash_key=old_bash_key)
   assert 'backup-boundary-ok' in c.tool('bash',**{old_bash_key:'test ! -e /workspace/candidate-only && echo backup-boundary-ok'})

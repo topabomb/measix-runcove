@@ -89,9 +89,15 @@ impl AgentEngine for MsbEngine {
                         None => Allocation::error("workspace_capacity_unavailable"),
                     };
                     if let (Some(config), Some(path)) = (&config, volume.disk_path()) {
-                        verified = config.spec.mounts.iter().any(|mount| {
-                            matches!(mount, microsandbox::sandbox::VolumeMount::DiskImage { host, guest, .. }
-                                if guest == "/workspace" && host == &path)
+                        use microsandbox::sandbox::VolumeMount;
+                        verified = config.spec.mounts.iter().any(|mount| match mount {
+                            VolumeMount::Named { name, guest, .. } => {
+                                guest == "/workspace" && name == volume_name
+                            }
+                            VolumeMount::DiskImage { host, guest, .. } => {
+                                guest == "/workspace" && host == &path
+                            }
+                            _ => false,
                         });
                         if !verified {
                             allocation.workspace_capacity_bytes =
@@ -178,64 +184,6 @@ impl AgentEngine for MsbEngine {
             .ok()
             .filter(|cpus| *cpus > 0)
             .ok_or_else(|| EngineError::Other("workspace.cpus must be between 1 and 255".into()))?;
-        // Pre-create disk volumes and collect their host paths
-        let mut disk_mounts: Vec<(String, String, bool)> = Vec::new();
-        for vol in &opts.volumes {
-            if vol.kind == VolumeKind::Disk {
-                let vol_name = vol.name.as_deref().unwrap_or("vol");
-                let scoped_name = format!("{}-{}", name, vol_name);
-                let size = vol.size_mib.mib();
-
-                // Reuse persisted disks; activation must never replace user data.
-                match Volume::builder(&scoped_name)
-                    .disk()
-                    .size(size)
-                    .create()
-                    .await
-                {
-                    Ok(volume) => {
-                        let disk_path = volume.disk_path().ok_or_else(|| {
-                            EngineError::Other(format!("volume '{}' has no disk_path", scoped_name))
-                        })?;
-                        tracing::info!(volume = %scoped_name, disk_path = %disk_path.display(), "created disk volume, mounting via virtio-blk");
-                        disk_mounts.push((
-                            vol.guest_path.clone(),
-                            disk_path.to_string_lossy().to_string(),
-                            vol.readonly,
-                        ));
-                    }
-                    Err(e) => {
-                        let msg = e.to_string();
-                        if matches!(e, microsandbox::MicrosandboxError::VolumeAlreadyExists(_)) {
-                            tracing::info!(volume = %scoped_name, "volume already exists, reusing");
-                            let volume = Volume::get(&scoped_name).await.map_err(|e| {
-                                EngineError::Other(format!(
-                                    "failed to get existing volume '{}': {}",
-                                    scoped_name, e
-                                ))
-                            })?;
-                            let disk_path = volume.disk_path().ok_or_else(|| {
-                                EngineError::Other(format!(
-                                    "existing volume '{}' has no disk_path",
-                                    scoped_name
-                                ))
-                            })?;
-                            disk_mounts.push((
-                                vol.guest_path.clone(),
-                                disk_path.to_string_lossy().to_string(),
-                                vol.readonly,
-                            ));
-                        } else {
-                            return Err(EngineError::Other(format!(
-                                "failed to create volume '{}': {}",
-                                scoped_name, msg
-                            )));
-                        }
-                    }
-                }
-            }
-        }
-
         let mut builder = Sandbox::builder(name)
             .image(opts.image.as_str())
             .shell(&opts.shell)
@@ -243,20 +191,43 @@ impl AgentEngine for MsbEngine {
             .memory(opts.memory_mib)
             .detached(true);
 
-        for (guest_path, host_disk_path, readonly) in &disk_mounts {
-            builder = builder.volume(guest_path, |v| {
-                let b = v.disk(host_disk_path);
-                if *readonly {
-                    b.readonly()
-                } else {
-                    b
-                }
-            });
-        }
-
         for vol in &opts.volumes {
             match vol.kind {
-                VolumeKind::Disk => {}
+                VolumeKind::Disk => {
+                    let suffix = vol.name.as_deref().unwrap_or("vol");
+                    let volume_name = format!("{name}-{suffix}");
+                    let exists = match Volume::get(&volume_name).await {
+                        Ok(volume) if volume.kind() == microsandbox::volume::VolumeKind::Disk => {
+                            true
+                        }
+                        Ok(_) => {
+                            return Err(EngineError::Other(format!(
+                                "existing volume '{volume_name}' is not a disk"
+                            )));
+                        }
+                        Err(microsandbox::MicrosandboxError::VolumeNotFound(_)) => false,
+                        Err(error) => {
+                            return Err(EngineError::Other(format!(
+                                "failed to inspect volume '{volume_name}': {error}"
+                            )));
+                        }
+                    };
+                    builder = builder.volume(&vol.guest_path, |mount| {
+                        // Existing data keeps its capacity even if the default has changed.
+                        let mount = if exists {
+                            mount.named(&volume_name)
+                        } else {
+                            mount.named_with(&volume_name, |disk| {
+                                disk.ensure_exists().disk().size(vol.size_mib.mib())
+                            })
+                        };
+                        if vol.readonly {
+                            mount.readonly()
+                        } else {
+                            mount
+                        }
+                    });
+                }
                 VolumeKind::Tmpfs => {
                     builder = builder.volume(&vol.guest_path, |v| v.tmpfs().size(vol.size_mib));
                 }

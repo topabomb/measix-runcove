@@ -6,7 +6,7 @@
     {
       "id": "lifecycle",
       "patch": "msb-0.7.14-lifecycle.patch",
-      "patch_sha256": "c39d24052403dd05864220027b4ae354983ced4cbd75006e332d738a85da13a0",
+      "patch_sha256": "f6de2c4a5ba6b09b3506e782ff5310d98e87352ddf4c341399a243e3e1e4844b",
       "files": [
         {
           "file": "sdk/rust/lib/backend/local/sandbox/mod.rs",
@@ -32,6 +32,43 @@
           "file": "sdk/rust/lib/backend/local/sandbox/create.rs",
           "original_sha256": "1e66feb63a4eca7f783b914a7fe17ea7d8dd836817f406114b101c665de11982",
           "patched_sha256": "5b9a59273ea80b8da844dd8e87a40ae5601bc174e794eadd6c2335e95156e322"
+        },
+        {
+          "file": "sdk/rust/lib/runtime/protected_state.rs",
+          "original_sha256": "061edba3d38a163b4983cfcf158c237df66f35432fd73bb8f265aa5b9c3aeaa0",
+          "patched_sha256": "ade6cf1496dda49eb40dc25ee5f2f3d71a918dcfcd8ef7d7b84877d90a8b25d2"
+        },
+        {
+          "file": "sdk/rust/lib/sandbox/storage_recovery.rs",
+          "original_sha256": "363fd68c82318d4b6cb8727f302d932138581f4fb5f094fcd7fac5a1ec420d72",
+          "patched_sha256": "4623485f704496c2610a2af3b57f075b78f8ff86a293b961b045afbd1229d07b"
+        },
+        {
+          "file": "sdk/rust/lib/setup/storage_repair.rs",
+          "original_sha256": "b750166b530b2094767c33b24ca009c608e1ccd61a0bab86b2e59248e6939dab",
+          "patched_sha256": "e4666b4f3b6249c62f935a55d4bbc9cee7c41ada06297670d819bf95d84f3cd3"
+        },
+        {
+          "file": "sdk/rust/lib/sandbox/storage_preview.rs",
+          "original_sha256": "a28fd50d935680f084ea4f97d31111c89e6719ed429cceb21ecd19d38c1ee3d2",
+          "patched_sha256": "d6571fafd03c555de774eefcc34bf6cc90ce017117b6f6fb9e7f6390ea3d5ab9"
+        },
+        {
+          "file": "sdk/rust/lib/setup/storage_tests.rs",
+          "original_sha256": "84c5edcfa0972f49329b6f08b634c6544d88896b31666b0e1201184b10371048",
+          "patched_sha256": "42e838588e6ae3768d57bb8d926fe9697c601fc03f80af871ad518d881a98d90"
+        }
+      ]
+    },
+    {
+      "id": "storage-preview",
+      "patch": "msb-0.7.14-preview-proof.patch",
+      "patch_sha256": "fc3a54ddd89cc30c00d87ee03b2a01cddec95e9784ee096357c92168af536e1e",
+      "files": [
+        {
+          "file": "crates/runtime/lib/checkpoint/migration/preview.rs",
+          "original_sha256": "a7c33162f673cea659e99b5e0918b7c2f6b654acc3564a0f2b982144d2facb15",
+          "patched_sha256": "fcecee3ea7cf7cb16a1d1519ab572a7905e8a7033cebbb7a7f0deb44ce0bb5b8"
         }
       ]
     }
@@ -39,11 +76,11 @@
   "vendored_crates": {
     "microsandbox": {
       "crate_sha256": "e0b26f0e6af173169b927ec8c69d9e8ed19a61847137616d8f4957ed885adb07",
-      "tree_sha256": "6ed124cbd466af160cee00d9220e972bf8e074b7e9f1eac808081a7e57141a98"
+      "tree_sha256": "096160337ac4769d4fdb63fd6b8539cf57551487b135758011dba53c8a3e656d"
     },
     "microsandbox-runtime": {
       "crate_sha256": "c90bc46d76b257f81ff9919d82f596ebc6264f5be229b9b2fdba329f37d082fa",
-      "tree_sha256": "3f6a89bd34461798899d264bb1706bb0062507a652e4b9336f4b570f6e07fc40"
+      "tree_sha256": "3a9cd71866b2e454a00a0ba65b6e8d2a68889f4953fa4419918e26ad64c6ec24"
     }
   }
 }

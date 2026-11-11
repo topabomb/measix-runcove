@@ -10,6 +10,7 @@ use super::{
     MAX_SANDBOXES, diagnostic_error, inspection_config, open_catalog, storage_alias_catalog,
 };
 use crate::config::GlobalConfigPatch;
+use crate::runtime::protected_state::recorded_storage_runtime_is_alive;
 use crate::{MicrosandboxError, MicrosandboxResult, Sandbox};
 
 //--------------------------------------------------------------------------------------------------
@@ -94,6 +95,7 @@ pub(crate) async fn preview_alias_catalog(
 /// original bytes bind candidate identities; only the in-memory config is compatibility decoded.
 pub(crate) async fn preview_target(
     db: &mut SqliteConnection,
+    run_dir: &std::path::Path,
     name: &str,
 ) -> MicrosandboxResult<(i32, String, crate::SandboxConfig)> {
     let rows = super::read_catalog(db, Some(&BTreeSet::from([name.to_owned()]))).await?;
@@ -121,7 +123,7 @@ pub(crate) async fn preview_target(
     .await
     .map_err(|_| diagnostic_error("cannot verify released sandbox process ownership"))?
     .flatten();
-    if pid.is_some_and(microsandbox_utils::process::pid_exists) {
+    if recorded_storage_runtime_is_alive(pid, run_dir, name)? {
         return Err(diagnostic_error(
             "a recorded runtime is still present; wait for teardown before private preview",
         ));
@@ -211,7 +213,8 @@ pub(super) async fn blockers_resolved(
         result.push(observed_blocker(&mut db, &home, name, name, row.id).await?);
         return Ok(result);
     }
-    require_teardown(&mut db, row.id).await?;
+    let run_dir = config.run_dir();
+    require_teardown(&mut db, row.id, &run_dir, name).await?;
     let bindings = crate::runtime::protected_state::bindings(
         &saved,
         &sandbox,
@@ -231,7 +234,7 @@ pub(super) async fn blockers_resolved(
             )
             .is_err()
         {
-            require_teardown(&mut db, peer.id).await?;
+            require_teardown(&mut db, peer.id, &run_dir, &peer.name).await?;
         }
     }
     let volumes = config.volumes_dir();
@@ -266,7 +269,12 @@ pub(super) async fn blockers_resolved(
     Ok(result)
 }
 
-async fn require_teardown(db: &mut SqliteConnection, id: i32) -> MicrosandboxResult<()> {
+async fn require_teardown(
+    db: &mut SqliteConnection,
+    id: i32,
+    run_dir: &std::path::Path,
+    name: &str,
+) -> MicrosandboxResult<()> {
     // Some very old catalogs lack a run table. No process identity exists to authorize a stop.
     let table: i64 =
         sqlx::query_scalar("SELECT COUNT(*) FROM sqlite_schema WHERE type='table' AND name='run'")
@@ -282,10 +290,7 @@ async fn require_teardown(db: &mut SqliteConnection, id: i32) -> MicrosandboxRes
             .fetch_optional(db)
             .await
             .map_err(|_| diagnostic_error("runtime teardown cannot be established"))?;
-    if pid
-        .flatten()
-        .is_some_and(microsandbox_utils::process::pid_exists)
-    {
+    if recorded_storage_runtime_is_alive(pid.flatten(), run_dir, name)? {
         return Err(diagnostic_error(
             "a stopped sandbox still has a recorded runtime process; wait for teardown and inspect again",
         ));

@@ -124,8 +124,42 @@ async fn storage_preview_blockers_never_authorize_an_incomplete_or_terminal_targ
     .execute(&mut writer)
     .await
     .unwrap();
+    #[cfg(target_os = "linux")]
+    let runtime = {
+        use std::os::{fd::AsRawFd, unix::process::CommandExt};
+        use std::process::{Child, Command};
+
+        struct Runtime(Child);
+
+        impl Drop for Runtime {
+            fn drop(&mut self) {
+                let _ = self.0.kill();
+                let _ = self.0.wait();
+            }
+        }
+
+        let guard = microsandbox_runtime::ipc::acquire_lifecycle_guard(&config.run_dir(), "target")
+            .unwrap();
+        let fd = guard.as_raw_fd();
+        let inherited = microsandbox_runtime::launch::LIFECYCLE_LOCK_FD;
+        let mut command = Command::new("sleep");
+        command.arg("30");
+        unsafe {
+            command.pre_exec(move || {
+                if libc::dup2(fd, inherited) < 0 || libc::fcntl(inherited, libc::F_SETFD, 0) < 0 {
+                    return Err(std::io::Error::last_os_error());
+                }
+                Ok(())
+            });
+        }
+        Runtime(command.spawn().unwrap())
+    };
+    #[cfg(target_os = "linux")]
+    let pid = runtime.0.id();
+    #[cfg(not(target_os = "linux"))]
+    let pid = std::process::id();
     sqlx::query("INSERT INTO run VALUES(12,1,'Running',?)")
-        .bind(std::process::id() as i64)
+        .bind(i64::from(pid))
         .execute(&mut writer)
         .await
         .unwrap();
@@ -148,6 +182,24 @@ async fn storage_preview_blockers_never_authorize_an_incomplete_or_terminal_targ
         .await
         .unwrap_err();
     assert!(error.to_string().contains("wait for teardown"), "{error}");
+    #[cfg(target_os = "linux")]
+    {
+        let run_dir = config.run_dir();
+        let error = repair::preview_target(&mut writer, &run_dir, "target")
+            .await
+            .unwrap_err();
+        assert!(error.to_string().contains("wait for teardown"), "{error}");
+
+        // The test process is live but owns no lifecycle descriptor for this sandbox.
+        sqlx::query("UPDATE run SET pid=?")
+            .bind(i64::from(std::process::id()))
+            .execute(&mut writer)
+            .await
+            .unwrap();
+        repair::preview_target(&mut writer, &run_dir, "target")
+            .await
+            .unwrap();
+    }
     sqlx::query("UPDATE sandbox SET status='Running'")
         .execute(&mut writer)
         .await

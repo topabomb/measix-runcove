@@ -24,6 +24,10 @@ microsandbox 是本项目使用的上游 microVM 运行时；其 CLI/SDK 负责 
 
 补丁只覆盖 Linux start/reconcile 和对应重试，不声称修复所有信号发送路径；旧版缺 fd 99、inode 不符等不确定身份保守报错。Windows/macOS 保持上游行为。真实 PID 复用已在隔离旧镜像复现；原事故 PID 131 的历史归属及最初 VM 退出原因仍未知。
 
+### 存储预览的内容校验
+
+v0.7.14 使用文件身份、大小及时间戳判断临时预览盘是否被修改。实际 Linux 测试发现同一文件系统时钟刻度内的等长写入可能保留相同元数据。[存储预览补丁](../agent-space/docker/patches/msb-0.7.14-preview-proof.patch) 复用已有稀疏盘内容摘要，复核预览副本后才继续选定的恢复流程。已选原始盘链仍由上游的独立内容证明校验。待上游覆盖等长写入、元数据保持相同的情形并通过该回归后，独立撤销此补丁。
+
 ### 已撤销的 Relay 回补
 
 0.7.9 已收录迟到 BulkFinish（#1816）与部分帧读取取消安全（#1838）修复，因此删除旧 `msb-0.7.2-relay.patch` 及 manifest 条目，直接使用上游实现。构建仍运行完整 relay 回归，覆盖退休/取消 correlation、实例隔离、部分帧与下一帧对齐。文件服务的真实并发、取消、Range 和大文件验收继续保留。
@@ -58,6 +62,7 @@ v0.7.9 的固定输入及已验证范围见[验证记录](validation-records.md#
 ## v0.7.14 存储与诊断
 
 - 0.7.12 起，MSB 将宿主信任的磁盘记录和检查点移入受保护布局。v0.7.14 启动时迁移可验证的旧布局。出现拒绝时先保留数据和恢复记录，在独立冷备副本上使用 `msb doctor --sandbox <name>`。旧布局完整且修复报告可审查时，用匹配 SDK/CLI/runtime 的 `msb self repair --sandbox <name>`，再检查两盘和最近写入。原始盘与快照后的数据是恢复输入。[上游存储迁移指南](https://github.com/superradcompany/microsandbox/blob/v0.7.14/docs/migrations/sandbox-storage.mdx)
+- Server 新建工作盘时，由 SDK 创建并挂载登记名对应的块设备。已有登记盘继续按原容量复用；旧 VM 的按路径挂载仍参与资源核验。SDK 为新卷保存未完成创建的归属，完整的已有卷继续保留。若首次创建被中断，先在独立副本用 `msb doctor --sandbox <name> --format json` 核对确切身份和 `incomplete_creation`，再按归属通过 SDK/CLI 处置未发布的 sandbox。普通激活只报告故障，保留已登记的数据和恢复记录。 [上游创建恢复](https://github.com/superradcompany/microsandbox/pull/1929)
 - MSB catalog 包含创建、清理和受保护布局的迁移。应用的账号状态仍沿用 schema3。回滚用原应用和运行时的完整冷备，包含整个 MSB home。遇到 `needs investigation` 保留磁盘、目录和日志供诊断。
 
 ## 升级与逐项撤销

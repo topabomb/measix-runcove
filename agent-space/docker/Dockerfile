@@ -92,8 +92,11 @@ COPY docker/apply-msb-patch.py /build/docker/
 COPY docker/patches/ /build/docker/patches/
 RUN python3 -c 'import json,os,pathlib; m=json.loads(pathlib.Path("/build/docker/patches/manifest.json").read_text()); assert m["source_revision"]==os.environ["MSB_SOURCE_REVISION"] and m["source_archive_sha256"]==os.environ["MSB_SOURCE_SHA256"], "MSB upstream input differs from audited patch"' && \
     python3 /build/docker/apply-msb-patch.py /msb-source
+# Run disk migration tests on the Docker data filesystem, as deployed MSB
+# volumes are. OverlayFS does not enforce the same writable-mapping leases.
 RUN --mount=type=cache,id=runcove-server-registry,target=/usr/local/cargo/registry \
     --mount=type=cache,id=runcove-server-target,target=/build/target \
+    --mount=type=cache,id=runcove-msb-storage-test,target=/var/tmp/runcove-msb-storage-test,sharing=locked \
     cd /msb-source && \
     MSB_HOME=/opt/msb-build-home CARGO_TARGET_DIR=/build/target \
     CARGO_BUILD_JOBS=2 CARGO_PROFILE_TEST_DEBUG=0 SQLITE3_NO_PKG_CONFIG=1 \
@@ -104,6 +107,12 @@ RUN --mount=type=cache,id=runcove-server-registry,target=/usr/local/cargo/regist
     MSB_HOME=/opt/msb-build-home CARGO_TARGET_DIR=/build/target \
     CARGO_BUILD_JOBS=2 CARGO_PROFILE_TEST_DEBUG=0 SQLITE3_NO_PKG_CONFIG=1 \
       cargo test --locked -p microsandbox-runtime --lib client::maintenance -- --test-threads=1 && \
+    MSB_HOME=/opt/msb-build-home CARGO_TARGET_DIR=/build/target \
+    CARGO_BUILD_JOBS=2 CARGO_PROFILE_TEST_DEBUG=0 SQLITE3_NO_PKG_CONFIG=1 \
+      TMPDIR=/var/tmp/runcove-msb-storage-test cargo test --locked -p microsandbox-runtime --lib checkpoint::migration -- --test-threads=1 && \
+    MSB_HOME=/opt/msb-build-home CARGO_TARGET_DIR=/build/target \
+    CARGO_BUILD_JOBS=2 CARGO_PROFILE_TEST_DEBUG=0 SQLITE3_NO_PKG_CONFIG=1 \
+      TMPDIR=/var/tmp/runcove-msb-storage-test cargo test --locked -p microsandbox --lib setup::storage -- --test-threads=1 && \
     MSB_HOME=/opt/msb-build-home CARGO_TARGET_DIR=/build/target \
     CARGO_BUILD_JOBS=2 CARGO_PROFILE_TEST_DEBUG=0 SQLITE3_NO_PKG_CONFIG=1 \
       cargo test --locked -p microsandbox --lib backend::local::sandbox -- --test-threads=1 && \

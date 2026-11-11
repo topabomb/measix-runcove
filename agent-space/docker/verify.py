@@ -401,9 +401,8 @@ ThreadingHTTPServer(('127.0.0.1',38080),functools.partial(App,directory='/worksp
         )
         passed('configured fallback and manual bash timeout both use seconds')
 
-        assert 'Wrote' in client.tool(
-            'write', path='/workspace/a.txt', content='old'
-        )
+        written = json.loads(client.tool('write', path='/workspace/a.txt', content='old'))
+        assert written == {'path': '/workspace/a.txt', 'size_bytes': 3}, written
         paused_publication=json.loads(client.tool('web_publish',action='publish',name='paused',file='/workspace/a.txt',keep_alive_secs=60))
         docker('exec',name,'msb','pause','-q','dockerverify-workspace')
         wait_workspace_status(name,'paused')
@@ -415,9 +414,10 @@ ThreadingHTTPServer(('127.0.0.1',38080),functools.partial(App,directory='/worksp
         assert 'old' in pause_then_call(
             name, client, 'read', path='/workspace/a.txt'
         )
-        assert 'Wrote' in pause_then_call(
+        written = json.loads(pause_then_call(
             name, client, 'write', path='/workspace/b.txt', content='data'
-        )
+        ))
+        assert written == {'path': '/workspace/b.txt', 'size_bytes': 4}, written
         assert 'Replaced' in pause_then_call(
             name, client, 'edit', path='/workspace/a.txt', old_text='old', new_text='new'
         )

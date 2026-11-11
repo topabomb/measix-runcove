@@ -31,6 +31,26 @@ pub(crate) enum StoragePreparation<'a> {
 // Functions
 //--------------------------------------------------------------------------------------------------
 
+/// Check whether the recorded process can still own the target sandbox's disks.
+/// Keep the platform's conservative PID gate when lifecycle identity is unavailable.
+pub(crate) fn recorded_storage_runtime_is_alive(
+    pid: Option<i32>,
+    run_dir: &Path,
+    name: &str,
+) -> std::io::Result<bool> {
+    #[cfg(target_os = "linux")]
+    return pid
+        .map(|pid| microsandbox_runtime::ipc::recorded_runtime_is_alive(pid, run_dir, name))
+        .transpose()
+        .map(|alive| alive.unwrap_or(false));
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = (run_dir, name);
+        Ok(pid.is_some_and(microsandbox_utils::process::pid_exists))
+    }
+}
+
 /// Derive disk authority only from saved host configuration. Legacy journals are deliberately
 /// absent here: they can select a view within these roles but cannot grant access to another disk.
 pub(crate) fn bindings(
@@ -194,11 +214,10 @@ pub(crate) async fn prepare_storage(
     // A terminal catalog row and a free lifecycle lock do not prove teardown of older
     // runtimes. This shared gate covers stopped snapshots, growth and compaction as well
     // as startup/recovery; none may capture a disk still held by the previous process.
-    if LocalBackend::load_latest_run(db.read(), id)
+    let pid = LocalBackend::load_latest_run(db.read(), id)
         .await?
-        .and_then(|run| run.pid)
-        .is_some_and(microsandbox_utils::process::pid_exists)
-    {
+        .and_then(|run| run.pid);
+    if recorded_storage_runtime_is_alive(pid, &backend.config().run_dir(), &config.spec.name)? {
         return Err(MicrosandboxError::SandboxStillRunning(format!(
             "sandbox '{}' still has a recorded runtime process; wait for teardown before migrating storage and retry",
             config.spec.name

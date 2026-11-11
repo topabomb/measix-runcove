@@ -1,0 +1,119 @@
+--- a/crates/runtime/lib/checkpoint/migration/preview.rs
++++ b/crates/runtime/lib/checkpoint/migration/preview.rs
+@@ -30,7 +30,7 @@
+     candidates: Vec<CandidateSummary>,
+     views: BTreeMap<String, Disk>,
+     copies: BTreeMap<String, CapturedLayer>,
+-    outputs: BTreeMap<String, (PathBuf, io::Identity)>,
++    outputs: BTreeMap<String, (CapturedLayer, io::Identity)>,
+     output_bytes: u64,
+ }
+ 
+@@ -58,9 +58,9 @@
+             .get(candidate_id)
+             .filter(|disk| disk.id == disk_id)
+             .ok_or("unknown private recovery view")?;
+-        if let Some((path, stamp)) = self.outputs.get(candidate_id) {
+-            verify_output(path, stamp)?;
+-            return Ok(path.clone());
++        if let Some((output, stamp)) = self.outputs.get(candidate_id) {
++            verify_output(output, stamp)?;
++            return Ok(output.path.clone());
+         }
+         let capacity = view.sources.last().ok_or("empty recovery view")?.capacity;
+         let output_bytes = self
+@@ -119,16 +119,30 @@
+             })
+             .map_err(|_| "private recovery materializer stopped unexpectedly")?
+         };
+-        if let Err(error) = write.and_then(|()| io::harden_created(&target, false)) {
+-            if target.exists() {
+-                fs::remove_file(&target)
+-                    .map_err(|_| "cannot discard incomplete recovery image; close the session")?;
+-            }
+-            return Err(error);
+-        }
+-        let stamp = io::identity(&io::exact(&target)?)?;
+-        self.outputs
+-            .insert(candidate_id.to_owned(), (target.clone(), stamp));
++        let record = write.and_then(|()| {
++            io::harden_created(&target, false)?;
++            let file = io::exact(&target)?;
++            Ok((
++                CapturedLayer {
++                    path: target.clone(),
++                    content_root: content_root(&file)?,
++                },
++                io::identity(&file)?,
++            ))
++        });
++        match record {
++            Ok(record) => {
++                self.outputs.insert(candidate_id.to_owned(), record);
++            }
++            Err(error) => {
++                if target.exists() {
++                    fs::remove_file(&target).map_err(
++                        |_| "cannot discard incomplete recovery image; close the session",
++                    )?;
++                }
++                return Err(error);
++            }
++        }
+         self.output_bytes = output_bytes;
+         Ok(target)
+     }
+@@ -267,8 +281,8 @@
+             .get(&selection.candidate_id)
+             .filter(|disk| disk.id == selection.disk_id)
+             .ok_or("selection was not captured in this private recovery session")?;
+-        if let Some((path, stamp)) = preview.outputs.get(&selection.candidate_id) {
+-            verify_output(path, stamp)?;
++        if let Some((output, stamp)) = preview.outputs.get(&selection.candidate_id) {
++            verify_output(output, stamp)?;
+         }
+         journals.push(view.journal.as_deref());
+         roots.push(
+@@ -430,8 +444,10 @@
+     Ok(())
+ }
+ 
+-fn verify_output(path: &Path, stamp: &io::Identity) -> Result<(), String> {
+-    if io::identity(&io::exact(path)?)? != *stamp {
++fn verify_output(output: &CapturedLayer, stamp: &io::Identity) -> Result<(), String> {
++    let file = io::exact(&output.path)?;
++    // A same-size write can leave both timestamps unchanged within one filesystem tick.
++    if io::identity(&file)? != *stamp || content_root(&file)? != output.content_root {
+         return Err(
+             "the disposable inspection image changed; inspect a fresh recovery session".into(),
+         );
+@@ -451,3 +467,29 @@
+     }
+     Ok(())
+ }
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn inspection_output_rejects_modified_bytes_even_with_matching_metadata() {
++        let directory = tempfile::tempdir().unwrap();
++        let path = directory.path().join("view.raw");
++        fs::write(&path, vec![1; 131072]).unwrap();
++        let output = CapturedLayer {
++            content_root: content_root(&io::exact(&path).unwrap()).unwrap(),
++            path,
++        };
++        verify_output(
++            &output,
++            &io::identity(&io::exact(&output.path).unwrap()).unwrap(),
++        )
++        .unwrap();
++
++        fs::write(&output.path, vec![2; 131072]).unwrap();
++        // Model a write in the same filesystem timestamp tick deterministically.
++        let unchanged_stamp = io::identity(&io::exact(&output.path).unwrap()).unwrap();
++        assert!(verify_output(&output, &unchanged_stamp).is_err());
++    }
++}

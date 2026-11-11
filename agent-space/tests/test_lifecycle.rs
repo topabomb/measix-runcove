@@ -85,6 +85,59 @@ async fn test_lifecycle_create_exec_volume_persists_on_restart() {
     common::cleanup_sandbox(&engine, &name, &make_opts()).await;
 }
 
+#[tokio::test]
+#[serial]
+async fn recreating_vm_reuses_registered_disk_at_its_original_capacity() {
+    let engine = MsbEngine::new();
+    let name = unique_name("test-lc-reuse");
+    let volume_name = format!("{name}-test-ws");
+    let mut old_opts = make_opts();
+    old_opts.volumes[0].size_mib = 384;
+
+    let old = engine.create_sandbox(&name, &old_opts).await.unwrap();
+    let seed = old
+        .exec(
+            "bash",
+            &["-c", "printf preserved >/workspace/reuse-marker"],
+            Some(timeout()),
+        )
+        .await
+        .unwrap();
+    assert_eq!(seed.exit_code, 0);
+    old.stop().await.unwrap();
+    engine.remove_sandbox(&name).await.unwrap();
+
+    let opts = make_opts();
+    let recreated = engine.create_sandbox(&name, &opts).await.unwrap();
+    let marker = recreated
+        .exec("cat", &["/workspace/reuse-marker"], Some(timeout()))
+        .await
+        .unwrap();
+    assert_eq!(marker.stdout.trim(), "preserved");
+    let inspection = engine
+        .inspect_resources(&name, std::slice::from_ref(&volume_name), &opts)
+        .await
+        .unwrap();
+    assert!(inspection.workspace_disk_verified);
+    assert_eq!(
+        inspection.allocation.workspace_capacity_bytes.value,
+        Some(384 * 1024 * 1024)
+    );
+    let sandbox = microsandbox::Sandbox::get(&name).await.unwrap();
+    assert!(sandbox.config().unwrap().spec.mounts.iter().any(|mount| {
+        matches!(mount, microsandbox::sandbox::VolumeMount::Named { name, guest, .. }
+            if name == &volume_name && guest == "/workspace")
+    }));
+
+    recreated.stop().await.unwrap();
+    engine.remove_sandbox(&name).await.unwrap();
+    engine.remove_volume(&volume_name).await.unwrap();
+    assert!(matches!(
+        microsandbox::Volume::get(&volume_name).await,
+        Err(microsandbox::MicrosandboxError::VolumeNotFound(_))
+    ));
+}
+
 // L-02: Overlay filesystem persists across stop/start (apt installs survive)
 #[tokio::test]
 #[serial]

@@ -263,7 +263,8 @@ pub(crate) async fn capture_readonly(
     parent: &std::path::Path,
 ) -> MicrosandboxResult<(SandboxConfig, RecoveryPreview)> {
     let mut db = crate::setup::open_catalog(local.config()).await?;
-    let (id, stored, config) = crate::setup::preview_target(&mut db, name).await?;
+    let run_dir = local.config().run_dir();
+    let (id, stored, config) = crate::setup::preview_target(&mut db, &run_dir, name).await?;
     let storage = guard_target_storage(local, name, &config).await?;
     let runtime = storage.join("runtime");
     if microsandbox_runtime::checkpoint::layout::require_ready(&runtime).is_ok() {
@@ -278,7 +279,8 @@ pub(crate) async fn capture_readonly(
         Some(&mut db),
     )
     .await?;
-    let (current, raw, current_config) = crate::setup::preview_target(&mut db, name).await?;
+    let (current, raw, current_config) =
+        crate::setup::preview_target(&mut db, &run_dir, name).await?;
     if id != current
         || raw != stored
         || serde_json::to_value(&current_config)? != serde_json::to_value(&config)?

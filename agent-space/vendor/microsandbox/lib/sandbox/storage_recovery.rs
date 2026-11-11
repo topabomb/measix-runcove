@@ -169,12 +169,11 @@ async fn with_catalog_storage<T>(
         )));
     }
     // Older generations can publish a stopped row before their process and disk handles exit.
-    // The PID check is conservative on reuse and never sends a signal to another process.
-    if LocalBackend::load_latest_run(db.read(), model.id)
+    // Use the same process ownership check as automatic storage preparation.
+    let pid = LocalBackend::load_latest_run(db.read(), model.id)
         .await?
-        .and_then(|run| run.pid)
-        .is_some_and(microsandbox_utils::process::pid_exists)
-    {
+        .and_then(|run| run.pid);
+    if protected_state::recorded_storage_runtime_is_alive(pid, &local.config().run_dir(), name)? {
         return Err(MicrosandboxError::SandboxStillRunning(format!(
             "sandbox '{name}' still has a recorded runtime process; wait for teardown and retry"
         )));
