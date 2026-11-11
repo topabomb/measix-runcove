@@ -1,0 +1,81 @@
+{
+  "date": "2026-11-11",
+  "candidate": {
+    "image_id": "sha256:2ba4b3205a3afbf3c8df3817a8a6dbee3dee26acdb54c80c5dab2d46d8d896f5",
+    "image_tag": "runcove-server:qa-msb0714-review",
+    "source_revision": "e850eb0e5abe224fc4aee9fda832ff1f21d35d4c",
+    "source_sha256": "7f065baa2b203e663d9ece80c26b0b44e5b300a027b48f7e01e979d3e327352d",
+    "microsandbox": "0.7.14",
+    "sqlite_static_version": "3.51.3",
+    "msb_sha256": "b7b18f95b114583d1cacbd6056e8c27b30d9a9bf41afa118801e15f2573aada8",
+    "agentd_sha256": "743ba6497d7006838e1276bc4965b524ca6718a638d613e9cfc8240c8f5f5276",
+    "firmware_sha256": "e5480f2feb911c5d9a508559cc13e35983c9811acc2f136e24bb8040461a7a52",
+    "workspace_reference": "runcove/runcove-workspace@sha256:c69285f71d590f6a03e472a181a77207b9cee2ee704a9c5eb038885c4a596400"
+  },
+  "earlier_qualified_image_id": "sha256:c12677aba31b35d883f6518558bfeafe7b1c20ae3f61514055da73dd0d4d7b00",
+  "old_production_equivalent_baseline_image_id": "sha256:440b6acbfadfe199141cf2341f75e600c91f1864ecfd14f849679a9d22babe9d",
+  "verified": {
+    "official_package_and_patch_parity": {
+      "microsandbox_files": 245,
+      "microsandbox_runtime_files": 97
+    },
+    "firmware_input_checks": [
+      "higher_version_decoy_ignored_by_build_entry",
+      "wrong_hash_rejected",
+      "broken_link_rejected",
+      "extra_version_rejected"
+    ],
+    "workspace_mount_kind": [
+      "earlier_candidate_reproduces_directory_mount_after_disk_replacement",
+      "review_candidate_refuses_wrong_type_on_dav_activation",
+      "real_rust_lifecycle_checks_original_capacity_and_wrong_type"
+    ],
+    "production_equivalent_upgrade_and_cold_rollback": [
+      "original_credentials_and_identity",
+      "workspace_profile_and_files",
+      "legacy_workspace_disk_resource_summary",
+      "legacy_storage_protected_layout",
+      "new_server_tools_desktop_dav_publish",
+      "restart_persistence",
+      "isolated_complete_backup_rollback"
+    ],
+    "dav_restart": [
+      "abrupt_container_exit_leaves_original_sandbox_crashed",
+      "first_concurrent_dav_recovers_crashed_vm_with_live_recycled_pid",
+      "graceful_container_restart_preserves_original_space_and_files",
+      "dav_resumes_existing_paused_vm",
+      "abrupt_container_exit_recovers_original_paused_vm",
+      "cached_runtime_recovers_after_unexpected_vm_process_exit",
+      "failed_dav_helper_start_is_retryable_without_recreating_vm",
+      "startup_deadline_and_backend_failure_release_terminal_capacity_then_retry",
+      "cancelled_first_dav_waiter_can_retry_and_retains_one_runtime_owner",
+      "guest_stall_deadline_is_retryable_and_retains_resident_capacity",
+      "original_mcp_and_dav_credentials_remain_valid",
+      "failure_logs_include_stage_identity_and_elapsed_time"
+    ],
+    "upstream_rust": {
+      "passed": 344,
+      "ignored": 8
+    },
+    "real_workspace_lifecycle_tests": 7,
+    "python": {
+      "test_exec_owner.py": 5,
+      "test_file_read.py": 3,
+      "test_managed_cleanup.py": 8,
+      "test_msb_patches.py": 4,
+      "test_package.py": 5,
+      "test_verify_dav_large.py": 3,
+      "test_verify_protocol.py": 8,
+      "test_workspace_transfer.py": 9
+    },
+    "source_checks": [
+      "locked_workspace_check",
+      "workspace_all_targets_clippy",
+      "standalone_no_default_features_build_and_clippy",
+      "standalone_graph_without_msb_or_libkrun",
+      "format",
+      "diff_check"
+    ]
+  },
+  "production_updated": false
+}
