@@ -9,7 +9,7 @@ microsandbox 是本项目使用的上游 microVM 运行时；其 CLI/SDK 负责 
 - SDK、agent-client 和 CLI 锁定 `0.7.14`，Cargo 精确依赖与 `Cargo.lock` 一起维护，构建使用 `--locked`。版本锁定不表示它是上游最新版。
 - [`msb-runtime.sha256`](../agent-space/msb-runtime.sha256) 校验官方种子 CLI/libkrunfw。种子 CLI 用于导出 guest 镜像，不能代表最终 VM 程序。
 - SDK 的 `vendor/microsandbox`、`vendor/microsandbox-runtime` 是官方 crate 的审计副本，通过 Cargo 覆盖应用生命周期与存储预览补丁。Docker 在固定官方源码及锁文件上重编译 CLI；源码归档、crate、副本树、补丁及每个修改文件的输入/结果摘要由 [`manifest.json`](../agent-space/docker/patches/manifest.json) 核验。
-- [`apply-msb-patch.py`](../agent-space/docker/apply-msb-patch.py) 拒绝版本或内容不匹配，不允许模糊应用。服务与 CLI 均静态链接 SQLite 3.51.3；guest 保持匹配的官方来源。
+- [`apply-msb-patch.py`](../agent-space/docker/apply-msb-patch.py) 拒绝版本或内容不匹配。服务与 CLI 均静态链接 SQLite 3.51.3。构建校验官方 Linux x86_64 Agentd 的摘要，并核对最终 CLI 内嵌的二进制。镜像也核验实际打包的固件和链接文件。
 - 镜像 `/opt/agent-space/runtime.json` 保存来源、补丁及最终哈希，`msb.sha256` 校验实际 CLI。entrypoint 覆盖数据卷中的旧缓存。验收须核对运行 VM 的 `/proc/<pid>/exe`，不能只检查 `/usr/local/bin/msb` 或种子摘要。
 
 ## 本地补丁
@@ -62,7 +62,7 @@ v0.7.9 的固定输入及已验证范围见[验证记录](validation-records.md#
 ## v0.7.14 存储与诊断
 
 - 0.7.12 起，MSB 将宿主信任的磁盘记录和检查点移入受保护布局。v0.7.14 启动时迁移可验证的旧布局。出现拒绝时先保留数据和恢复记录，在独立冷备副本上使用 `msb doctor --sandbox <name>`。旧布局完整且修复报告可审查时，用匹配 SDK/CLI/runtime 的 `msb self repair --sandbox <name>`，再检查两盘和最近写入。原始盘与快照后的数据是恢复输入。[上游存储迁移指南](https://github.com/superradcompany/microsandbox/blob/v0.7.14/docs/migrations/sandbox-storage.mdx)
-- Server 新建工作盘时，由 SDK 创建并挂载登记名对应的块设备。已有登记盘继续按原容量复用；旧 VM 的按路径挂载仍参与资源核验。SDK 为新卷保存未完成创建的归属，完整的已有卷继续保留。若首次创建被中断，先在独立副本用 `msb doctor --sandbox <name> --format json` 核对确切身份和 `incomplete_creation`，再按归属通过 SDK/CLI 处置未发布的 sandbox。普通激活只报告故障，保留已登记的数据和恢复记录。 [上游创建恢复](https://github.com/superradcompany/microsandbox/pull/1929)
+- Server 新建工作盘时，由 SDK 创建并挂载登记名对应的块设备。已有登记盘继续按原容量复用。创建和重启都会校验命名工作盘的磁盘类型，同名目录卷会被拒绝。旧 VM 的按路径挂载仍参与资源核验。SDK 为新卷保存未完成创建的归属，完整的已有卷继续保留。若首次创建被中断，先在独立副本用 `msb doctor --sandbox <name> --format json` 核对确切身份和 `incomplete_creation`，再按归属通过 SDK/CLI 处置未发布的 sandbox。普通激活只报告故障，保留已登记的数据和恢复记录。 [上游创建恢复](https://github.com/superradcompany/microsandbox/pull/1929)
 - MSB catalog 包含创建、清理和受保护布局的迁移。应用的账号状态仍沿用 schema3。回滚用原应用和运行时的完整冷备，包含整个 MSB home。遇到 `needs investigation` 保留磁盘、目录和日志供诊断。
 
 ## 升级与逐项撤销

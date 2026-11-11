@@ -189,6 +189,8 @@ impl AgentEngine for MsbEngine {
             .shell(&opts.shell)
             .cpus(cpus)
             .memory(opts.memory_mib)
+            // The SDK checks this saved requirement on every named-volume resolution.
+            .label("runcove.named-volume-kind", "disk")
             .detached(true);
 
         for vol in &opts.volumes {
@@ -213,14 +215,16 @@ impl AgentEngine for MsbEngine {
                         }
                     };
                     builder = builder.volume(&vol.guest_path, |mount| {
-                        // Existing data keeps its capacity even if the default has changed.
-                        let mount = if exists {
-                            mount.named(&volume_name)
-                        } else {
-                            mount.named_with(&volume_name, |disk| {
-                                disk.ensure_exists().disk().size(vol.size_mib.mib())
-                            })
-                        };
+                        let mount = mount.named_with(&volume_name, |volume| {
+                            let disk = volume.ensure_exists().disk();
+                            // MSB checks the kind under its volume lock. Omit the size
+                            // for an existing disk so its original capacity is accepted.
+                            if exists {
+                                disk
+                            } else {
+                                disk.size(vol.size_mib.mib())
+                            }
+                        });
                         if vol.readonly {
                             mount.readonly()
                         } else {

@@ -87,9 +87,9 @@ is_stamp_fresh() {
 info "copying libkrunfw libraries..."
 # Clear stale libs first so a version change never leaves mismatched sonames.
 rm -f "$LIBS_DIR"/libkrunfw.so*
-KRUN_REAL="$(find "$MSB_HOME/lib" -maxdepth 1 -type f -name 'libkrunfw.so.*' -printf '%p\n' | sort -V | tail -1)"
-[ -n "$KRUN_REAL" ] || error "versioned libkrunfw not found under $MSB_HOME/lib"
-KRUN_FILE="$(basename "$KRUN_REAL")"
+KRUN_FILE="$(awk '$2 ~ /^lib\/libkrunfw\.so\.[0-9]+(\.[0-9]+)+$/ { sub(/^lib\//, "", $2); print $2 }' "$PROJECT_DIR/msb-runtime.sha256")"
+[[ "$KRUN_FILE" =~ ^libkrunfw\.so\.[0-9]+(\.[0-9]+)+$ ]] || error "expected one audited libkrunfw file"
+KRUN_REAL="$MSB_HOME/lib/$KRUN_FILE"
 KRUN_MAJOR="$(printf '%s\n' "$KRUN_FILE" | sed -E 's/^(libkrunfw\.so\.[0-9]+).*/\1/')"
 cp "$KRUN_REAL" "$LIBS_DIR/$KRUN_FILE"
 ln -s "$KRUN_FILE" "$LIBS_DIR/$KRUN_MAJOR"

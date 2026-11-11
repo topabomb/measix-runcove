@@ -138,6 +138,35 @@ async fn recreating_vm_reuses_registered_disk_at_its_original_capacity() {
     ));
 }
 
+#[tokio::test]
+#[serial]
+async fn restarting_vm_rejects_a_directory_replacing_the_registered_disk() {
+    let engine = MsbEngine::new();
+    let name = unique_name("test-lc-volume-kind");
+    let volume_name = format!("{name}-test-ws");
+
+    let sandbox = engine.create_sandbox(&name, &make_opts()).await.unwrap();
+    sandbox.stop().await.unwrap();
+    engine.remove_volume(&volume_name).await.unwrap();
+    microsandbox::Volume::builder(&volume_name)
+        .directory()
+        .create()
+        .await
+        .unwrap();
+
+    let start = engine.start_sandbox(&name).await;
+    let error = start.err().expect("typed disk must not accept a directory");
+    assert!(
+        error
+            .to_string()
+            .contains("but this sandbox requested disk"),
+        "{error}"
+    );
+
+    engine.remove_sandbox(&name).await.unwrap();
+    engine.remove_volume(&volume_name).await.unwrap();
+}
+
 // L-02: Overlay filesystem persists across stop/start (apt installs survive)
 #[tokio::test]
 #[serial]

@@ -92,6 +92,12 @@ COPY docker/apply-msb-patch.py /build/docker/
 COPY docker/patches/ /build/docker/patches/
 RUN python3 -c 'import json,os,pathlib; m=json.loads(pathlib.Path("/build/docker/patches/manifest.json").read_text()); assert m["source_revision"]==os.environ["MSB_SOURCE_REVISION"] and m["source_archive_sha256"]==os.environ["MSB_SOURCE_SHA256"], "MSB upstream input differs from audited patch"' && \
     python3 /build/docker/apply-msb-patch.py /msb-source
+# Upstream filesystem crate reads build/agentd; its SDK has separate runtime seeds.
+RUN version="$(python3 -c 'import json; print(json.load(open("/build/docker/patches/manifest.json"))["version"])')" && \
+    mkdir -p /msb-source/build && \
+    curl --fail --location --retry 3 --silent --show-error \
+      "https://github.com/superradcompany/microsandbox/releases/download/v${version}/agentd-x86_64" -o /msb-source/build/agentd && \
+    python3 -c 'import hashlib,json,pathlib; m=json.load(open("/build/docker/patches/manifest.json")); assert hashlib.sha256(pathlib.Path("/msb-source/build/agentd").read_bytes()).hexdigest() == m["agentd_linux_x86_64_sha256"], "MSB Agentd digest mismatch"'
 # Run disk migration tests on the Docker data filesystem, as deployed MSB
 # volumes are. OverlayFS does not enforce the same writable-mapping leases.
 RUN --mount=type=cache,id=runcove-server-registry,target=/usr/local/cargo/registry \
@@ -129,8 +135,9 @@ RUN --mount=type=cache,id=runcove-server-registry,target=/usr/local/cargo/regist
     python3 /build/docker/verify-sqlite-link.py /out/msb && \
     ! ldd /out/msb | grep -q libsqlite3 && \
     strip /out/msb && \
+    python3 -c 'from pathlib import Path; assert Path("/msb-source/build/agentd").read_bytes() in Path("/out/msb").read_bytes(), "MSB CLI does not embed the audited Agentd"' && \
     /out/msb --version | grep -Fx 'msb 0.7.14'
-RUN python3 -c 'import hashlib,json,os,pathlib; p=pathlib.Path("/out/msb"); m=json.loads(pathlib.Path("/build/docker/patches/manifest.json").read_text()); pathlib.Path("/build/runtime.json").write_text(json.dumps({"microsandbox":"0.7.14","sqlite":"3.51.3","source_revision":os.environ["MSB_SOURCE_REVISION"],"source_archive_sha256":os.environ["MSB_SOURCE_SHA256"],"sdk_source_modified":True,"runtime_source_modified":True,"runtime_patch":m,"profile":"release","msb_sha256":hashlib.file_digest(p.open("rb"),"sha256").hexdigest()},indent=2)+"\n")'
+RUN python3 -c 'import hashlib,json,os,pathlib; p=pathlib.Path("/out/msb"); m=json.loads(pathlib.Path("/build/docker/patches/manifest.json").read_text()); pathlib.Path("/build/runtime.json").write_text(json.dumps({"microsandbox":"0.7.14","sqlite":"3.51.3","source_revision":os.environ["MSB_SOURCE_REVISION"],"source_archive_sha256":os.environ["MSB_SOURCE_SHA256"],"sdk_source_modified":True,"runtime_source_modified":True,"runtime_patch":m,"agentd_sha256":m["agentd_linux_x86_64_sha256"],"profile":"release","msb_sha256":hashlib.file_digest(p.open("rb"),"sha256").hexdigest()},indent=2)+"\n")'
 RUN printf '%s  bin/msb\n' "$(sha256sum /out/msb | cut -d' ' -f1)" > /build/msb.sha256
 
 # Record the matched desktop helper, embedded workers and UI release assets.
@@ -189,6 +196,13 @@ COPY --from=runtime-builder /build/msb.sha256 /opt/agent-space/msb.sha256
 # libkrunfw: microsandbox KVM runtime library (msb searches $HOME/.microsandbox/lib/)
 # Place in /opt/msb-libs (outside the data volume); entrypoint copies to $HOME on first start
 COPY docker/.build/libs/ /opt/msb-libs/
+RUN --mount=type=bind,source=msb-runtime.sha256,target=/tmp/msb-runtime.sha256 \
+    cd /opt/msb-libs && \
+    firmware="$(awk '$2 ~ /^lib\// {sub(/^lib\//, "", $2); print $2}' /tmp/msb-runtime.sha256)" && \
+    test "$(find . -maxdepth 1 -type f -name 'libkrunfw.so.*' -printf '%f\n')" = "$firmware" && \
+    awk '$2 ~ /^lib\// {sub(/^lib\//, "", $2); print $1 "  " $2}' /tmp/msb-runtime.sha256 | sha256sum --strict -c - && \
+    major="${firmware#libkrunfw.so.}" && \
+    cmp -s libkrunfw.so "$firmware" && cmp -s "libkrunfw.so.${major%%.*}" "$firmware"
 
 COPY --from=builder /out/agent-space-mcp /usr/local/bin/agent-space-mcp
 COPY --from=builder /out/agent-space-static-http /usr/local/bin/agent-space-static-http

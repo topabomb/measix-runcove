@@ -1,12 +1,13 @@
 {
   "version": "0.7.14",
+  "agentd_linux_x86_64_sha256": "743ba6497d7006838e1276bc4965b524ca6718a638d613e9cfc8240c8f5f5276",
   "source_revision": "60fc5071b34e6cc2671c84c8dc07709795d45d27",
   "source_archive_sha256": "7b733474c8b540f53854f85c476ebe397392c023335eb7faab27bf6e93098a66",
   "patches": [
     {
       "id": "lifecycle",
       "patch": "msb-0.7.14-lifecycle.patch",
-      "patch_sha256": "f6de2c4a5ba6b09b3506e782ff5310d98e87352ddf4c341399a243e3e1e4844b",
+      "patch_sha256": "05adafb3f42beef23cfeaeeb69a91df4335f8a3ae83083b1581685f1b4ea12c8",
       "files": [
         {
           "file": "sdk/rust/lib/backend/local/sandbox/mod.rs",
@@ -57,6 +58,11 @@
           "file": "sdk/rust/lib/setup/storage_tests.rs",
           "original_sha256": "84c5edcfa0972f49329b6f08b634c6544d88896b31666b0e1201184b10371048",
           "patched_sha256": "42e838588e6ae3768d57bb8d926fe9697c601fc03f80af871ad518d881a98d90"
+        },
+        {
+          "file": "sdk/rust/lib/backend/local/volume.rs",
+          "original_sha256": "ef9dd413bc377cf668fed5c0d14e569d5caf05b5606d6eb76e6ea9ba4a4e8bc6",
+          "patched_sha256": "ba2464a884e11366ce3183221debc008aed92f05f8bff843555a11fe8747781f"
         }
       ]
     },
@@ -76,7 +82,7 @@
   "vendored_crates": {
     "microsandbox": {
       "crate_sha256": "e0b26f0e6af173169b927ec8c69d9e8ed19a61847137616d8f4957ed885adb07",
-      "tree_sha256": "096160337ac4769d4fdb63fd6b8539cf57551487b135758011dba53c8a3e656d"
+      "tree_sha256": "e4ae20794e687a360a7c78109103440717c395f0081376aaac31c29f396397a9"
     },
     "microsandbox-runtime": {
       "crate_sha256": "c90bc46d76b257f81ff9919d82f596ebc6264f5be229b9b2fdba329f37d082fa",

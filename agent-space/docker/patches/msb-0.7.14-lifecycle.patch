@@ -720,3 +720,69 @@
      sqlx::query("UPDATE sandbox SET status='Running'")
          .execute(&mut writer)
          .await
+--- a/sdk/rust/lib/backend/local/volume.rs
++++ b/sdk/rust/lib/backend/local/volume.rs
+@@ -381,6 +381,13 @@
+         config: &SandboxConfig,
+     ) -> MicrosandboxResult<HashMap<String, ResolvedNamedVolume>> {
+         let mut resolved: HashMap<String, ResolvedNamedVolume> = HashMap::new();
++        // Runcove persists its disk requirement independently of transient
++        // provisioning intent, which the SDK removes after creating a sandbox.
++        let requires_disk = config
++            .spec
++            .labels
++            .get("runcove.named-volume-kind")
++            .is_some_and(|kind| kind == "disk");
+ 
+         for mount in &config.spec.mounts {
+             let VolumeMount::Named {
+@@ -414,6 +421,9 @@
+                 .ok_or_else(|| MicrosandboxError::VolumeNotFound(name.clone()))?;
+ 
+             let kind = VolumeKind::from_db_value(&model.kind);
++            if requires_disk {
++                validate_named_volume_kind(name, VolumeKind::Disk, kind)?;
++            }
+             self.ensure_volume_available(model.id, Some(&config.spec.name))
+                 .await?;
+ 
+@@ -492,19 +502,30 @@
+     Ok(locks)
+ }
+ 
++fn validate_named_volume_kind(
++    name: &str,
++    expected: VolumeKind,
++    actual: VolumeKind,
++) -> MicrosandboxResult<()> {
++    if expected != actual {
++        return Err(MicrosandboxError::InvalidConfig(format!(
++            "named volume {name:?} already exists as {}, but this sandbox requested {}",
++            actual.as_str(),
++            expected.as_str()
++        )));
++    }
++    Ok(())
++}
++
+ fn validate_existing_named_volume(
+     requested: &microsandbox_types::NamedVolumeCreate,
+     existing: &volume_entity::Model,
+ ) -> MicrosandboxResult<()> {
+-    let actual_kind = VolumeKind::from_db_value(&existing.kind);
+-    if requested.kind() != actual_kind {
+-        return Err(MicrosandboxError::InvalidConfig(format!(
+-            "named volume {:?} already exists as {}, but this sandbox requested {}",
+-            requested.name(),
+-            actual_kind.as_str(),
+-            requested.kind().as_str()
+-        )));
+-    }
++    validate_named_volume_kind(
++        requested.name(),
++        requested.kind(),
++        VolumeKind::from_db_value(&existing.kind),
++    )?;
+ 
+     if let Some(requested_quota_mib) = requested.quota_mib()
+         && existing.quota_mib != Some(requested_quota_mib as i32)
