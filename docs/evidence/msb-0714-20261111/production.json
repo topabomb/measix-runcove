@@ -1,0 +1,68 @@
+{
+  "date": "2026-11-12",
+  "deployment": {
+    "online_at": "2026-11-12T09:53:08+08:00",
+    "platform": "linux/amd64",
+    "source_revision": "e850eb0e5abe224fc4aee9fda832ff1f21d35d4c",
+    "source_sha256": "7f065baa2b203e663d9ece80c26b0b44e5b300a027b48f7e01e979d3e327352d",
+    "image_id": "sha256:2ba4b3205a3afbf3c8df3817a8a6dbee3dee26acdb54c80c5dab2d46d8d896f5",
+    "previous_microsandbox": "0.7.9",
+    "microsandbox": "0.7.14",
+    "sqlite_static_version": "3.51.3",
+    "vm_process_executable_sha256": "b7b18f95b114583d1cacbd6056e8c27b30d9a9bf41afa118801e15f2573aada8",
+    "original_volumes_reused": true
+  },
+  "data_and_recovery": {
+    "cold_data_archive_bytes": 23161487360,
+    "cold_sqlite_integrity": "ok",
+    "foreign_key_violations": 0,
+    "active_runs_at_final_stop": 0,
+    "registered_storage_files_matched_to_archive": 22,
+    "original_spaces_started_on_restored_copy_in_both_versions": 2,
+    "original_spaces_started_on_production_volume": 2,
+    "original_workspace_file_hashes_matched": 24,
+    "original_spaces_with_protected_storage_on_restored_copy": 2,
+    "rollback_image_including_previous_writable_layer": "sha256:8aa1f6ac5e4c4b084de1a9bc494784497ca2eb908effe8de6727c93364f33272"
+  },
+  "maintenance_incidents": [
+    {
+      "stage": "first_cold_backup",
+      "effect": "Tar streamed through Docker logs, exhausting the Windows system drive and detaching the Docker data disk. Runcove and the neighboring service were temporarily unavailable.",
+      "recovery": "The complete Docker data VHDX was copied to the data drive while closed, checked by SHA-256 and brought back online before upgrade."
+    },
+    {
+      "stage": "cold_restore_rehearsal",
+      "effect": "The restored workspace probe invoked the seed CLI and failed to start the guest.",
+      "recovery": "Original production resumed. The exact cached runtime passed on the independent restored volume."
+    },
+    {
+      "stage": "production_smoke",
+      "effect": "The first MCP initialize check treated an empty SSE event as JSON.",
+      "recovery": "The probe parsed events by frame and the public smoke passed on the same deployment."
+    }
+  ],
+  "production_checks": {
+    "production_runtime_proxy_original_accounts_and_admin": true,
+    "public_mcp_and_dav_tls_health": true,
+    "public_authentication_boundary": true,
+    "authenticated_mcp_catalog_and_workspace_write": true,
+    "authenticated_dav_list_read_range_and_upload": true,
+    "authenticated_publication": true,
+    "browser_read_and_real_desktop_frame": true,
+    "temporary_space_deleted_original_accounts_preserved": true,
+    "neighboring_service_healthy_with_no_restart_during_cutover": true,
+    "separate_client_lan_and_public_health": true
+  },
+  "cleanup": {
+    "restore_scratch_bytes": 68719476736,
+    "candidate_archive_bytes": 1085821550,
+    "released_verification_bind_mounts": 4,
+    "system_disk_free_bytes": 61653397504,
+    "data_disk_free_bytes": 416673738752,
+    "backup_manifest_entries_verified": 9,
+    "failed_archive_bytes_removed": 5644120064,
+    "docker_data_vhdx_bytes_relocated": 61547216896,
+    "retired_container_removed": true,
+    "local_transfer_archive_bytes_removed": 1085821550
+  }
+}

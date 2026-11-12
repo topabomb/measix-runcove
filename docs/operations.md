@@ -125,6 +125,8 @@ docker run --rm -v agent-space-data:/var/lib/microsandbox \
 
 Server 的 state、MSB DB/WAL/SHM、根盘、登记工作卷、镜像缓存和运行库副本须按同一停机时点整体备份；另存日志、实际 TOML、启动参数及容器内独立配置（如 sing-box）。Standalone 停止浏览器和容器后，完整备份 `/workspace`，保留 numeric UID/GID、mode 和链接；配置及凭据来自部署来源，不能只保留数据卷。
 
+Windows / WSL 2 还须核对 Docker 数据盘所在 Windows 分区的实际可用空间，以及外部归档盘的空间。归档直接写入挂载的备份文件，关闭归档容器的日志驱动，避免 Docker 记录归档字节并占满数据盘。
+
 下面仅演示 **Server 数据卷** 归档。在实际 Docker 主机执行，事先将 `CONTAINER`、`DATA_VOLUME`、`VERIFIED_IMAGE` 和绝对 `BACKUP_DIR` 设置为核对过的目标；备份放到容量足够的私有外部存储、新目录，配置/日志等其他挂载另外归档。停止后须先核对 VM 已正常退出且无共享写入者，再运行 tar 归档：
 
 ```bash
@@ -134,7 +136,7 @@ mkdir "$BACKUP_DIR"
 docker stop --time 60 "$CONTAINER"
 test "$(docker inspect "$CONTAINER" --format '{{.State.Running}}')" = false
 test "$(docker inspect "$CONTAINER" --format '{{.State.Pid}}')" = 0
-docker run --rm --entrypoint /bin/tar \
+docker run --rm --log-driver none --entrypoint /bin/tar \
   -v "$DATA_VOLUME:/data:ro" -v "$BACKUP_DIR:/backup" \
   "$VERIFIED_IMAGE" --sparse --numeric-owner -czf /backup/data.tar.gz -C /data .
 tar tzf "$BACKUP_DIR/data.tar.gz" >/dev/null
