@@ -30,19 +30,40 @@ class PreviewWorkerTests(unittest.TestCase):
             worker.webm(io.BytesIO(b'\x1aE\xdf\xa3\x10\x20\x00\x00'))
         self.assertEqual(failure.exception.code, worker.LIMIT)
 
+    def test_one_codec_table_verifies_regular_and_named_alpha_decoders_and_webp_encoder(self):
+        table = (b' DEV.L. h264 H.264 (decoders: h264 h264_qsv) (encoders: libx264)\n'
+                 b' DEV.L. vp8 VP8 (decoders: vp8 libvpx) (encoders: libvpx)\n'
+                 b' DEV.L. vp9 VP9 (decoders: vp9 libvpx-vp9) (encoders: libvpx-vp9)\n'
+                 b' DEVILS webp WebP (encoders: libwebp_anim libwebp)\n')
+        for codec, decoder in [('h264', None), ('vp8', 'libvpx'), ('vp9', 'libvpx-vp9')]:
+            with self.subTest(codec=codec), patch.object(worker, 'command', return_value=table) as command:
+                worker.video_dependencies(codec, decoder)
+                command.assert_called_once_with(['/usr/bin/ffmpeg', '-v', 'error', '-codecs'], 64 * 1024)
+
     def test_missing_decoder_is_unsupported_and_missing_encoder_is_dependency(self):
-        with patch.object(worker, 'command', return_value=b'Codecs:\n .EV.L. h264 H.264\n'):
-            with self.assertRaises(worker.Failure) as failure:
-                worker.video_dependencies('h264')
-            self.assertEqual(failure.exception.code, worker.UNSUPPORTED)
-        with patch.object(worker, 'command', side_effect=[b' DEV.L. h264 H.264\n', b' V..... png PNG\n']):
+        webp = b' DEVILS webp WebP (encoders: libwebp_anim libwebp)\n'
+        for codec, decoder, table, expected in [
+            ('h264', None, b' .EV.L. h264 H.264\n' + webp, worker.UNSUPPORTED),
+            ('unknown', None, webp, worker.UNSUPPORTED),
+            ('h264', None, b' DEV.L. h264 H.264\n V..... png PNG\n', worker.DEPENDENCY),
+            ('h264', None, b' DEV.L. h264 H.264\n D.VILS webp WebP (encoders: libwebp)\n', worker.DEPENDENCY),
+            ('h264', None, b' DEV.L. h264 H.264\n DEVILS webp WebP (encoders: libwebp_anim)\n', worker.DEPENDENCY),
+            ('h264', None, b' DEV.L. h264 H.264\n DEVILS webp WebP\n', worker.DEPENDENCY),
+            ('vp9', 'libvpx-vp9', b' DEV.L. vp9 VP9 (decoders: vp9)\n' + webp, worker.UNSUPPORTED),
+            ('vp8', 'libvpx', b' DEV.L. vp8 VP8 (decoders: vp8 libvpx-vp9)\n' + webp, worker.UNSUPPORTED),
+        ]:
+            with self.subTest(codec=codec, decoder=decoder, table=table), patch.object(worker, 'command', return_value=table) as command:
+                with self.assertRaises(worker.Failure) as failure:
+                    worker.video_dependencies(codec, decoder)
+                self.assertEqual(failure.exception.code, expected)
+                command.assert_called_once_with(['/usr/bin/ffmpeg', '-v', 'error', '-codecs'], 64 * 1024)
+
+    def test_missing_codec_tool_is_dependency_failure_without_a_second_probe(self):
+        with patch.object(worker, 'command', side_effect=worker.Failure(worker.DEPENDENCY)) as command:
             with self.assertRaises(worker.Failure) as failure:
                 worker.video_dependencies('h264')
             self.assertEqual(failure.exception.code, worker.DEPENDENCY)
-        with patch.object(worker, 'command', side_effect=[b' DEV.L. vp9 VP9\n', b' V..... vp9 native\n']):
-            with self.assertRaises(worker.Failure) as failure:
-                worker.video_dependencies('vp9', 'libvpx-vp9')
-            self.assertEqual(failure.exception.code, worker.UNSUPPORTED)
+            command.assert_called_once_with(['/usr/bin/ffmpeg', '-v', 'error', '-codecs'], 64 * 1024)
 
     def test_real_webm_alternate_vint_and_arbitrary_video_rotation(self):
         from PIL import Image

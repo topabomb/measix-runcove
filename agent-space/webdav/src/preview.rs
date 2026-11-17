@@ -717,6 +717,132 @@ mod tests {
     use super::*;
 
     #[tokio::test]
+    async fn same_key_is_busy_after_last_waiter_cancels_until_cleanup_finishes() {
+        let directory = tempfile::tempdir().unwrap();
+        let fs = RootFs::new(directory.path(), "owner", "instance").unwrap();
+        let store = Store::default();
+        let key = Key {
+            path: "image.png".into(),
+            source: "\"source\"".into(),
+            size: 128,
+        };
+        let (sender, _) = watch::channel(None);
+        let job = Arc::new(Job {
+            key: key.clone(),
+            waiters: AtomicUsize::new(1),
+            cancel: CancellationToken::new(),
+            result: sender,
+        });
+        store.0.lock().unwrap().job = Some(job.clone());
+        let last_waiter = Waiter(job.clone());
+        let generations = Arc::new(AtomicUsize::new(0));
+        let (cleanup_started, cleanup_observed) = tokio::sync::oneshot::channel();
+        let (release_cleanup, cleanup_held) = tokio::sync::oneshot::channel();
+        let owner = store.clone();
+        let active = job.clone();
+        let pending_key = key.clone();
+        let count = generations.clone();
+        let finish = tokio::spawn(async move {
+            owner
+                .finish(
+                    &active,
+                    &pending_key,
+                    async {
+                        count.fetch_add(1, Ordering::SeqCst);
+                        active.cancel.cancelled().await;
+                        cleanup_started.send(()).unwrap();
+                        cleanup_held.await.unwrap();
+                        Err(Error::unavailable())
+                    },
+                    Duration::from_secs(10),
+                )
+                .await;
+        });
+        drop(last_waiter);
+        cleanup_observed.await.unwrap();
+        assert_eq!(job.waiters.load(Ordering::SeqCst), 0);
+        assert!(job.cancel.is_cancelled());
+        let rejected = tokio::time::timeout(
+            Duration::from_millis(100),
+            store.image(
+                fs,
+                key,
+                File::open("/dev/null").unwrap(),
+                CancellationToken::new(),
+            ),
+        )
+        .await
+        .expect("new same-key reader joined a cancelled producer")
+        .err()
+        .expect("a cancelled producer must reject a new same-key waiter");
+        assert_eq!(rejected.0, StatusCode::TOO_MANY_REQUESTS);
+        assert_eq!(rejected.1, "preview_busy");
+        assert_eq!(rejected.response(false).headers()["retry-after"], "1");
+        assert_eq!(job.waiters.load(Ordering::SeqCst), 0);
+        assert_eq!(generations.load(Ordering::SeqCst), 1);
+        assert!(Arc::ptr_eq(
+            store.0.lock().unwrap().job.as_ref().unwrap(),
+            &job
+        ));
+        release_cleanup.send(()).unwrap();
+        finish.await.unwrap();
+        assert!(store.0.lock().unwrap().job.is_none());
+    }
+
+    #[tokio::test]
+    async fn cached_preview_is_available_while_another_job_retains_its_cleanup_slot() {
+        let directory = tempfile::tempdir().unwrap();
+        let fs = RootFs::new(directory.path(), "owner", "instance").unwrap();
+        let store = Store::default();
+        let key = Key {
+            path: "cached.png".into(),
+            source: "\"source\"".into(),
+            size: 128,
+        };
+        let image = Arc::new(Image {
+            bytes: Bytes::from_static(b"cached"),
+            etag: "\"cached\"".into(),
+        });
+        let (sender, _) = watch::channel(None);
+        let cancel = CancellationToken::new();
+        cancel.cancel();
+        let job = Arc::new(Job {
+            key: Key {
+                path: "other.png".into(),
+                ..key.clone()
+            },
+            waiters: AtomicUsize::new(0),
+            cancel,
+            result: sender,
+        });
+        {
+            let mut state = store.0.lock().unwrap();
+            state.job = Some(job.clone());
+            state.cache.insert(
+                key.clone(),
+                Cached {
+                    image: image.clone(),
+                    used: Instant::now(),
+                },
+            );
+        }
+        let result = store
+            .image(
+                fs,
+                key,
+                File::open("/dev/null").unwrap(),
+                CancellationToken::new(),
+            )
+            .await
+            .unwrap();
+        assert!(Arc::ptr_eq(&image, &result));
+        assert!(Arc::ptr_eq(
+            store.0.lock().unwrap().job.as_ref().unwrap(),
+            &job
+        ));
+    }
+
+    #[tokio::test]
     async fn generation_ready_after_deadline_is_not_cached() {
         let store = Store::default();
         let key = Key {

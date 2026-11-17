@@ -93,6 +93,7 @@ fn fixture() -> Fixture {
 }
 
 #[tokio::test]
+#[serial_test::serial(preview_capacity)]
 async fn preview_capabilities_are_authenticated_and_do_not_activate_vm() {
     use axum::body::to_bytes;
     use std::sync::atomic::Ordering;
@@ -159,6 +160,7 @@ async fn preview_capabilities_are_authenticated_and_do_not_activate_vm() {
 }
 
 #[tokio::test]
+#[serial_test::serial(preview_capacity)]
 async fn preview_runtime_failure_has_protocol_problem_and_head_has_no_body() {
     let f = fixture();
     f.sessions
@@ -204,6 +206,7 @@ async fn preview_runtime_failure_has_protocol_problem_and_head_has_no_body() {
 }
 
 #[tokio::test]
+#[serial_test::serial(preview_capacity)]
 async fn preview_rejects_request_bodies_before_activation_and_accepts_zero_length() {
     use std::sync::atomic::Ordering;
     let f = fixture();
@@ -285,6 +288,88 @@ async fn preview_rejects_request_bodies_before_activation_and_accepts_zero_lengt
         );
     }
     f.sessions.stop_all().await;
+}
+
+#[tokio::test]
+#[serial_test::serial(preview_capacity)]
+async fn cancelled_unpolled_previews_release_capacity_before_their_bodies_drop() {
+    for revoke in [false, true] {
+        let f = fixture_with_idle(Duration::from_millis(100));
+        let path = "/u/alice/previews?path=image.png&expectedEtag=%22source%22";
+        let auth = format!("Bearer {}", f.dav.token);
+        let mut held = Vec::new();
+        for _ in 0..4 {
+            let response = f
+                .app
+                .clone()
+                .oneshot(request("GET", path, &auth, Body::empty()))
+                .await
+                .unwrap();
+            assert_eq!(response.status(), StatusCode::OK);
+            held.push(response);
+        }
+        let full = f
+            .app
+            .clone()
+            .oneshot(request("GET", path, &auth, Body::empty()))
+            .await
+            .unwrap();
+        assert_eq!(full.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert_eq!(full.headers()["retry-after"], "1");
+        drop(full);
+        let auth = if revoke {
+            format!(
+                "Bearer {}",
+                f.store
+                    .rotate_dav_token("alice", &f.user.agent_space_id)
+                    .unwrap()
+                    .token
+            )
+        } else {
+            auth
+        };
+        let session = f.sessions.get_session(&f.user.sandbox_name).await.unwrap();
+        let old = std::time::Instant::now() - Duration::from_secs(5);
+        let config = agent_engine::config::LifecycleConfig {
+            session_timeout_secs: 1,
+            idle_timeout_secs: 1,
+            check_interval_secs: 1,
+        };
+        tokio::time::timeout(Duration::from_secs(2), async {
+            loop {
+                session.set_last_request(old).await;
+                session.set_last_work(old).await;
+                if f.sessions.collect_candidates(&config).await.len() == 1 {
+                    break;
+                }
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .expect("cancelled response retained activity");
+        let ordinary = f
+            .app
+            .clone()
+            .oneshot(request("GET", "/u/alice/dav/file", &auth, Body::empty()))
+            .await
+            .unwrap();
+        assert_eq!(ordinary.status(), StatusCode::OK);
+        drop(ordinary);
+        let restored = f
+            .app
+            .clone()
+            .oneshot(request("GET", path, &auth, Body::empty()))
+            .await
+            .unwrap();
+        assert_eq!(
+            restored.status(),
+            StatusCode::OK,
+            "cancelled preview bodies retained all four permits (revoked={revoke})"
+        );
+        drop(restored);
+        drop(held);
+        f.sessions.stop_all().await;
+    }
 }
 fn fixture_with_idle(idle: Duration) -> Fixture {
     fixture_with_capacity(idle, 1)

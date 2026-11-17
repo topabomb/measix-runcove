@@ -4,6 +4,7 @@ import io
 import json
 import math
 import os
+import re
 import resource
 import selectors
 import signal
@@ -138,17 +139,23 @@ def video_dependencies(codec, decoder=None):
     # Use the codec capability table: an identified codec without a compiled
     # decoder is unsupported input, distinct from a corrupt packet (422).
     codecs = command(['/usr/bin/ffmpeg', '-v', 'error', '-codecs'], 64 * 1024).decode('utf-8')
-    if not any(len(row) >= 2 and len(row[0]) == 6 and row[0][0] == 'D' and row[1] == codec
-               for row in map(str.split, codecs.splitlines())):
+    rows = {}
+    for line in codecs.splitlines():
+        columns = line.split()
+        if len(columns) >= 2 and len(columns[0]) == 6:
+            rows[columns[1]] = (columns[0], line)
+    flags, row = rows.get(codec, ('', ''))
+    if not flags.startswith('D'):
         raise Failure(UNSUPPORTED)
     if decoder:
-        decoders = command(['/usr/bin/ffmpeg', '-v', 'error', '-decoders'], 64 * 1024).decode('utf-8')
-        if not any(len(row) >= 2 and len(row[0]) == 6 and row[1] == decoder
-                   for row in map(str.split, decoders.splitlines())):
+        names = re.search(r'\(decoders:\s*([^)]*)\)', row)
+        if decoder not in (names[1].split() if names else [codec]):
             raise Failure(UNSUPPORTED)
-    encoders = command(['/usr/bin/ffmpeg', '-v', 'error', '-encoders'], 64 * 1024).decode('utf-8')
-    if not any(len(row) >= 2 and len(row[0]) == 6 and row[1] == 'libwebp'
-               for row in map(str.split, encoders.splitlines())):
+    # -codecs includes the exact decoder/encoder implementation names when
+    # they differ from the codec name. Avoid reloading FFmpeg for each table.
+    flags, row = rows.get('webp', ('', ''))
+    names = re.search(r'\(encoders:\s*([^)]*)\)', row)
+    if len(flags) < 2 or flags[1] != 'E' or names is None or 'libwebp' not in names[1].split():
         raise Failure(DEPENDENCY)
 
 

@@ -525,8 +525,12 @@ pub(crate) async fn forward_authenticated(
     }
     let handshake_started = std::time::Instant::now();
     let (mut sender, connection) = tokio::select! { biased; _ = cancel.cancelled() => return unauthorized(), _ = ready.cancel.cancelled() => return unavailable(), _ = progress.idle(state.io_idle_timeout) => { tracing::warn!(phase = "dav_guest_http_handshake", elapsed_ms = startup_started.elapsed().as_millis() as u64, phase_elapsed_ms = handshake_started.elapsed().as_millis() as u64, "DAV guest connection deadline exceeded"); return unavailable(); }, result = http1::handshake::<_, Body>(TokioIo::new(GuestIo::new(tcp).with_progress({ let progress = progress.clone(); move |bytes| progress.tick(bytes) }))) => match result { Ok(pair) => pair, Err(error) => { tracing::warn!(%error, phase = "dav_guest_http_handshake", elapsed_ms = startup_started.elapsed().as_millis() as u64, phase_elapsed_ms = handshake_started.elapsed().as_millis() as u64, "DAV guest HTTP handshake failed"); return StatusCode::BAD_GATEWAY.into_response(); } } };
+    // Cancellation releases capacity even when downstream backpressure keeps
+    // the response body alive without polling it again.
+    let preview_permit = preview_permit.map(|permit| Arc::new(Mutex::new(Some(permit))));
     let connection = {
         let active = lease.0.clone();
+        let preview_permit = preview_permit.clone();
         let cancel = cancel.clone();
         let progress = progress.clone();
         let epoch = ready.cancel;
@@ -541,6 +545,9 @@ pub(crate) async fn forward_authenticated(
             }
             cancel.cancel();
             active.lock().unwrap().take();
+            if let Some(preview_permit) = preview_permit {
+                preview_permit.lock().unwrap().take();
+            }
         }))
     };
     let (mut parts, body) = request.into_parts();

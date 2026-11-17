@@ -1,0 +1,521 @@
+{
+  "date": "2026-11-18",
+  "kind": "sanitized qualification index; raw artifact hashes do not identify this projection",
+  "scope": "Full 39-file baseline-diff review, source regressions, three new real build entrypoints with one successful repeat each, and new final-image public DAV preview qualification; no registry or production change",
+  "identity": {
+    "sourceDigest": "70ae0aeb142a80eca577b2a8c231b67809502d261a1b99550c970763d37b1844",
+    "helperBuildId": "56fedcbae9831ef7d860f930f88318cd4368a00705a0ffe66bdebd69201c4aa2",
+    "buildInputs": {
+      "sourceSha256": "70ae0aeb142a80eca577b2a8c231b67809502d261a1b99550c970763d37b1844",
+      "sourceRevision": "659735e5fd7ce080dc66b1bde55e8cd18dfd3701",
+      "sourceDateEpoch": 1794931252
+    },
+    "buildIdentitySha256": "d49511315101ad2eb7fd8fe3509201ee1dd2961e1b8e94b75f677be01db77cee",
+    "appVersion": "runcove-d49511315101ad2e",
+    "fileCount": 516,
+    "frozenAndSharedInputsMatch": true
+  },
+  "images": {
+    "workspace": {
+      "imageId": "sha256:a90e8f8a302d0a57f44bd174dc1d55a950c6fc3e614d04f96db7e0c8588faf8f",
+      "manifestDigest": "sha256:a90e8f8a302d0a57f44bd174dc1d55a950c6fc3e614d04f96db7e0c8588faf8f",
+      "configDigest": "sha256:da6f390f4764a83842903dd4a0657dcedd8295ca52090ca2fa10996662c6360b",
+      "architecture": "amd64",
+      "os": "linux",
+      "created": "2026-11-17T16:00:52Z",
+      "verifiedBlobCount": 23
+    },
+    "standalone": {
+      "imageId": "sha256:c85ffabe2309534cd5c921aa3ea268dcf89858c9aac47afd0895787e6c23e8cc",
+      "manifestDigest": "sha256:c85ffabe2309534cd5c921aa3ea268dcf89858c9aac47afd0895787e6c23e8cc",
+      "configDigest": "sha256:d0405be8045368298f62788180cfe206356eb5f7b175976a4d6cd02d340eeffe",
+      "architecture": "amd64",
+      "os": "linux",
+      "created": "2026-11-17T16:00:52Z",
+      "verifiedBlobCount": 34
+    },
+    "server": {
+      "imageId": "sha256:f0b3e3a94251afc3749c6aea7d0d92946169d968a79019128ecb7fa1d8d70c35",
+      "manifestDigest": "sha256:f0b3e3a94251afc3749c6aea7d0d92946169d968a79019128ecb7fa1d8d70c35",
+      "configDigest": "sha256:5b10aa3ff4a986265e7b660b31967327d9db434d186b06ccc4e31bf77d9621c0",
+      "architecture": "amd64",
+      "os": "linux",
+      "created": "2026-11-17T16:00:52Z",
+      "verifiedBlobCount": 25
+    }
+  },
+  "workspaceArchive": {
+    "source": "93ab28f25a71a37c0705c8d3db9a822e989715ed4ce8e248558dde48e51fb3ee",
+    "imageId": "sha256:a90e8f8a302d0a57f44bd174dc1d55a950c6fc3e614d04f96db7e0c8588faf8f",
+    "reference": "runcove/runcove-workspace@sha256:a90e8f8a302d0a57f44bd174dc1d55a950c6fc3e614d04f96db7e0c8588faf8f",
+    "archive": "2149c4223d90640b8bb302332ffee82f995fd8646e54a6ecc370fc6bb27ba5d6"
+  },
+  "builds": [
+    {
+      "step": "workspace-build",
+      "returncode": 0,
+      "elapsedSeconds": 610.18,
+      "diskProtectionTriggered": false,
+      "rawLogSha256": "02a78a2d09add6db9cdd693577f5098d01cf22f1b2edaf02e6e09a83c06ff694"
+    },
+    {
+      "step": "workspace-repeat",
+      "returncode": 0,
+      "elapsedSeconds": 2.72,
+      "diskProtectionTriggered": false,
+      "rawLogSha256": "e19982ec38f6510b2688e3d4dc5fd0eb9e1894fb02da407ad97971a9bc06c813"
+    },
+    {
+      "step": "standalone-build",
+      "returncode": 0,
+      "elapsedSeconds": 69.61,
+      "diskProtectionTriggered": false,
+      "rawLogSha256": "b9874c444014d48de64f0bbf1c7112f3ffda5a8f4fdf4c55dfe0e9f756607eb1"
+    },
+    {
+      "step": "standalone-repeat",
+      "returncode": 0,
+      "elapsedSeconds": 3.47,
+      "diskProtectionTriggered": false,
+      "rawLogSha256": "d40d264907b3857727bcaf04fe0eb8c7fe6dc5120c4c27a36bc2f417a35b473d"
+    },
+    {
+      "step": "server-build",
+      "returncode": -2,
+      "elapsedSeconds": 351.08,
+      "diskProtectionTriggered": false,
+      "rawLogSha256": "a42269aeefe3242053004fdb7a0839e9db5f17589a318a6fe861c800283542f1"
+    },
+    {
+      "step": "server-attempt2",
+      "returncode": 0,
+      "elapsedSeconds": 753.51,
+      "diskProtectionTriggered": false,
+      "rawLogSha256": "906d2547b954a8ec697741cd199be30b3d7fb0d2fe71900f9bf53403c615a89b"
+    },
+    {
+      "step": "server-repeat",
+      "returncode": 0,
+      "elapsedSeconds": 32.93,
+      "diskProtectionTriggered": false,
+      "rawLogSha256": "2993e2b0f5dae418c1f4be8f4ba0344c1fc2a43e4d7f2d3ca3d7ad2ac8cac98e"
+    }
+  ],
+  "cacheBehavior": {
+    "workspaceRepeat": "verified offline archive hit",
+    "standaloneRepeat": "same immutable image; application compilation layers CACHED",
+    "serverRepeat": "same immutable image; application compilation, selected runtime tests and CLI layers CACHED",
+    "runtimeTestsExecutedOn": "server-attempt2 only; successful repeat reused the validated layer"
+  },
+  "runtimeTests": {
+    "selectedGroups": 8,
+    "passed": 344,
+    "failed": 0,
+    "upstreamIgnored": 8,
+    "countsByGroup": [
+      [
+        109,
+        0,
+        0
+      ],
+      [
+        4,
+        0,
+        0
+      ],
+      [
+        17,
+        0,
+        0
+      ],
+      [
+        62,
+        0,
+        0
+      ],
+      [
+        12,
+        0,
+        0
+      ],
+      [
+        97,
+        0,
+        0
+      ],
+      [
+        32,
+        0,
+        8
+      ],
+      [
+        11,
+        0,
+        0
+      ]
+    ],
+    "entireUpstreamSuite": false
+  },
+  "protocols": {
+    "standalone": {
+      "report": "standalone-preview-protocol.json",
+      "sha256": "c7e42a07e8fe89b5b1bf179ccee89776e939385fbe650c4b941117d2393307f0",
+      "passed": true,
+      "cleanupPassed": true,
+      "checks": [
+        "image system decoders pass real WebM VINT rotation SAR and reflection regressions",
+        "exact image source label and actual shipped binaries match release inventory",
+        "authenticated capability discovery uses DAV credential and does not activate Server VM",
+        "original DAV uploads activate the real workspace",
+        "real PNG MP4 M4V MOV WebM OGV previews exclude first-stream attached cover and preserve alpha dimensions hash identity HEAD 304 Range",
+        "source mutation and deletion fence cached previews while standard DAV CRUD Range and method discovery remain usable",
+        "missing runtime decoder dependency returns explicit 503 while original DAV remains usable",
+        "client disconnect reaps a stopped real decoder and concurrent DAV reads remain available"
+      ],
+      "helperBuildId": "56fedcbae9831ef7d860f930f88318cd4368a00705a0ffe66bdebd69201c4aa2",
+      "workerSuiteTests": 7,
+      "mediaDependencies": "3.13.5\n11.1.0\nffmpeg version 7.1.5-0+deb13u1 Copyright (c) 2000-2026 the FFmpeg developers\n\nExit code: 0"
+    },
+    "server": {
+      "report": "server-preview-protocol.json",
+      "sha256": "f3932154ad404d4796a31c5ab99ad8af71451e771850dda1a681fd77d1949364",
+      "passed": true,
+      "cleanupPassed": true,
+      "checks": [
+        "exact image source label and actual shipped binaries match release inventory",
+        "authenticated capability discovery uses DAV credential and does not activate Server VM",
+        "original DAV uploads activate the real workspace",
+        "real Server guest system decoders pass WebM VINT rotation SAR and reflection regressions",
+        "real PNG MP4 M4V MOV WebM OGV previews exclude first-stream attached cover and preserve alpha dimensions hash identity HEAD 304 Range",
+        "source mutation and deletion fence cached previews while standard DAV CRUD Range and method discovery remain usable",
+        "client disconnect reaps a stopped real decoder and concurrent DAV reads remain available",
+        "DAV key revocation cancels and reaps stopped decoder without damaging original file access",
+        "bundled default seed tag resolves and its ordinary distribution activates from cache"
+      ],
+      "helperBuildId": "56fedcbae9831ef7d860f930f88318cd4368a00705a0ffe66bdebd69201c4aa2",
+      "workerSuiteTests": 7,
+      "mediaDependencies": "3.13.5\n11.1.0\nffmpeg version 7.1.5-0+deb13u1 Copyright (c) 2000-2026 the FFmpeg developers\n\nExit code: 0"
+    }
+  },
+  "sourceReview": {
+    "baseline": "85f5696048527540d55e6b25063cad5b51bbeed8",
+    "reviewedHead": "659735e5fd7ce080dc66b1bde55e8cd18dfd3701",
+    "files": 39,
+    "mandatoryFinding": {
+      "priority": "P2",
+      "title": "Cancelled unpolled preview bodies retained all process-wide read permits",
+      "redTest": "cancelled_unpolled_previews_release_capacity_before_their_bodies_drop",
+      "beforeObservedStatus": 429,
+      "expectedStatus": 200,
+      "fixed": true,
+      "fix": "Connection owner takes the preview permit alongside the existing activity lease; old body ownership remains independent"
+    },
+    "checks": {
+      "mcpNoDefaultProxy": 19,
+      "webdavInitialFullCrate": 49,
+      "webdavFollowupLibIncludingSameKeyCleanupBarrier": 11,
+      "webdavDistinctPassingCases": 50,
+      "workerHost": 7,
+      "workerFinalStandaloneDependencyCli": 7,
+      "buildScripts": 26,
+      "entrypoint": 1,
+      "ociExport": 1,
+      "browserInstall": 5,
+      "previewVerifier": 10,
+      "workspaceClippyAllTargetsDenyWarnings": true,
+      "standaloneLibBinProxyClippyDenyWarnings": true,
+      "fmtCheck": true,
+      "diffCheck": true
+    },
+    "sameKeyCleanupBarrier": {
+      "sequence": "last waiter dropped -> cancellation visible -> cleanup started -> cleanup held -> new same-key request -> cleanup released",
+      "statusDuringCleanup": 429,
+      "code": "preview_busy",
+      "retryAfter": "1",
+      "waitersDuringCleanup": 0,
+      "generationExecutionsDuringCleanup": 1,
+      "retainedOriginalJobIdentity": true,
+      "jobClearedAfterCleanup": true,
+      "productSynchronizationChanged": false
+    }
+  },
+  "performance": {
+    "environment": {
+      "imageId": "sha256:1287d98fd62043e9872caf63cd360fc8113f16e4a740d096795b0406dbd148d2",
+      "execution": "Container CLI, no network, no business volumes, tmpfs /workspace, 1 CPU, 1GiB memory; not real Server VM/public HTTP performance",
+      "python": "3.13.5",
+      "pillow": "11.1.0",
+      "ffmpeg": "7.1.5",
+      "size": 128,
+      "samplesPerSourcePerWorker": 3,
+      "coldLoading": "First old MP4 sample includes cold shared-library loading; report hot ranges separately and do not infer cold-start speedup"
+    },
+    "comparison": {
+      "clip.mp4": {
+        "before": {
+          "workerSha256": "38e288e15ae4a4b51dfb10a509c9c10c1e0a1b39bb3fa875c77561d91d8b33c1",
+          "attempts": 3,
+          "mediaChildProcessCounts": [
+            4
+          ],
+          "allWallSeconds": [
+            0.642428553001082,
+            0.21771874700061744,
+            0.20430571700126166
+          ],
+          "medianWallSeconds": 0.21771874700061744,
+          "cpuSeconds": [
+            0.30471,
+            0.226047,
+            0.217468
+          ],
+          "outputSha256": [
+            "c9bbdc7654caf356eaa9df8eb14f7914eddc750dacf1a44d68c1a481eec0f30d"
+          ]
+        },
+        "after": {
+          "workerSha256": "3d8333b845cbb5bdfa85404e69c282f88085d35062d725072c193e7797834e99",
+          "attempts": 3,
+          "mediaChildProcessCounts": [
+            3
+          ],
+          "allWallSeconds": [
+            0.1513581780018285,
+            0.15863788099886733,
+            0.16833117900023353
+          ],
+          "medianWallSeconds": 0.15863788099886733,
+          "cpuSeconds": [
+            0.16914500000000002,
+            0.175277,
+            0.176337
+          ],
+          "outputSha256": [
+            "c9bbdc7654caf356eaa9df8eb14f7914eddc750dacf1a44d68c1a481eec0f30d"
+          ]
+        },
+        "sameOutputSha256": true
+      },
+      "alpha.webm": {
+        "before": {
+          "workerSha256": "38e288e15ae4a4b51dfb10a509c9c10c1e0a1b39bb3fa875c77561d91d8b33c1",
+          "attempts": 3,
+          "mediaChildProcessCounts": [
+            5
+          ],
+          "allWallSeconds": [
+            0.2633650849966216,
+            0.24615733700193232,
+            0.2600857569996151
+          ],
+          "medianWallSeconds": 0.2600857569996151,
+          "cpuSeconds": [
+            0.250279,
+            0.254743,
+            0.272385
+          ],
+          "outputSha256": [
+            "dfbd3fa1a6bd800070adce90a4bc66c38306838fe79bccac284981a864845070"
+          ]
+        },
+        "after": {
+          "workerSha256": "3d8333b845cbb5bdfa85404e69c282f88085d35062d725072c193e7797834e99",
+          "attempts": 3,
+          "mediaChildProcessCounts": [
+            3
+          ],
+          "allWallSeconds": [
+            0.15921208399959141,
+            0.17186682099782047,
+            0.16763584100044682
+          ],
+          "medianWallSeconds": 0.16763584100044682,
+          "cpuSeconds": [
+            0.177871,
+            0.168466,
+            0.175696
+          ],
+          "outputSha256": [
+            "dfbd3fa1a6bd800070adce90a4bc66c38306838fe79bccac284981a864845070"
+          ]
+        },
+        "sameOutputSha256": true
+      },
+      "32mp.jpg": {
+        "before": {
+          "workerSha256": "38e288e15ae4a4b51dfb10a509c9c10c1e0a1b39bb3fa875c77561d91d8b33c1",
+          "attempts": 3,
+          "mediaChildProcessCounts": [
+            0
+          ],
+          "allWallSeconds": [
+            0.4826337910017173,
+            0.39979768299963325,
+            0.3883227430014813
+          ],
+          "medianWallSeconds": 0.39979768299963325,
+          "cpuSeconds": [
+            0.499745,
+            0.41813999999999996,
+            0.40642199999999995
+          ],
+          "outputSha256": [
+            "5136e4cc17325531fbb763cb492140b907b57131d047f7890bf1a9fa6e541824"
+          ]
+        },
+        "after": {
+          "workerSha256": "3d8333b845cbb5bdfa85404e69c282f88085d35062d725072c193e7797834e99",
+          "attempts": 3,
+          "mediaChildProcessCounts": [
+            0
+          ],
+          "allWallSeconds": [
+            0.48312248200090835,
+            0.4127259300003061,
+            0.39704521900057443
+          ],
+          "medianWallSeconds": 0.4127259300003061,
+          "cpuSeconds": [
+            0.498935,
+            0.430709,
+            0.41399699999999995
+          ],
+          "outputSha256": [
+            "5136e4cc17325531fbb763cb492140b907b57131d047f7890bf1a9fa6e541824"
+          ]
+        },
+        "sameOutputSha256": true
+      }
+    },
+    "interpretation": "Three samples per fixture, worker CLI with a retained dependency image. Exclude the initial old MP4 cold-load sample when discussing hot ranges: regular MP4 204-218ms before / 151-168ms after; alpha VP9 246-263ms before / 159-172ms after. Not public HTTP, Core/UI, or real Server guest performance. All fixture output hashes match; limits unchanged."
+  },
+  "resourcePreservationAtQualificationEnd": {
+    "originalContainers": 1,
+    "originalVolumes": 50,
+    "containersUnchanged": true,
+    "volumesUnchanged": true,
+    "temporaryProtocolResourcesCleaned": true,
+    "globalPrune": false,
+    "diskFloorBytes": 5368709120
+  },
+  "controlledCancellation": {
+    "step": "server-build",
+    "elapsedSeconds": 351.08,
+    "reason": "Controlled cancel during redundant remote download; then preloaded the exact already-local immutable base through official MSB load and resumed unmodified entrypoint in server-attempt2",
+    "baseReference": "nikolaik/python-nodejs@sha256:648f6a6036dca5fc9de144ca54ce7c0af51ac49af790ed67c2ec6a81cbfac3b3",
+    "exactArchiveChainAndEveryLayerVerified": true,
+    "msbImportNormalization": "The imported manifest identity may be normalized; original manifest, config, all 9 layer blob hashes/sizes/media types/diff IDs and exact reference were verified separately",
+    "firstAttemptSuccessful": false
+  },
+  "qualificationPrecheckCorrection": {
+    "initialFailure": "Before creating any protocol fixtures, a wrapper compared raw Docker Mounts list order and rejected a reordered but otherwise identical list",
+    "correction": "Compare per-Destination mount fields and per-ID containers; original snapshots retained",
+    "productOrBuildInputChanged": false
+  },
+  "limitations": [
+    "This is media-preview-specific final-image qualification, not full browser/desktop/lifecycle/upgrade/rollback release qualification.",
+    "Docker layers and a verified preinstalled immutable base were reused; this is not a cache-free or fully disconnected build.",
+    "Initial Server cancellation and qualification-wrapper precheck failure remain separate raw records; neither is relabeled as an initial success.",
+    "Host four-read and helper one-generation limits, source-version fences and media resource limits remain unchanged.",
+    "Historical DAV class declarations remain; Basic/Bearer without Digest is explicitly not full RFC4918 conformance.",
+    "Core/Tuck/Pilot UI, ARM/NAS, registry publication and production deployment are outside this Runcove record."
+  ],
+  "rawArtifactSha256": {
+    "baseline-resources.json": "7f938e293f2dc07fdb4d16b3e352d5e735bdbd3bf8680f4dc614bdb731807962",
+    "before-protocol-resources-initial-order-check.json": "441e5bf31923f318d334f4901d5872d9a77ba0b4d50b959ab4d3f1f5e0f742bb",
+    "before-protocol-resources.json": "a7f0aba9b8e1102b91860aa12b624846c254ddc9eff87e157035352731106ff8",
+    "final-qualification.json": "c91d95e08ce1630762bc8222bdaedb30cc2e5dc686ad811885fd788d17749e6a",
+    "final-resources.json": "236994031e2d56ba50cf31fe018adbd072fcb1ba3052c914fdcd04f844cd4d80",
+    "generated-workspace.lock.json": "2bdb28faee1bb372a9f7846a920e992f7f1500668c3347c3bf0adca8dd8b476a",
+    "images.json": "72d122c2ebd7b57f080e7a01568849dc71126ede0b2d4b4dc57eb8136cb1462e",
+    "original-workspace.lock.json": "04ca62823757c6e1cc32e7c5ba8ba9e7c556aad91c8886044b7a443554b23b86",
+    "protocol-precheck-initial-failure.json": "39aa89d1b79c923b11f20906cf5e43c9440910f3012bd6a44c11de1892942092",
+    "seed-648f-config.json": "59220b79517718ebe63a8390ae9d6c7336ab3d60eb4e90f8aa85c6066ae53114",
+    "seed-648f-index.json": "6aeb2ea6ffd512669abaf6f71723fec1e9b0bbfc01f934fccd8b562cb248ee9a",
+    "seed-648f-inspect.json": "1d2b979809965014d302c1d1efbdc4b55f48c0c2def0d8795888757931ae479a",
+    "seed-648f-manifest.json": "5ee1b5b59a4bd120f3e02c220a1c587663b3013927a58c988862bc192609bdbd",
+    "seed-648f-oci-proof.json": "962d618556e57350cea1e9377d492325508f93e2caf7ccf841ded4c9c16b1b39",
+    "seed-export-owner.json": "e7ab0564af9ad8c560533e3b39811b2c8afb1420cd28e20bf694708ed1e1b18f",
+    "seed-export-result.json": "d47ffbd895307d9da16c295ba1db5861ff85283a9f558206dc39f37e50437756",
+    "seed-msb-cache-proof.json": "e2d37b007d403a53f3ada9d9b8833d0034d787cad4ffc411543172fd34d2b4a9",
+    "seed-msb-load-owner.json": "88bfa14395062950fa6c2a05308c811a3f89cee782bfff641e43f01f1ec0c1c6",
+    "seed-msb-load-result.json": "2099743c80609beeccc33ec62b384a2162f3c52986b10fe34d963e3c27a5f90a",
+    "seed-verify-owner.json": "b5c7bc99ac9ab4e90aa96ca1fc8e01363e618cdacfc6c055e7d4bdafa24766ee",
+    "seed-verify-result.json": "ebe1150a88d6d98f2afeb8ff45cfbb2f984e9621d561aa094771a9c1e082ec3e",
+    "server-attempt2-owner.json": "75ad03f37b5423482013e1a5db0aeabc120f3a8e0433c5a3d043594407c0a0af",
+    "server-attempt2-result.json": "f4430fd5b89bbbc3d503460656b47c5809f26fc2b25135be6bb51fd9df3ccc31",
+    "server-build-controlled-cancel.json": "bfc5e9ff3db27018cde4c601dee44d9773600f3ab2d8ba7f22caba7d8b2bd2d4",
+    "server-build-owner.json": "0e3740b2a2766c2ea7a5129ef651052d8df70c24edf0dcc5847fce3cc49056a0",
+    "server-build-result.json": "8965619157b6300b04da0777f1fabed66a02cac0c29f006c7f563c27b23a39c4",
+    "server-config.json": "a5c662a66e7e63277db11db1df3372c74a5df10c2872cdeb21760725e9c0ca4b",
+    "server-index.json": "ff4272b17edf24c615e0c7fc262401e808ddde1f0ddc9911595db976d73d94d5",
+    "server-inspect.json": "b19c6b38eaea1d6316b3293a21b1617b0209a3fe1a5cc7523f70e583d2940225",
+    "server-manifest.json": "7910176350bcd4c9b58aebd420d2030af32abe1c26ca6652b51e546fc1170483",
+    "server-oci-owner.json": "1a3785c257e60dccc7d9241d3d2543ae1bbbab5ca63d3e5665d0bb19fff90b97",
+    "server-oci-proof.json": "23715f9f7d1d4fe4d0596ee1be69b0fc52daa1bfd946c9286a79a3f9cea66cfc",
+    "server-oci-result.json": "37dee2dca43ebe083147ef30a96769bb4f9d6b0c522c97005eaeb3f7758d3cd2",
+    "server-preview-protocol-owner.json": "93d85b0ab641144ab7e96a7b4c631816aa504d726e560c03db2a360225e9dbd5",
+    "server-preview-protocol-result.json": "69d15c4d5c0f6507ca32b9b07ca5d884737f754a2f5cf3bf9419839d0220db6b",
+    "server-preview-protocol.json": "f3932154ad404d4796a31c5ab99ad8af71451e771850dda1a681fd77d1949364",
+    "server-repeat-owner.json": "902e8678c99eaeb21a91e25fb86083d26b0635a19fd446130943c244db38b948",
+    "server-repeat-result.json": "d0dd2a4127bdae5095980bed31045cf890267279af80e80e4998f5660bf7230d",
+    "source-final-proof.json": "5dc1bc2e579422e712037953a5e8c9b7a0d6cd8d5a13f3177e6c477b5d0091d2",
+    "standalone-build-owner.json": "35295ba3e8912c2c798a3c2072ab5fd55c13ba560c5906f0b855fa7346b76243",
+    "standalone-build-result.json": "4860d22b47d09c0de719e6dd047cf2621521b160364e52d60694cb94ba4fa052",
+    "standalone-config.json": "442180d1f0206fd38c36acdf5cec736bd2bd70ad9f749970f0cac117459a3b5d",
+    "standalone-index.json": "1d9575745460967b66ed1ddaae1c5a02082737d51e140c37fd6b95101b8c9040",
+    "standalone-inspect.json": "48003bc92b2e6124d06369bad2da13ad3702c3b77fc47001281d2c68059af953",
+    "standalone-manifest.json": "e29a484794e22a6c7353e9efb27b4b63e08f9ea78bcc433af32216157a34922b",
+    "standalone-oci-owner.json": "1640eb437480ef6de3f36d9b12e278c6106104c33e1baa7cc3704bf51d2a4d71",
+    "standalone-oci-proof.json": "bd892785a32a6acb370f25a32010226c276c590a8352aea142219e208cd8823f",
+    "standalone-oci-result.json": "2b29fe6c5e63256d8040c95903da3346cda17988a23d068d81236678ee5a2d00",
+    "standalone-preview-protocol-owner.json": "966c65e28842d7cb4861fd44800fd96c914417aba4c996f46862934dee4540b5",
+    "standalone-preview-protocol-result.json": "2723483145ee7a8872e3e6c8dec3e3ed6a2f37cfc28b753e3db9a30de4c51027",
+    "standalone-preview-protocol.json": "c7e42a07e8fe89b5b1bf179ccee89776e939385fbe650c4b941117d2393307f0",
+    "standalone-repeat-owner.json": "796eca486c4d9cc3da6bc6936477a1b0c91675edf9205398077f005b9f294aa6",
+    "standalone-repeat-result.json": "c4b97756251fa75648bcf3ee77cf760f82d321695261bf686384884d325d087d",
+    "workspace-build-owner.json": "d5e7f6d3a4d4bf8b94df8783eaa738d894612d1b1f75f3390c80f93ab76d5066",
+    "workspace-build-result.json": "f025768ec4c0d50e294236f4e9f2b06bdcd774c466d4b52a0517783405878402",
+    "workspace-config.json": "8f8183d32d77683d7fe8c30838f22c45e2bc914fdb9434ce23851438188864ef",
+    "workspace-index.json": "316edd87dec49a01d65cf7b1df1d9f741e71a628dc9773a0b2016dca7283e2dc",
+    "workspace-inspect.json": "e64dc75f6e8629b49214bb211c37ed716b14ee9ed8b830b702a6d2c34898deeb",
+    "workspace-lock-transition.json": "6a0b3e7286f6a10dbe1145983e783939d4c925a8bbb549c161c4e7d8d71741bf",
+    "workspace-manifest.json": "e2d912c905e5db4b5e191979f0aec749229750eaaa9747eb7a0dfa926c4ac0c6",
+    "workspace-oci-owner.json": "6ad938a0f550b0dbac5d2501629e0c21674ce659971d66b39394b183ed1d3840",
+    "workspace-oci-proof.json": "9cfba0d680cb3aeb692b5248a004d616cc436d2238c341596d1947869d05408f",
+    "workspace-oci-result.json": "24ca4286aa615461b7445601d26da587286ec4dc1a31f98598339e517ec21bf9",
+    "workspace-repeat-owner.json": "07fa789e9331810ae0a90f8c91344f91d3ecace283db0381c58cffd23a33557c",
+    "workspace-repeat-result.json": "4dca80c439bac4c960b92606f95aed8ee9ab7db3155479fd226df496e6a9c666",
+    "cleanup-plan.json": "987ab7cb1f36faa106743b29c9318ab811dd0e014ee3916af47fadb59b68da56",
+    "cleanup-result.json": "a562f4b89592fa88a76ff68918d5eb3a23e039b6b78a4df1ff3aa5865bd5f400",
+    "before-cleanup-resources.json": "4f0e706df96b29a175c5013d1f00efc2b7790efcef54a9abca704ee8ca1dd55e",
+    "after-cleanup-resources.json": "d7dcd1875c900e987d57d98e99f8bfbc219f8b093e0a85f320499b26270ea6b8",
+    "post-cleanup-verification.json": "d03eb123e2236ce85a2d05ef10ec3cdbfe82a588f062d3ae1aede0021d13dd90"
+  },
+  "redactions": [
+    "personal paths and original container/volume names",
+    "temporary account/space/container identifiers",
+    "credentials and private host topology"
+  ],
+  "temporaryBuildCleanup": {
+    "frozenRemoved": true,
+    "exactSeedTarRemoved": true,
+    "logicalBytesRemoved": 1270995490,
+    "wslAvailableBytesIncrease": 1272614912,
+    "sourceFilesPreserved": 516,
+    "sourceDigestPreserved": "70ae0aeb142a80eca577b2a8c231b67809502d261a1b99550c970763d37b1844",
+    "qualifiedImageIdsRetained": [
+      "sha256:a90e8f8a302d0a57f44bd174dc1d55a950c6fc3e614d04f96db7e0c8588faf8f",
+      "sha256:c85ffabe2309534cd5c921aa3ea268dcf89858c9aac47afd0895787e6c23e8cc",
+      "sha256:f0b3e3a94251afc3749c6aea7d0d92946169d968a79019128ecb7fa1d8d70c35"
+    ],
+    "originalContainerAndVolumeInventoriesMatch": true,
+    "largeSourceCopyOrTarMirroredToD": false
+  },
+  "performanceRawArtifactSha256": {
+    "guest-worker-comparison.jsonl": "2694ef989adacd240a97a9dcc031b5eb9a1bde9305003d3e458bc7f20029cc02",
+    "host-worker-baseline.jsonl": "f1412364f01fc36b0ce34b1dcf3d99994398b4418564d097b3079f076650275e",
+    "measure_worker.py": "aebee104cbaae0ec6eafd741dd1b4380c00a70f017cdf232c565528338b933ff",
+    "run_baseline.py": "cdc5b1f797b0e872fbc4e95a556c76f2686ce710b5a47703f04084265c785372"
+  }
+}
