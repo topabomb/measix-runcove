@@ -6,6 +6,7 @@ License: Apache-2.0 (upstream package metadata and source notices retained).
 
 Only source, package manifests and README are vendored; example/test targets are removed from the generated manifest. Upstream tests are not part of the application workspace; the application regression suite covers these patches.
 
+- handle_options.rs: advertise only enabled locking/partial-update capabilities and include supported PROPPATCH in Allow. Application method rejections derive Allow from the same configured handler; no disabled PATCH or TRACE is advertised.
 - handle_props.rs: route writable modification-time properties through the filesystem adapter; do not claim Windows attribute writes succeeded without applying them.
 - handle_props.rs: collection quota is the same backing-volume accounting at every path, rather than subtracting each child file length from total capacity.
 - handle_copymove.rs: regular-file overwrite calls copy/rename without deleting the target first; remove destination locks only after success. RootFs provides atomic file replacement. Reject copying/moving a directory onto an ancestor, or moving it into a descendant, before deleting any destination; compare decoded path components. Other directory operations retain partial-failure semantics.

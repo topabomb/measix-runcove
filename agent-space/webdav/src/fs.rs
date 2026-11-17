@@ -375,6 +375,16 @@ impl RootFs {
     fn checked(&self, path: &DavPath) -> FsResult<File> {
         open_at(&self.root, &relative(path)?, libc::O_PATH, 0)
     }
+    /// Open one verified inode for a decoder; no user path reaches the decoder.
+    pub(crate) fn preview_source(&self, path: &DavPath) -> FsResult<(File, String)> {
+        let pinned = self.checked(path)?;
+        let file = reopen(&pinned, false)?;
+        if !file.metadata().map_err(fs_error)?.is_file() {
+            return Err(FsError::Forbidden);
+        }
+        let version = preview_file_version(&file)?;
+        Ok((file, version))
+    }
     fn prepare(&self, path: &DavPath, options: &OpenOptions) -> FsResult<File> {
         let context = self.upload.as_ref().ok_or(FsError::Forbidden)?;
         let mut slot = context.lock().unwrap();
@@ -480,6 +490,13 @@ fn fingerprint(m: &Metadata) -> (u64, u64, u64, i64, i64, i64, i64) {
         m.ctime(),
         m.ctime_nsec(),
     )
+}
+
+pub(crate) fn preview_file_version(file: &File) -> FsResult<String> {
+    Ok(format!(
+        "\"{}\"",
+        Meta(file.metadata().map_err(fs_error)?).etag().unwrap()
+    ))
 }
 struct Upload {
     staging: Arc<File>,

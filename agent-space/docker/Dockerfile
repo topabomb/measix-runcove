@@ -1,5 +1,5 @@
 # ---- Stage 1: Compile Rust binaries ----
-FROM nikolaik/python-nodejs@sha256:3a486570ce499b396f0189e27a782410801a27503b0f82b95ed51bfd01d72478 AS desktop-ui-builder
+FROM nikolaik/python-nodejs@sha256:648f6a6036dca5fc9de144ca54ce7c0af51ac49af790ed67c2ec6a81cbfac3b3 AS desktop-ui-builder
 WORKDIR /ui
 COPY desktop-ui/package.json desktop-ui/package-lock.json ./
 RUN npm ci --ignore-scripts --no-audit --no-fund

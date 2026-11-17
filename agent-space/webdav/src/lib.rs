@@ -3,6 +3,7 @@ mod dav_path;
 pub use dav_path::validate_path;
 pub mod fs;
 mod mutations;
+mod preview;
 
 use bytes::Bytes;
 use dav_server::{
@@ -39,6 +40,9 @@ pub struct Service {
     prefix: String,
     mutations: Arc<Mutations>,
     idle: Duration,
+    preview: preview::Store,
+    preview_path: String,
+    owner: String,
 }
 impl Service {
     pub fn new(
@@ -58,8 +62,41 @@ impl Service {
             prefix: prefix.into(),
             mutations: Arc::new(Mutations::default()),
             idle,
+            preview: preview::Store::default(),
+            preview_path: format!(
+                "{}previews",
+                prefix.strip_suffix("dav/").ok_or("invalid DAV prefix")?
+            ),
+            owner: owner.to_owned(),
         })
     }
+    fn handler(&self, filesystem: fs::RootFs) -> DavHandler {
+        DavHandler::builder()
+            .filesystem(Box::new(filesystem))
+            .locksystem(self.locks.clone())
+            .strip_prefix(self.prefix.clone())
+            .autoindex(false)
+            .methods(
+                DavMethodSet::from_vec(vec![
+                    "OPTIONS",
+                    "PROPFIND",
+                    "PROPPATCH",
+                    "GET",
+                    "HEAD",
+                    "PUT",
+                    "MKCOL",
+                    "DELETE",
+                    "COPY",
+                    "MOVE",
+                    "LOCK",
+                    "UNLOCK",
+                ])
+                .unwrap(),
+            )
+            .read_buf_size(64 * 1024)
+            .build_handler()
+    }
+
     pub async fn handle<B>(
         &self,
         mut request: Request<B>,
@@ -69,6 +106,19 @@ impl Service {
         B: Body<Data = Bytes> + Send + 'static,
         B::Error: std::error::Error + Send + Sync + 'static,
     {
+        if request.uri().path() == self.preview_path {
+            return self
+                .preview
+                .handle(
+                    self.fs.clone(),
+                    &self.owner,
+                    request.method(),
+                    request.uri().query(),
+                    request.headers(),
+                    cancel,
+                )
+                .await;
+        }
         // Normalize only the authenticated root spelling, never dot segments.
         if request.uri().path().trim_end_matches('/') == self.prefix.trim_end_matches('/') {
             if request.uri().query().is_some() {
@@ -97,7 +147,17 @@ impl Service {
                 | "LOCK"
                 | "UNLOCK"
         ) {
-            return response(StatusCode::METHOD_NOT_ALLOWED, "");
+            let options = Request::builder()
+                .method("OPTIONS")
+                .uri(request.uri().clone())
+                .body(DavBody::empty())
+                .expect("validated resource URI");
+            let advertised = self.handler(self.fs.clone()).handle(options).await;
+            let mut rejected = response(StatusCode::METHOD_NOT_ALLOWED, "");
+            if let Some(allow) = advertised.headers().get("allow") {
+                rejected.headers_mut().insert("allow", allow.clone());
+            }
+            return rejected;
         }
         let modified = if method == "PUT" {
             match request.headers().get("x-oc-mtime") {
@@ -253,30 +313,7 @@ impl Service {
         } else {
             self.fs.clone()
         };
-        let handler = DavHandler::builder()
-            .filesystem(Box::new(request_fs.clone()))
-            .locksystem(self.locks.clone())
-            .strip_prefix(self.prefix.clone())
-            .autoindex(false)
-            .methods(
-                DavMethodSet::from_vec(vec![
-                    "OPTIONS",
-                    "PROPFIND",
-                    "PROPPATCH",
-                    "GET",
-                    "HEAD",
-                    "PUT",
-                    "MKCOL",
-                    "DELETE",
-                    "COPY",
-                    "MOVE",
-                    "LOCK",
-                    "UNLOCK",
-                ])
-                .unwrap(),
-            )
-            .read_buf_size(64 * 1024)
-            .build_handler();
+        let handler = self.handler(request_fs.clone());
         let new_lock_path = if new_lock {
             let path = DavPath::from_uri(request.uri()).and_then(|mut path| {
                 path.set_prefix(&self.prefix)?;
@@ -516,6 +553,14 @@ fn response(status: StatusCode, text: &str) -> Response<ResponseBody> {
     });
     *response.status_mut() = status;
     response
+}
+
+fn bytes_body(bytes: Bytes, cancel: CancellationToken) -> ResponseBody {
+    ResponseBody {
+        body: DavBody::from(bytes),
+        guard: None,
+        cancel: Box::pin(cancel.cancelled_owned()),
+    }
 }
 
 #[cfg(test)]

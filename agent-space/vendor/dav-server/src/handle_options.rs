@@ -11,18 +11,22 @@ impl<C: Clone + Send + Sync + 'static> DavInner<C> {
 
         let h = res.headers_mut();
 
-        // We could simply not report webdav level 2 support if self.allow doesn't
-        // contain LOCK/UNLOCK. However we do advertise support, since there might
-        // be LOCK/UNLOCK support in another part of the URL space.
-        #[cfg(all(feature = "caldav", feature = "carddav"))]
-        let dav = "1,2,3,sabredav-partialupdate,calendar-access,addressbook";
-        #[cfg(all(feature = "caldav", not(feature = "carddav")))]
-        let dav = "1,2,3,sabredav-partialupdate,calendar-access";
-        #[cfg(all(feature = "carddav", not(feature = "caldav")))]
-        let dav = "1,2,3,sabredav-partialupdate,addressbook";
-        #[cfg(not(any(feature = "caldav", feature = "carddav")))]
-        let dav = "1,2,3,sabredav-partialupdate";
-        h.insert("DAV", dav.parse().unwrap());
+        // Capabilities describe this configured resource, not hypothetical
+        // methods implemented by the library but disabled by its caller.
+        let enabled = |method| self.allow.map(|set| set.contains(method)).unwrap_or(true);
+        let mut dav = vec!["1"];
+        if self.ls.is_some() && enabled(DavMethod::Lock) && enabled(DavMethod::Unlock) {
+            dav.push("2");
+        }
+        dav.push("3");
+        if enabled(DavMethod::Patch) {
+            dav.push("sabredav-partialupdate");
+        }
+        #[cfg(feature = "caldav")]
+        dav.push("calendar-access");
+        #[cfg(feature = "carddav")]
+        dav.push("addressbook");
+        h.insert("DAV", dav.join(",").parse().unwrap());
         h.insert("MS-Author-Via", "DAV".parse().unwrap());
         h.typed_insert(headers::ContentLength(0));
 
@@ -66,6 +70,7 @@ impl<C: Clone + Send + Sync + 'static> DavInner<C> {
             }
             mm(&mut v, "OPTIONS", DavMethod::Options);
             mm(&mut v, "PROPFIND", DavMethod::PropFind);
+            mm(&mut v, "PROPPATCH", DavMethod::PropPatch);
             mm(&mut v, "COPY", DavMethod::Copy);
             if path.as_url_string() != "/" {
                 mm(&mut v, "MOVE", DavMethod::Move);

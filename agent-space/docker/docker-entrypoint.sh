@@ -89,11 +89,13 @@ mv -f "$STAMP_FILE.tmp" "$STAMP_FILE"
 
 # 5. Pre-load bundled sandbox image if not already cached
 DEFAULT_IMAGE="nikolaik/python-nodejs:python3.12-nodejs22-slim"
-if ! msb image list 2>/dev/null | grep -q "$DEFAULT_IMAGE"; then
+if ! msb image inspect "$DEFAULT_IMAGE" >/dev/null 2>&1; then
     echo "[agent-space] loading bundled sandbox image (first start, ~30s)..."
     # msb image load requires -i file (stdin pipe is unreliable); decompress first
     gunzip -c /opt/msb-images/default.tar.gz > /tmp/default.tar
-    if msb image load -i /tmp/default.tar -q 2>/dev/null; then
+    # The archive is exported from a pinned build input. Restore the configured
+    # default alias explicitly; its embedded RepoTags may contain only @digest.
+    if msb image load -i /tmp/default.tar --tag "$DEFAULT_IMAGE" -q 2>/dev/null; then
         echo "[agent-space] sandbox image loaded"
     else
         echo "[agent-space] WARNING: failed to load bundled image, will pull on first sandbox"

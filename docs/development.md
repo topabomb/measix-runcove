@@ -36,6 +36,12 @@ python3 tests/test_workspace_transfer.py
 python3 docker/test_verify_protocol.py
 python3 docker/test_verify_dav_large.py
 python3 docker/test_package.py
+python3 docker/test_build_images.py
+python3 docker/test_entrypoint.py
+python3 images/desktop/test_export.py
+python3 images/desktop/test_install_browser.py
+/usr/bin/python3 webdav/tests/test_preview_worker.py
+python3 docker/test_verify_previews.py
 ```
 
 先构建当前三个 helper，再串行运行真实 VM 测试；只使用独立资格 Host、容器和新建卷，不指向日常或生产服务。Standalone 的 normal/build 依赖图应排除 microsandbox/libkrun。工作区导入的所有者与权限测试需要隔离 root 环境；普通用户运行的跳过项不能记为通过。
@@ -57,6 +63,7 @@ python3 docker/test_package.py
 | 桌面/控制 | 新四工具唯一目录、整批校验、ref 身份/替换失效、嵌套及跨域 iframe、浮层/弹出页、整页原始PNG、统一2560/CatmullRom/WebP Q90 method4返回及透明通道无损、图片元数据仅大小与格式、DPR与缩放坐标换算、保存原图再读取的字节一致性、失败任务稳定轮询、1..8帧与间隔、可选原始PNG保存/命名/路径/真实下载、bash创建私有目录后的上传及截图保存权限一致、Page配置默认/覆盖、并发新增与弹窗/新窗口上限、关闭确认后释放、取消保留页面、浏览器关闭后从显示控制重开、个人资料选择器/跨资料上限/最后选择及全部页面休眠恢复、CDP失去响应时仍能闲置回收、页面绑定/关闭、CDP卡死时桌面截图、原生窗口、硬期限、部分输出、不重放、交接取消、清理失败 BLOCKED |
 | 工作台/代理 | 真实 RFB 键鼠和中英文剪贴板、双观看者单控制、320/390/宽屏、HTTPS/改写 Host/嵌套前缀、Origin/Cookie/nonce、重启登录失效 |
 | 文件/发布 | 文本兼容、read 默认关闭图片、四格式/方向/透明度/首帧、错误扩展名、损坏/超限、超过50 KiB完整图片、12 MiB工具结果、并发/取消/回收；原子提交、无覆盖、权限、ENOSPC 保留原文件、1 GiB 文件流、4 GiB DAV/Range/截短/取消、发布认证与撤销 |
+| DAV 媒体预览 | 独立 OPTIONS 不激活空间、DAV 凭据与空间归属、图片透明/首帧/EXIF、真实 WebM 可变长度编码、视频时间点/SAR/任意角/反射、源与派生 ETag/HEAD/304/失败隔离、单槽合并/取消/超时与后代回收；缺依赖、未知解码器及损坏媒体分别返回合同错误 |
 | Server | 凭据/空间隔离、轮换/禁用/删除/同名重建、VM 容量/暂停/异常退出恢复、原盘保留及 MSB 补丁回归 |
 | Standalone | 无 KVM、秘密与 UID1001 边界、用户路径不可让 root 代读写、单空间路由、容器限额/信号/重建和卷保留 |
 | 迁移/交付 | 精确旧镜像升级和独立卷冷备回滚、选定工作区导入及归档后路径预检、标签并发变化时仍验证同一镜像 ID、归档/OCI/manifest/报告对应实际镜像、离线加载与 Compose |
@@ -78,9 +85,15 @@ python3 docker/verify-storage-failure.py --image "$SERVER_IMAGE" --evidence targ
 python3 docker/verify-standalone.py --image "$STANDALONE_IMAGE" --full
 python3 docker/verify-storage-failure.py --image "$STANDALONE_IMAGE" --evidence target/standalone-storage.json
 python3 docker/verify-workspace-import.py --image "$STANDALONE_IMAGE" --old-image "$EXACT_OLD_IMAGE_ID"
+python3 docker/verify-previews.py --target server --image "$SERVER_IMAGE" --expected-source "$SERVER_BUILD_SOURCE_SHA256" --expected-helper-build-id "$DAV_HELPER_BUILD_ID" --evidence target/media-preview/server-image.json
+python3 docker/verify-previews.py --target standalone --image "$STANDALONE_IMAGE" --expected-source "$STANDALONE_BUILD_SOURCE_SHA256" --expected-helper-build-id "$DAV_HELPER_BUILD_ID" --evidence target/media-preview/standalone-image.json
 ```
 
 将生命周期脚本输出的 `result.json` 路径赋给 `SERVER_LIFECYCLE_REPORT`。资格脚本在开始时解析镜像 ID，后续初始化、启动、备份/回滚都使用该 ID；输入标签在运行期间改变不能改变实际被测镜像。打包器也按报告的 `image_id` 读取镜像，原标签仅作来源说明。Standalone 的 4 GiB 文件验证只指向本仓库新建且带资格标记的容器；其运行方式和客户端范围见 [DAV 参考](webdav.md)。`--development-assets` 绑定当前二进制用于开发回归，报告明确为开发资产，不能通过正式打包门槛。
+
+`verify-previews.py` 每次新建独立容器和数据卷，不接受现有部署作为输入；它分别验证真实 VM 和 Standalone 的外部 DAV 认证、生成、条件请求、依赖缺失、断连及撤销回收，并核对原文件操作。预期源码摘要来自独立固定的构建输入，helper ID 按相同源码的 `build-support/helper.rs` 算法取得，不能直接信任待测镜像自报。已有证据路径拒绝覆盖；失败仍保存 `passed: false`，清理失败退出非零。媒体专项通过不代替上表的完整发布资格。
+
+此验证器的 `--development-assets` 冻结当前 `target/debug` 服务、三个 helper 和入口脚本，记录源摘要及可执行文件 SHA，只用于开发验证。Standalone 以 Workspace 依赖镜像运行；Server 使用匹配 MSB 的 Server runtime 基底，额外传 `--workspace-assets <已验证缓存目录>`，该目录须含 `desktop.tar.gz`、`desktop.reference` 和 `workspace.lock.json`。验证器冻结归档、核对引用，并以明确的 custom distribution 摘要替代 debug Host 的旧 preset；初始化和运行使用同份冻结 Host。开发模式同样可传 `--expected-helper-build-id` 核对 Host/guest。最终镜像模式禁止 `--workspace-assets`，必须提供独立的 expected source/helper，不能把绑定开发资产的成功结果作为最终镜像证据。
 
 打包按目标核对共同完整套件、4 GiB 文件、20 次真实写满与固定拒绝上传截止、成功清理、精确镜像和当前源码摘要；Server 另需旧生产版本升级/完整冷备回滚报告。命令和加载步骤见[部署指南](deployment.md#3-验证与离线包)。导出归档、内嵌 release 元数据、manifest 和报告必须一致；使用包内 Compose 实际初始化和启动，并检查未遗留本次资格资源。
 

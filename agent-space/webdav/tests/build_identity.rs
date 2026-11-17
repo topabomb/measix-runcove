@@ -25,6 +25,7 @@ fn binary_identity_ignores_timestamps_but_rejects_different_sources() {
     common::verify_helper_identity(binary, copy.path(), "webdav");
     for name in [
         "webdav/src/main.rs",
+        "webdav/src/preview_worker.py",
         "vendor/dav-server/src/handle_props.rs",
         "vendor/dav-server/Cargo.toml",
     ] {

@@ -183,7 +183,9 @@ pub(crate) fn matches_origin(request: &Request, expected: &url::Url) -> bool {
 }
 pub(crate) fn dav_username(path: &str) -> Option<&str> {
     let (username, rest) = path.strip_prefix("/u/")?.split_once('/')?;
-    if validate_username(username).is_err() || !(rest == "dav" || rest.starts_with("dav/")) {
+    if validate_username(username).is_err()
+        || !(rest == "dav" || rest.starts_with("dav/") || rest == "previews")
+    {
         return None;
     }
     Some(username)

@@ -36,7 +36,21 @@ cargo check --workspace --all-targets --locked
 bash docker/build.sh
 ```
 
-脚本按 `Cargo.lock` 校验 SDK/运行时，按源码内容构建 `runcove-server:runcove-<摘要前16位>`；不覆盖旧 SDK 版本标签或 `latest`。应用版本与 SDK 版本分开记录，镜像 ID 是验收依据。下文 `NEW_IMAGE` 须替换为本次验证通过的标签。镜像包含服务端、三个受管helper、中英文桌面前端、msb CLI、libkrunfw、默认自定义及锁定桌面沙盒镜像，不包含用户配置或数据。
+脚本按 `Cargo.lock` 校验 SDK/运行时，以规范 JSON `{sourceSha256, sourceRevision, sourceDateEpoch}` 的 SHA-256 前16位构建 `runcove-server:runcove-<构建摘要>`。`sourceSha256` 仍是内容摘要，`sourceRevision` 来自固定 Git HEAD，时间取该修订的 commit Unix epoch；非法或未来时间在构建前拒绝，避免时间归一化未生效。相同字节提交到新 HEAD 不会误用旧构建标签。脚本拒绝覆盖历史 SDK 版本标签，默认不发布 `latest`。应用版本与 SDK 版本分开记录，实际镜像 ID 是验收依据。下文 `NEW_IMAGE` 须替换为本次验证通过的标签。镜像包含服务端、三个受管helper、中英文桌面前端、msb CLI、libkrunfw、默认自定义及锁定桌面沙盒镜像，不包含用户配置或数据。
+
+三处入口由 `docker/build_images.py` 统一管理：`images/desktop/build.sh [OUTPUT]` 生成 Workspace 及离线缓存，`docker/build.sh` 构建 Server，`docker/build-standalone.sh` 构建 Standalone。构建宿主需要 Bash、Python 3.11+、支持 `--metadata-file` / `ADD --checksum` / `RUN --mount` 的 Docker BuildKit，以及能让 `docker save` 导出 OCI layout 的 containerd image store；经典 store 的 legacy tar 不在当前 exporter 支持范围，前置检查会拒绝这种构建环境。这是构建导出要求，运行成品镜像仍按部署资格核对。
+
+脚本在私有源码副本构建，通过 `--iidfile` 和 BuildKit 元数据分别核对 config digest、平台 digest 与当前 store 的实际对象 ID。统一传入固定 `SOURCE_DATE_EPOCH`，使用 `type=image,unpack=false,rewrite-timestamp=true` 归一化镜像和产物时间；该 exporter 配置已验证可被本地 store 检查、导出和实际启动。关闭默认 provenance 的可变 attestation 包装，避免仅因构建时刻变化而误触发内容标签冲突；源码和可执行文件身份仍由 release inventory 记录。不同 iidfile 形式的兼容不代表支持 legacy 归档：最终 OCI 的 index/manifest/config/layer 仍逐项校验，离线引用为 linux/amd64 平台 manifest 摘要。不要将这几个摘要互换。
+
+构建缓存同时核对源码、镜像、归档校验和与提交记录。相同输出目录（包括不同 checkout 传入的相同 OUTPUT）串行发布，源仓库的锁文件单独同步；发布被中断时下一次构建先恢复日志，再读取缓存。失败构建保留原有完整缓存，不依靠共享可变构建标签。内容标签若已指向不同镜像会报错，需保留旧标签并调查输入；`IMAGE_NAME` 仅用于显式额外别名。构建完成不代表最终镜像已获得发布资格。
+
+Chrome 下载输入由 `images/desktop/chromium-download.lock.json` 固定官方 URL、版本、revision 和 SHA-256。独立 BuildKit checksum stage 下载归档并跨基础镜像复用缓存；构建期临时 loopback 服务仅将校验后的归档交给官方 Playwright CLI，仍由它完成解压、权限和安装标记，Playwright 自带的小型 FFmpeg 工具沿用官方来源。安装前核对实际 Playwright 包及 `browsers.json` 与锁一致，退出时回收种子进程；该服务不进入产品运行。升级 Playwright 时须同步核对并更新此下载锁，不能跳过版本或归档校验。
+
+### 媒体预览依赖与已有空间
+
+Workspace 和 Standalone 的系统依赖包含 `/usr/bin/python3`、系统 Pillow、ffmpeg/ffprobe，确切版本记录在镜像 `/opt/image-manifest/apt-packages.tsv`。DAV helper 内嵌受限预览 worker，不读取工作区虚拟环境；独立端点和失败语义见 [DAV 媒体预览扩展](webdav.md#媒体预览扩展-v1)。
+
+Server 换镜像或修改默认 Workspace 只影响新建空间，已有 VM 根盘保留。旧根盘或自定义镜像缺少媒体依赖时，能力查询仍表示已实现协议，实际生成返回明确的依赖错误；原文件访问继续工作。维护已有空间时，先按运维手册备份，并在其明确的镜像/根盘维护流程安装相同系统依赖后验证。不能以启用缩略图为由删除、重建或自动重置已有根盘。Standalone 通过构建包含依赖的新镜像更新，继续复用原 `/workspace` 卷和数值 UID/GID。
 
 Server 的服务与实际 VM CLI 使用配对的 MSB 生命周期补丁和双端 SQLite 3.51.3，构建及启动核验固定输入、补丁和最终程序身份。来源、上游状态与逐项撤销门槛集中在[运行时维护](runtime.md)，升级前核查；Agent Space 不直接修改 MSB 表，生产运行期间不要另用 CLI 修改同一数据库。
 

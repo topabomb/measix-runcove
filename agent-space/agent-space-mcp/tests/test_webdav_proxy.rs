@@ -91,6 +91,201 @@ async fn real_http_reports_upstream_truncation_and_allows_download_progress() {
 fn fixture() -> Fixture {
     fixture_with_idle(Duration::from_secs(5))
 }
+
+#[tokio::test]
+async fn preview_capabilities_are_authenticated_and_do_not_activate_vm() {
+    use axum::body::to_bytes;
+    use std::sync::atomic::Ordering;
+    let f = fixture();
+    let auth = format!("Bearer {}", f.dav.token);
+    let response = f
+        .app
+        .clone()
+        .oneshot(request(
+            "OPTIONS",
+            "/u/alice/previews",
+            &auth,
+            Body::empty(),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers()["agent-space-id"], f.user.agent_space_id);
+    assert_eq!(response.headers()["cache-control"], "no-store");
+    let body: serde_json::Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 16384).await.unwrap()).unwrap();
+    assert_eq!(body["supported"], true);
+    assert_eq!(body["sizes"], serde_json::json!([128, 256, 512]));
+    let response = f
+        .app
+        .clone()
+        .oneshot(request(
+            "OPTIONS",
+            "/u/alice/previews",
+            &format!("Bearer {}", f.mcp.token),
+            Body::empty(),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    let response = f
+        .app
+        .clone()
+        .oneshot(request("OPTIONS", "/u/bob/previews", &auth, Body::empty()))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    let response = f
+        .app
+        .clone()
+        .oneshot(request("POST", "/u/alice/previews", &auth, Body::empty()))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
+    assert_eq!(response.headers()["allow"], "OPTIONS, GET, HEAD");
+    let response = f
+        .app
+        .clone()
+        .oneshot(request(
+            "OPTIONS",
+            "/u/alice/previews?size=256",
+            &auth,
+            Body::empty(),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(f.engine.create_count.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
+async fn preview_runtime_failure_has_protocol_problem_and_head_has_no_body() {
+    let f = fixture();
+    f.sessions
+        .get_or_create(&f.user.sandbox_name)
+        .await
+        .unwrap();
+    f.sessions
+        .stop_workspace(&f.user.sandbox_name)
+        .await
+        .unwrap();
+    f.engine.set_fail_start(true);
+    for method in ["GET", "HEAD"] {
+        let response = f
+            .app
+            .clone()
+            .oneshot(request(
+                method,
+                "/u/alice/previews?path=image.png&expectedEtag=%22source%22",
+                &format!("Bearer {}", f.dav.token),
+                Body::empty(),
+            ))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+        assert_eq!(
+            response.headers().get("content-type").unwrap(),
+            "application/problem+json"
+        );
+        assert_eq!(response.headers()["cache-control"], "no-store");
+        assert_eq!(response.headers()["x-content-type-options"], "nosniff");
+        assert_eq!(response.headers()["retry-after"], "1");
+        let bytes = axum::body::to_bytes(response.into_body(), 16384)
+            .await
+            .unwrap();
+        if method == "HEAD" {
+            assert!(bytes.is_empty());
+        } else {
+            let problem: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+            assert_eq!(problem["code"], "preview_unavailable");
+        }
+    }
+    f.sessions.stop_all().await;
+}
+
+#[tokio::test]
+async fn preview_rejects_request_bodies_before_activation_and_accepts_zero_length() {
+    use std::sync::atomic::Ordering;
+    let f = fixture();
+    for method in ["GET", "HEAD", "OPTIONS"] {
+        for framing in [
+            Some(("content-length", "1")),
+            Some(("content-length", "1048577")),
+            Some(("transfer-encoding", "chunked")),
+            None,
+        ] {
+            let mut input = request(
+                method,
+                if method == "OPTIONS" {
+                    "/u/alice/previews"
+                } else {
+                    "/u/alice/previews?path=image.png&expectedEtag=%22source%22"
+                },
+                &format!("Bearer {}", f.dav.token),
+                if framing.is_some() {
+                    Body::empty()
+                } else {
+                    Body::from("x")
+                },
+            );
+            if let Some((name, value)) = framing {
+                input.headers_mut().insert(
+                    http::HeaderName::from_static(name),
+                    http::HeaderValue::from_static(value),
+                );
+            }
+            let response = f.app.clone().oneshot(input).await.unwrap();
+            assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+            assert_eq!(
+                response.headers().get("content-type").unwrap(),
+                "application/problem+json"
+            );
+            assert_eq!(response.headers()["cache-control"], "no-store");
+            let bytes = axum::body::to_bytes(response.into_body(), 16384)
+                .await
+                .unwrap();
+            if method == "HEAD" {
+                assert!(bytes.is_empty());
+            } else {
+                assert_eq!(
+                    serde_json::from_slice::<serde_json::Value>(&bytes).unwrap()["code"],
+                    "invalid_preview_request"
+                );
+            }
+        }
+    }
+    assert_eq!(f.engine.create_count.load(Ordering::SeqCst), 0);
+    let mut input = request(
+        "OPTIONS",
+        "/u/alice/previews",
+        &format!("Bearer {}", f.dav.token),
+        Body::empty(),
+    );
+    input
+        .headers_mut()
+        .insert("content-length", http::HeaderValue::from_static("0"));
+    assert_eq!(
+        f.app.clone().oneshot(input).await.unwrap().status(),
+        StatusCode::OK
+    );
+    assert_eq!(f.engine.create_count.load(Ordering::SeqCst), 0);
+    for method in ["GET", "HEAD"] {
+        let mut input = request(
+            method,
+            "/u/alice/previews?path=image.png&expectedEtag=%22source%22",
+            &format!("Bearer {}", f.dav.token),
+            Body::empty(),
+        );
+        input
+            .headers_mut()
+            .insert("content-length", http::HeaderValue::from_static("0"));
+        assert_eq!(
+            f.app.clone().oneshot(input).await.unwrap().status(),
+            StatusCode::OK
+        );
+    }
+    f.sessions.stop_all().await;
+}
 fn fixture_with_idle(idle: Duration) -> Fixture {
     fixture_with_capacity(idle, 1)
 }

@@ -1,4 +1,9 @@
-ARG BASE_IMAGE=nikolaik/python-nodejs@sha256:3a486570ce499b396f0189e27a782410801a27503b0f82b95ed51bfd01d72478
+ARG BASE_IMAGE=nikolaik/python-nodejs@sha256:648f6a6036dca5fc9de144ca54ce7c0af51ac49af790ed67c2ec6a81cbfac3b3
+FROM scratch AS chrome-artifact
+ARG CHROMIUM_URL
+ARG CHROMIUM_SHA256
+ADD --checksum=sha256:${CHROMIUM_SHA256} ${CHROMIUM_URL} /chrome-linux64.zip
+
 FROM ${BASE_IMAGE}
 ENV DEBIAN_FRONTEND=noninteractive \
     PLAYWRIGHT_BROWSERS_PATH=/opt/agent-tools/browsers \
@@ -8,14 +13,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       breeze-icon-theme ca-certificates curl dbus-x11 lxqt-core openbox \
       qterminal tigervnc-standalone-server fonts-noto-cjk \
       x11-utils xdotool xclip xauth scrot mousepad procps \
+      ffmpeg python3 python3-pil \
     && rm -rf /var/lib/apt/lists/* \
     && useradd -m -u 1001 -s /bin/bash desktop \
     && mkdir -p /opt/agent-tools /opt/image-manifest
 WORKDIR /opt/agent-tools
 COPY images/desktop/package.json images/desktop/package-lock.json ./
-RUN npm ci --ignore-scripts --no-audit --no-fund \
-    && node node_modules/playwright/cli.js install --with-deps --no-shell chromium \
+RUN npm ci --ignore-scripts --no-audit --no-fund
+COPY images/desktop/chromium-download.lock.json /opt/image-manifest/
+COPY images/desktop/install_browser.py /tmp/install_browser.py
+RUN --mount=type=bind,from=chrome-artifact,source=/chrome-linux64.zip,target=/tmp/chrome-linux64.zip \
+    /usr/bin/python3 /tmp/install_browser.py install \
+      --lock /opt/image-manifest/chromium-download.lock.json --archive /tmp/chrome-linux64.zip \
     && chmod -R a+rX /opt/agent-tools \
+    && rm /tmp/install_browser.py \
     && rm -rf /root/.npm /var/lib/apt/lists/*
 COPY images/desktop/requirements.lock ./
 RUN python3 -m venv /opt/agent-tools/python \

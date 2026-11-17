@@ -1,0 +1,211 @@
+{
+  "date": "2026-11-17",
+  "kind": "sanitized qualification index; raw artifact hashes do not identify this projection",
+  "scope": "isolated Stage2 real build and final public DAV preview qualification; no production deployment",
+  "environment": {
+    "platform": "linux/amd64",
+    "docker": "29.6.2",
+    "imageStore": "OCI/containerd",
+    "serverKvm": true
+  },
+  "identity": {
+    "sourceDigest": "d592ce82f66aa48058523c99101b01f80dcba66de895de377a0f23014e875af8",
+    "fileCount": 516,
+    "ownerAndRootDigestMatch": true,
+    "buildInputs": {
+      "sourceSha256": "d592ce82f66aa48058523c99101b01f80dcba66de895de377a0f23014e875af8",
+      "sourceRevision": "85f5696048527540d55e6b25063cad5b51bbeed8",
+      "sourceDateEpoch": 1794449310
+    },
+    "buildIdentitySha256": "f33f2fcdf15c7f375aae91bbe31512a026dd17b7891dc01ca62415140e3c86a0",
+    "appVersion": "runcove-f33f2fcdf15c7f37",
+    "helperBuildId": "affe2fbf0b2b0b91d39c3ff92fe95905d9de253e857f820960ac5c47c4c4174f",
+    "workspaceCommit": {
+      "source": "194ed45d71dd11aac976de95f247d3e48884f85f88c7465992fc23099f337393",
+      "imageId": "sha256:ff69a8d74f91df722b50a125af0785949acdff02a653cee89ffc0944c1e20aba",
+      "reference": "runcove/runcove-workspace@sha256:ff69a8d74f91df722b50a125af0785949acdff02a653cee89ffc0944c1e20aba",
+      "archive": "49c0ee0913b7da110b54a1dd84c69c7a7da5316c893dc9fdf0bed03c858ac080"
+    }
+  },
+  "builds": [
+    {
+      "target": "workspace",
+      "returncode": 0,
+      "elapsedSeconds": 118.97,
+      "workspaceCacheHit": false,
+      "sourceDigest": "d592ce82f66aa48058523c99101b01f80dcba66de895de377a0f23014e875af8"
+    },
+    {
+      "target": "workspace-cache",
+      "returncode": 0,
+      "elapsedSeconds": 4.55,
+      "workspaceCacheHit": true,
+      "sourceDigest": "d592ce82f66aa48058523c99101b01f80dcba66de895de377a0f23014e875af8"
+    },
+    {
+      "target": "standalone",
+      "returncode": 0,
+      "elapsedSeconds": 151.73,
+      "workspaceCacheHit": true,
+      "sourceDigest": "d592ce82f66aa48058523c99101b01f80dcba66de895de377a0f23014e875af8",
+      "tag": "runcove-standalone:runcove-f33f2fcdf15c7f37",
+      "imageId": "sha256:1287d98fd62043e9872caf63cd360fc8113f16e4a740d096795b0406dbd148d2",
+      "imageSourceDigest": "d592ce82f66aa48058523c99101b01f80dcba66de895de377a0f23014e875af8",
+      "imageCreated": "2026-11-12T02:08:30Z"
+    },
+    {
+      "target": "standalone-cache",
+      "returncode": 0,
+      "elapsedSeconds": 6.15,
+      "workspaceCacheHit": true,
+      "sourceDigest": "d592ce82f66aa48058523c99101b01f80dcba66de895de377a0f23014e875af8",
+      "tag": "runcove-standalone:runcove-f33f2fcdf15c7f37",
+      "imageId": "sha256:1287d98fd62043e9872caf63cd360fc8113f16e4a740d096795b0406dbd148d2",
+      "imageSourceDigest": "d592ce82f66aa48058523c99101b01f80dcba66de895de377a0f23014e875af8",
+      "imageCreated": "2026-11-12T02:08:30Z"
+    },
+    {
+      "target": "server",
+      "returncode": 0,
+      "elapsedSeconds": 1044.84,
+      "workspaceCacheHit": true,
+      "sourceDigest": "d592ce82f66aa48058523c99101b01f80dcba66de895de377a0f23014e875af8",
+      "tag": "runcove-server:runcove-f33f2fcdf15c7f37",
+      "imageId": "sha256:671bcfbd867e6a91b57c9add2db77d431fd4a0281583b969232dc66039b680e3",
+      "imageSourceDigest": "d592ce82f66aa48058523c99101b01f80dcba66de895de377a0f23014e875af8",
+      "imageCreated": "2026-11-12T02:08:30Z"
+    },
+    {
+      "target": "server-cache",
+      "returncode": 1,
+      "elapsedSeconds": 667.61,
+      "workspaceCacheHit": true,
+      "sourceDigest": "d592ce82f66aa48058523c99101b01f80dcba66de895de377a0f23014e875af8"
+    },
+    {
+      "sourceDigest": "d592ce82f66aa48058523c99101b01f80dcba66de895de377a0f23014e875af8",
+      "returncode": 0,
+      "elapsedSeconds": 512.36,
+      "workspaceCacheHit": true,
+      "tag": "runcove-server:runcove-f33f2fcdf15c7f37",
+      "imageId": "sha256:671bcfbd867e6a91b57c9add2db77d431fd4a0281583b969232dc66039b680e3",
+      "imageCreated": "2026-11-12T02:08:30Z",
+      "sameIdAsFirst": true,
+      "target": "server-repeat-attempt-2"
+    }
+  ],
+  "workspaceRepeat": {
+    "firstSeconds": 118.97,
+    "repeatSeconds": 4.55,
+    "sameVerifiedManifest": "sha256:ff69a8d74f91df722b50a125af0785949acdff02a653cee89ffc0944c1e20aba"
+  },
+  "tests": {
+    "actualRuntimeGroups": 8,
+    "passed": 344,
+    "failed": 0,
+    "upstreamIgnored": 8,
+    "executedOnFirstAndServerRepeat": true
+  },
+  "cacheBehavior": {
+    "report": "incremental-cache-report.json",
+    "serverRepeatApplicationCompile": "CACHED",
+    "serverRepeatRuntimeTestsAndCli": "executed again",
+    "wholeServerAllLayersCacheHit": false,
+    "cacheMissCause": "not established; no extra probes or frozen production changes"
+  },
+  "protocols": {
+    "standalone": {
+      "report": "protocol/standalone-d592-final.json",
+      "passed": true,
+      "cleanupPassed": true,
+      "imageId": "sha256:1287d98fd62043e9872caf63cd360fc8113f16e4a740d096795b0406dbd148d2",
+      "mediaDependencies": "3.13.5\n11.1.0\nffmpeg version 7.1.5-0+deb13u1 Copyright (c) 2000-2026 the FFmpeg developers\n\nExit code: 0",
+      "rawSha256": "a8d3abd1ccad16f635f9deaec1f4888d01c030aae4f78e63527918daefbaa979",
+      "checks": [
+        "image system decoders pass real WebM VINT rotation SAR and reflection regressions",
+        "exact image source label and actual shipped binaries match release inventory",
+        "authenticated capability discovery uses DAV credential and does not activate Server VM",
+        "original DAV uploads activate the real workspace",
+        "real PNG MP4 M4V MOV WebM OGV previews exclude first-stream attached cover and preserve alpha dimensions hash identity HEAD 304 Range",
+        "source mutation and deletion fence cached previews while standard DAV CRUD Range and method discovery remain usable",
+        "missing runtime decoder dependency returns explicit 503 while original DAV remains usable",
+        "client disconnect reaps a stopped real decoder and concurrent DAV reads remain available"
+      ]
+    },
+    "server": {
+      "report": "protocol/server-d592-final.json",
+      "passed": true,
+      "cleanupPassed": true,
+      "imageId": "sha256:671bcfbd867e6a91b57c9add2db77d431fd4a0281583b969232dc66039b680e3",
+      "mediaDependencies": "3.13.5\n11.1.0\nffmpeg version 7.1.5-0+deb13u1 Copyright (c) 2000-2026 the FFmpeg developers\n\nExit code: 0",
+      "rawSha256": "63942ca37f4f4ae374ff1bb2b7397d2c3fe78c89e55d26c65c3010f075461bad",
+      "checks": [
+        "exact image source label and actual shipped binaries match release inventory",
+        "authenticated capability discovery uses DAV credential and does not activate Server VM",
+        "original DAV uploads activate the real workspace",
+        "real Server guest system decoders pass WebM VINT rotation SAR and reflection regressions",
+        "real PNG MP4 M4V MOV WebM OGV previews exclude first-stream attached cover and preserve alpha dimensions hash identity HEAD 304 Range",
+        "source mutation and deletion fence cached previews while standard DAV CRUD Range and method discovery remain usable",
+        "client disconnect reaps a stopped real decoder and concurrent DAV reads remain available",
+        "DAV key revocation cancels and reaps stopped decoder without damaging original file access",
+        "bundled default seed tag resolves and its ordinary distribution activates from cache"
+      ]
+    }
+  },
+  "defaultSeed": {
+    "source": "nikolaik/python-nodejs@sha256:648f6a6036dca5fc9de144ca54ce7c0af51ac49af790ed67c2ec6a81cbfac3b3",
+    "runtimeVersion": "0.7.14",
+    "archive": "910ac879ffeb9bf976fa7ba966caccac3808cf75877c00e36158681f8c6a68ad"
+  },
+  "resourcePreservationAtStage2Close": {
+    "originalVolumes": 50,
+    "originalVolumesPreserved": true,
+    "originalContainers": 1,
+    "originalContainerIdsPreserved": true,
+    "runningContainers": 0,
+    "temporaryProtocolContainersAndVolumesCleaned": true,
+    "buildOwnerExited": true,
+    "noPendingPublicationTransactions": true,
+    "globalPrune": false
+  },
+  "independentReview": {
+    "reviewer": "phase1_review",
+    "wholeStage2": "approved",
+    "openMandatoryFindings": 0
+  },
+  "rawArtifactSha256": {
+    "final-build-qualification.json": "ac2f82a6c126c5a288867d6693a58a6e7509f229b67aadaf3a3bda73e9a524ab",
+    "stage2-source-check.json": "3ccbd291b3d2ea65347ff2c77edc8507443fc7cf5edf78235ebec22d3479f9e6",
+    "source-proof.json": "bc4cbf047d4cf2cb4dd3e6e55c56beb7bf19e1cbfe0ad084f3d674c637231870",
+    "post-repeat-resource-preservation.json": "953c5e827c3f8f97fa25c04c6dc5608d5135b41a5af6a0c74e6cc47546e7c2ab",
+    "incremental-cache-report.json": "d3eec74dcedea68e24df08f6ca7120a341f038f8525e8c871b7d0460077824e5",
+    "server-repeat-storage-cancel.json": "347c3ced10460633377520f200ffc46a50a06f8fb6393af9f28c1d285bd92c1e"
+  },
+  "limitations": [
+    "The 667.61-second Server repeat was controlled-cancelled for insufficient host data-disk capacity; its separate failure log remains. The 512.36-second retry is a later success, not the original attempt.",
+    "Earlier temporary-directory raw probe files were lost after host recovery; they do not certify the final artifacts.",
+    "Existing Docker layers and preinstalled fixed inputs were reused. Timings do not prove a clean network build or a fully offline build.",
+    "The 344 passing and 8 upstream-ignored SDK tests are eight selected groups, not the entire upstream suite.",
+    "Default distribution cache activation passed; disconnected networking was not asserted.",
+    "This record does not certify Core/Admin integration, Tuck/Pilot UI, ARM/NAS targets, registry publication or production deployment."
+  ],
+  "redactions": [
+    "personal host paths",
+    "temporary account/space/container/volume identifiers",
+    "credentials and private deployment addresses"
+  ],
+  "ociImages": {
+    "standalone": {
+      "manifest": "sha256:1287d98fd62043e9872caf63cd360fc8113f16e4a740d096795b0406dbd148d2",
+      "config": "sha256:36a87cee959e076c2968a01dff2a7629b2beea2b567d514e0b033a068dba53ff",
+      "platform": "linux/amd64",
+      "created": "2026-11-12T02:08:30Z"
+    },
+    "server": {
+      "manifest": "sha256:671bcfbd867e6a91b57c9add2db77d431fd4a0281583b969232dc66039b680e3",
+      "config": "sha256:7aebd2952473134d17675ca3ab032e0f1ed6314ca558a24969823f62e9951253",
+      "platform": "linux/amd64",
+      "created": "2026-11-12T02:08:30Z"
+    }
+  }
+}

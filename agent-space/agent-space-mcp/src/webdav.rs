@@ -2,6 +2,8 @@
 //! the external DAV path, validated condition headers and a streamed body.
 #[path = "../../build-support/dav_path.rs"]
 mod dav_path;
+#[path = "../../build-support/preview_protocol.rs"]
+mod preview_protocol;
 
 use crate::guest_http::{forwarded_headers, ConnectionGuard, GuestIo, Progress, ResponseLease};
 use crate::origins::{browser_request_allowed, dav_username, OriginPolicy};
@@ -11,7 +13,7 @@ use agent_engine::{
     state::{StateStore, UserRecord},
 };
 use axum::{
-    body::Body,
+    body::{Body, HttpBody as _},
     extract::{Request, State},
     http::{header, HeaderMap, HeaderValue, StatusCode},
     response::{IntoResponse, Response},
@@ -24,7 +26,7 @@ use hyper::client::conn::http1;
 use hyper_util::rt::TokioIo;
 use std::{
     io,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, OnceLock},
     time::Duration,
 };
 use tokio_util::sync::CancellationToken;
@@ -40,11 +42,47 @@ pub struct DavState {
 }
 pub fn router(state: DavState) -> Router {
     let prefix = format!("{}/dav", crate::space_prefix(&state.state, "{username}"));
+    let previews = format!(
+        "{}/previews",
+        crate::space_prefix(&state.state, "{username}")
+    );
     Router::new()
         .route(&prefix, any(handle))
         .route(&format!("{prefix}/"), any(handle))
         .route(&format!("{prefix}/{{*path}}"), any(handle))
+        .route(&previews, any(handle))
         .with_state(state)
+}
+
+fn preview_problem(status: StatusCode, code: &'static str) -> Response {
+    let mut response = axum::Json(
+        serde_json::json!({"type":"about:blank","title":code,"status":status.as_u16(),"code":code}),
+    )
+    .into_response();
+    *response.status_mut() = status;
+    response.headers_mut().insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("application/problem+json"),
+    );
+    response
+        .headers_mut()
+        .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    response.headers_mut().insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+    if status == StatusCode::METHOD_NOT_ALLOWED {
+        response.headers_mut().insert(
+            header::ALLOW,
+            HeaderValue::from_static(preview_protocol::ALLOW),
+        );
+    }
+    if status == StatusCode::TOO_MANY_REQUESTS {
+        response
+            .headers_mut()
+            .insert(header::RETRY_AFTER, HeaderValue::from_static("1"));
+    }
+    response
 }
 
 fn unauthorized() -> Response {
@@ -226,7 +264,35 @@ fn normalize_if(value: &str, origin: &url::Url, prefix: &str) -> Result<String, 
     Ok(output.trim_end().to_string())
 }
 
-pub async fn handle(State(mut state): State<DavState>, request: Request) -> Response {
+pub async fn handle(State(state): State<DavState>, request: Request) -> Response {
+    let username = dav_username(request.uri().path()).unwrap_or("workspace");
+    let is_preview =
+        request.uri().path() == format!("{}/previews", crate::space_prefix(&state.state, username));
+    let head = request.method() == http::Method::HEAD;
+    let mut response = handle_inner(State(state), request).await;
+    if is_preview
+        && response.status().is_server_error()
+        && (response.status() != StatusCode::SERVICE_UNAVAILABLE
+            || response.headers().get(header::CONTENT_TYPE)
+                != Some(&HeaderValue::from_static("application/problem+json")))
+    {
+        let mut problem = preview_problem(StatusCode::SERVICE_UNAVAILABLE, "preview_unavailable");
+        for name in ["retry-after", "agent-space-error-code"] {
+            if let Some(value) = response.headers().get(name) {
+                problem
+                    .headers_mut()
+                    .insert(http::HeaderName::from_static(name), value.clone());
+            }
+        }
+        response = problem;
+    }
+    if is_preview && head {
+        *response.body_mut() = Body::empty();
+    }
+    response
+}
+
+async fn handle_inner(State(mut state): State<DavState>, request: Request) -> Response {
     state.origin = match OriginPolicy::new(Some(state.origin.as_str()))
         .unwrap()
         .resolve(&request)
@@ -252,6 +318,76 @@ pub async fn handle(State(mut state): State<DavState>, request: Request) -> Resp
         Err(StatusCode::UNAUTHORIZED) => return unauthorized(),
         Err(code) => return code.into_response(),
     };
+    if request.uri().path() == format!("{}/previews", crate::space_prefix(&state.state, &username))
+    {
+        // This resource has no request-body representation. Reject explicit
+        // framing or known nonempty bodies before activating a VM/helper.
+        if matches!(request.method().as_str(), "OPTIONS" | "GET" | "HEAD")
+            && (request.headers().contains_key(header::TRANSFER_ENCODING)
+                || request
+                    .headers()
+                    .get_all(header::CONTENT_LENGTH)
+                    .iter()
+                    .count()
+                    > 1
+                || request
+                    .headers()
+                    .get(header::CONTENT_LENGTH)
+                    .is_some_and(|value| {
+                        value
+                            .to_str()
+                            .ok()
+                            .and_then(|text| text.parse::<u64>().ok())
+                            != Some(0)
+                    })
+                || request.body().size_hint().lower() > 0)
+        {
+            return preview_problem(StatusCode::BAD_REQUEST, "invalid_preview_request");
+        }
+        match request.method().as_str() {
+            "OPTIONS" => {
+                if request.uri().query().is_some() {
+                    return preview_problem(StatusCode::BAD_REQUEST, "invalid_preview_request");
+                }
+                let credential = user.dav_credential.as_ref().unwrap();
+                if state
+                    .state
+                    .authorize_dav_current(&username, &user.agent_space_id, &credential.key_id)
+                    .is_err()
+                {
+                    return unauthorized();
+                }
+                let mut response = preview_protocol::CAPABILITY.into_response();
+                response.headers_mut().insert(
+                    header::CONTENT_TYPE,
+                    HeaderValue::from_static("application/json"),
+                );
+                response.headers_mut().insert(
+                    header::ALLOW,
+                    HeaderValue::from_static(preview_protocol::ALLOW),
+                );
+                response
+                    .headers_mut()
+                    .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+                response.headers_mut().insert(
+                    header::X_CONTENT_TYPE_OPTIONS,
+                    HeaderValue::from_static("nosniff"),
+                );
+                response.headers_mut().insert(
+                    "agent-space-id",
+                    HeaderValue::from_str(&user.agent_space_id).unwrap(),
+                );
+                return response;
+            }
+            "GET" | "HEAD" => (),
+            _ => {
+                return preview_problem(
+                    StatusCode::METHOD_NOT_ALLOWED,
+                    "preview_method_not_allowed",
+                )
+            }
+        }
+    }
     forward_authenticated(state, user, request, false, changes).await
 }
 
@@ -268,12 +404,32 @@ pub(crate) async fn forward_authenticated(
     let startup_started = std::time::Instant::now();
     let username = user.username.clone();
     let prefix = format!("{}/dav/", crate::space_prefix(&state.state, &username));
-    let path = match resource_uri(&request.uri().to_string(), &state.origin, &prefix) {
-        Ok(path) => path,
-        Err(code) => return code.into_response(),
+    let is_preview = !mcp
+        && request.uri().path()
+            == format!("{}/previews", crate::space_prefix(&state.state, &username));
+    let path = if is_preview {
+        request.uri().path_and_query().unwrap().to_string()
+    } else {
+        match resource_uri(&request.uri().to_string(), &state.origin, &prefix) {
+            Ok(path) => path,
+            Err(code) => return code.into_response(),
+        }
     };
     *request.uri_mut() = path.parse().unwrap();
-    for name in ["destination", "if"] {
+    let preview_permit = if is_preview {
+        static PREVIEWS: OnceLock<Arc<tokio::sync::Semaphore>> = OnceLock::new();
+        match PREVIEWS
+            .get_or_init(|| Arc::new(tokio::sync::Semaphore::new(4)))
+            .clone()
+            .try_acquire_owned()
+        {
+            Ok(permit) => Some(permit),
+            Err(_) => return preview_problem(StatusCode::TOO_MANY_REQUESTS, "preview_busy"),
+        }
+    } else {
+        None
+    };
+    for name in ["destination", "if"].into_iter().filter(|_| !is_preview) {
         if request.headers().get_all(name).iter().count() > 1 {
             return StatusCode::BAD_REQUEST.into_response();
         }
@@ -356,7 +512,7 @@ pub(crate) async fn forward_authenticated(
     };
     let launch = ManagedLaunch::Webdav {
         host_binary: state.helper_binary.clone(),
-        owner: user.agent_space_id,
+        owner: user.agent_space_id.clone(),
         config: serde_json::json!({"schemaVersion":1,"root":"/workspace","prefix":prefix,"lockTimeoutSecs":1800,"ioIdleTimeoutSecs":state.io_idle_timeout.as_secs()}),
     };
     let ready = tokio::select! { biased; _ = cancel.cancelled() => return unauthorized(), result = session.begin_dav_request(launch, state.startup_timeout) => match result { Ok(ready) => ready, Err(error) => { tracing::warn!(%error, elapsed_ms = startup_started.elapsed().as_millis() as u64, "DAV runtime admission or connection failed"); return admission_unavailable(&error); } } };
@@ -450,9 +606,23 @@ pub(crate) async fn forward_authenticated(
     // response cannot supply that guarantee.
     parts.headers.remove("agent-space-error-code");
     parts.headers.remove(header::SET_COOKIE);
+    parts.headers.remove("agent-space-id");
+    if is_preview && (parts.status.is_success() || parts.status == StatusCode::NOT_MODIFIED) {
+        parts.headers.insert(
+            "agent-space-id",
+            HeaderValue::from_str(&user.agent_space_id).unwrap(),
+        );
+    }
     parts.headers.insert(
         header::CONTENT_DISPOSITION,
-        HeaderValue::from_static("attachment"),
+        HeaderValue::from_static(
+            if is_preview && (parts.status.is_success() || parts.status == StatusCode::NOT_MODIFIED)
+            {
+                "inline; filename=\"thumbnail.webp\""
+            } else {
+                "attachment"
+            },
+        ),
     );
     parts.headers.insert(
         header::X_CONTENT_TYPE_OPTIONS,
@@ -466,7 +636,7 @@ pub(crate) async fn forward_authenticated(
         .headers
         .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
     let stream = async_stream::stream! {
-        let (_lease, _connection, _monitor, _lifetime) = (lease, connection, monitor, lifetime);
+        let (_lease, _connection, _monitor, _lifetime, _preview_permit) = (lease, connection, monitor, lifetime, preview_permit);
         let mut incoming = Body::new(body).into_data_stream();
         loop {
             tokio::select! {

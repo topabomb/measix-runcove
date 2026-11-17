@@ -28,6 +28,7 @@ pub fn inputs(workspace: &Path, package: &str) -> io::Result<Vec<PathBuf>> {
     source_files(&workspace.join(package).join("src"), &mut files)?;
     source_files(&workspace.join("build-support"), &mut files)?;
     if package == "webdav" {
+        files.push(workspace.join("webdav/src/preview_worker.py"));
         files.push(workspace.join("vendor/dav-server/Cargo.toml"));
         source_files(&workspace.join("vendor/dav-server/src"), &mut files)?;
     }

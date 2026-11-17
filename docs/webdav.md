@@ -37,7 +37,7 @@ io_idle_timeout_secs = 120
 
 正式部署必须明确配置主服务和DAV各自稳定的HTTPS `public_base_url`，并使用不同主机或端口。公共基址只能是无凭据、路径、query和fragment的origin；DAV的HTTP固定地址仅允许localhost、回环和私有/链路本地IP。固定地址用于规范链接，并声明允许的域名入口；不禁止通过本机/局域网IP访问。空配置只接受localhost、回环、私有及链路本地IP入口，不接受任意域名或公网IP。
 - 唯一外部根为 `/u/{username}/dav/`；用户不能选择其他用户、历史 space 或 guest 根目录。无尾斜杠的根在认证后内部归一化，不对有正文的方法做可能丢失正文的跳转。
-- **实际路由由独立监听器隔离**：主服务监听器没有DAV路由；DAV监听器仅提供DAV和健康检查，不承载管理/MCP、桌面或Web发布。Docker必须分别映射两个容器端口，不能把18932/18933都映射到8932。正式网关按两个公共origin分别转发至对应监听器并保留Host；TLS外部协议由匹配的固定公共origin确定，不信任任意 `X-Forwarded-*`。仅生成两个不同URL不算隔离。
+- **实际路由由独立监听器隔离**：主服务监听器没有DAV/媒体预览路由；DAV监听器提供DAV、可选媒体预览扩展及健康检查，不承载管理/MCP、桌面或Web发布。Docker必须分别映射两个容器端口，不能把18932/18933都映射到8932。正式网关按两个公共origin分别转发至对应监听器并保留Host；TLS外部协议由匹配的固定公共origin确定，不信任任意 `X-Forwarded-*`。仅生成两个不同URL不算隔离。
 - Host语法、重复Host、绝对请求URI与Host不一致会被拒绝。浏览器Origin/Fetch Metadata按当前实际入口检查，Token、用户/空间、路径校验不变。DAV `Destination` 和 `If` 中的绝对资源URL须属于当前请求origin及当前用户DAV根；切换入口后不能继续携带旧入口的绝对目标地址。
 - GET/HEAD 文件响应强制 `Content-Disposition: attachment`、`X-Content-Type-Options: nosniff`、`Content-Security-Policy: sandbox allow-downloads`；不提供 HTML 目录浏览页。不开放跨域 CORS，也不把 DAV 凭证存为浏览器 cookie。防止用户上传 HTML 后在文件服务 origin 执行脚本。
 - 文件传输不使用命令执行总超时。文件请求流式传输，受空间已有磁盘容量、启动超时和 IO 空闲超时约束。IO 超时按实际请求/响应字节进展更新，不因总传输时间较长而终止；等待写入串行锁最多同一 `io_idle_timeout_secs`，超时返回 503 和 Retry-After；只有 PUT 放开正文大小，协议控制类 XML 正文仍限制为 1 MiB。
@@ -62,7 +62,7 @@ PUT 在正文读完前被拒绝时（例如 412 或磁盘写满的 507），help
 
 DAV 请求支持 Basic（username 为路径中的用户名，password 为完整 DAV token）和 Bearer（同一 DAV token）。两者都必须绑定当前启用用户、当前 space 和当前 DAV key；MCP/admin token 不能代用。缺少或无效凭证 401 并提供 Basic challenge，有效凭证访问别的用户 403；在认证失败时不启动 VM。
 
-指定当前相同 token 是无写入/通知的重试，保持原 keyId 和在途请求。指定值已属于其他 DAV 用户或当前 MCP 凭证则返回 409。轮换为不同值、自动生成或撤销 DAV key 取消旧 key 的全部在途 DAV 请求，不影响 MCP 和预览；MCP key 轮换也不改变 DAV key。账号禁用/删除撤销两类凭证及所有入口。取消能终止传输，不能撤回已经完成的文件提交；连接中断后不得自动重放写操作。
+指定当前相同 token 是无写入/通知的重试，保持原 keyId 和在途请求。指定值已属于其他 DAV 用户或当前 MCP 凭证则返回 409。轮换为不同值、自动生成或撤销 DAV key 取消旧 key 的全部在途 DAV 和媒体预览请求，不影响 MCP 和 Web 发布；MCP key 轮换也不改变 DAV key。账号禁用/删除撤销两类凭证及所有入口。取消能终止传输，不能撤回已经完成的文件提交；连接中断后不得自动重放写操作。
 
 ### 已上线静态用户的导入
 
@@ -183,6 +183,88 @@ TCP 写 EOF 使用 H2G BulkFinish 半关闭，继续接收响应；读 EOF 要�
 
 锁、条件头、递归失败遵循 [RFC 4918](https://www.rfc-editor.org/rfc/rfc4918.html) 中相应语义；本文明确收窄的属性、锁持久化和 Depth 能力保留兼容性限制，不因取消剩余客户端实测而扩大承诺。
 
+## 媒体预览扩展 v1
+
+本节是通用媒体预览的唯一 wire 合同。状态为开发中的 v1 合同；实际交付与验证范围由验证记录拥有。它是 DAV 文件服务同入口上的可选 HTTP 扩展，不是 RFC 4918 的标准缩略图方法。原 `/dav/` 下文件、属性、锁、条件请求和范围语义不变；查询参数只在独立预览资源上解释。Core、其他网盘或客户端可独立消费，不要求企业身份、MCP 或管理凭据。
+
+### 地址、能力与身份
+
+| 部署 | 预览资源（沿用 DAV origin） |
+| --- | --- |
+| Server | `/u/{username}/previews` |
+| Standalone | `/previews` |
+
+资源只接受 OPTIONS、GET、HEAD。其他方法返回 405 和 `Allow: OPTIONS, GET, HEAD`。这三个方法不携带请求正文：允许 `Content-Length: 0`，已认证后在 VM/helper 准入前拒绝正 Content-Length、Transfer-Encoding 或已知非空正文，返回 400 `invalid_preview_request`；HEAD 错误同样没有正文。OPTIONS 不接受 query；GET/HEAD 的 query 只接受下表参数，重复、未知或非法值返回 400。相对路径作为 query 值仅编码一次。
+
+| 参数 | 约定 |
+| --- | --- |
+| `path` | 必填，非空的工作区相对普通文件路径；沿用 DAV 根、保留暂存、symlink/特殊文件/挂载越界规则 |
+| `size` | 可选十进制整数，只允许 128、256、512，默认 256；表示输出最长边上限 |
+| `expectedEtag` | 必填，单个强源 ETag，含 HTTP 引号；不得使用弱 ETag、星号或列表 |
+
+所有方法先沿用当前 DAV Basic/Bearer 认证、账号/空间/key 和浏览器来源校验。MCP/admin token 不能代替 DAV token；认证失败不能唤醒空间。OPTIONS 在 Host/Standalone 控制面完成，不启动 VM、helper、解码或文件读取；成功响应为 200、`application/json`、`Cache-Control: no-store`、上述 Allow 及 `Agent-Space-Id: <当前空间ID>`，正文精确必填如下（允许未来增加响应字段）：
+
+```json
+{"schemaVersion":1,"supported":true,"sizes":[128,256,512],"contentType":"image/webp","mediaKinds":["IMAGE","VIDEO"]}
+```
+
+supported 表示本入口实现该协议，不表示当前空间可激活、依赖可用或所有编码可解码。GET/HEAD 复用现有 DAV 活动租约、helper 实例和撤销/断开/shutdown 取消；不经 bash 队列、不另建 VM/端口池/常驻任务服务。Server 和 Standalone 使用相同生成实现，文件身份分别沿用 VM root 和容器 UID/GID1001。成功 GET/HEAD/304 同样返回当前 Agent-Space-Id；它由认证入口生成，guest 不能冒充其他空间。
+
+### 生成和表示
+
+- 支持 JPEG、PNG（含 APNG）、WebP、GIF、BMP，以及 MP4/M4V/MOV、WebM、OGV 容器中可解码的视频流；以受限内容探测为准，扩展名不授予解码权限。HTML/SVG、播放列表、外部引用和网络输入不受支持。视频选第一条真实视频流，排除附带封面流；实际编码缺失按不支持处理。
+- 图片动画只取第一帧，处理 EXIF 方向；视频按旋转/显示宽高比得到正向画面，取帧秒数为 `min(1, duration * 0.1)`。缺失/无效时长或没有可用帧属于解码失败，不扫描整段寻找封面。
+- 输出固定为 WebP，质量 85，透明通道保留；等比例缩到最长边不超过 size，不放大原图，宽高至少 1。最多 1 MiB 输出，不允许把原文件当作缩略图返回。视频封面不改变原文件，不提供转码播放。
+- 文件先通过受限根打开为固定只读句柄，再探测/解码；编码器只能读取该句柄，不能根据用户参数访问其他文件、协议、URL、设备或执行命令。生成前后核对句柄元数据及当前路径指向的源版本，变化即丢弃产物并返回 412。源 ETag 沿原 DAV 元数据语义，不承诺任意并发 bash 原地写入的内容快照。
+- 图片源最大 64 MiB，解码宽高乘积最大 3200 万像素；视频不按完整文件字节数拒绝，但单帧同样受像素上限限制。先检查尺寸再分配像素。每次生成总期限 10 秒（不含 VM 启动）、CPU 8 秒、解码子进程地址空间 768 MiB，捕获的探测输出和 stderr 分别最多 64 KiB，图像输出最多 1 MiB。到期返回 `preview_timeout` 并终止受限子进程组；清理延迟超过 1 秒时记录不含路径/凭据/解码器原始错误的诊断，由原生成任务继续持有并回收后代，完成前仍占用唯一生成槽，新请求返回 `preview_busy`。不将清理所有权交给 HTTP 等待者；迟到结果不入缓存。
+- Host 每进程至多 4 个预览读取租约；每空间至多 1 个不同键的实际生成任务。相同键请求合并，单个等待者取消不取消其他仍有效等待者，无有效等待者后取消任务；超出容量不建立无界队列，返回 429 和 `Retry-After: 1`。预览不持有普通文件修改预约，不占用 bash 队列；原 DAV 文件流的准入与资源预算独立。
+
+GET 200 返回 `Content-Type: image/webp`、`Content-Disposition: inline; filename="thumbnail.webp"`、准确 Content-Length、`X-Content-Type-Options: nosniff` 和 `Cache-Control: no-store`。表示 ETag 为输出字节的 SHA-256 强 ETag，与 expectedEtag 的源版本分别使用；提供 `Preview-Source-ETag` 以确认对应源版本。HEAD 执行相同授权/版本/生成流程并返回相同表示头，但没有正文。Range 在此小资源上忽略，不提供 206。
+
+在当前授权、源存在及 expectedEtag 核对成功后，按派生表示处理标准 If-Match、If-None-Match（分别强/弱比较），可能返回 412 或 304；源版本不符优先返回 412，不能用旧派生 ETag 取得 304。304 不带正文；其他 If-* 不参与源版本固定。
+
+缓存仅属于 helper 当前实例内存，最多 128 项且累计编码字节最多 32 MiB，10 分钟未使用过期，按 LRU 回收；空间/helper 停止即丢弃，不保存源文件或凭据，不出现在 DAV 列表和用户卷。键包含本空间/实例、规范源路径、源 ETag、size 和算法版本。命中前重新打开并核对当前源和授权；删除/替换/修改源不能继续得到旧图。缓存失败不改变用户文件或文件操作结果。
+
+示例（Server；路径 query 编码一次，示例 ETag 取自同账号 DAV PROPFIND/HEAD）：
+
+```http
+GET /u/alice/previews?path=media%2Fclip.mp4&size=256&expectedEtag=%22source-version%22 HTTP/1.1
+Authorization: Bearer <DAV_TOKEN>
+
+HTTP/1.1 200 OK
+Agent-Space-Id: spc_550e8400-e29b-41d4-a716-446655440000
+Content-Type: image/webp
+Content-Disposition: inline; filename="thumbnail.webp"
+Preview-Source-ETag: "source-version"
+ETag: "<sha256-of-returned-webp>"
+Content-Length: <actual-webp-length>
+Cache-Control: no-store
+X-Content-Type-Options: nosniff
+
+<WebP binary>
+```
+
+### 错误和兼容
+
+预览错误为 `application/problem+json`，含 `type: "about:blank"`、title、status、code，不包含解码器原始错误、内部路径、URL 或秘密。HEAD 只有状态和头。原 DAV 请求仍使用其原协议响应，不改成预览 JSON。
+
+| HTTP | code / 含义 |
+| --- | --- |
+| 400 | `invalid_preview_request`：参数或条件格式错误 |
+| 401/403 | 沿原 DAV 认证/目标/路径/来源拒绝；不泄露其他空间信息 |
+| 404 | `file_not_found`：当前授权根内源文件不存在 |
+| 405 | `preview_method_not_allowed`，必须有 Allow |
+| 412 | `file_version_conflict`：源版本变化，或派生表示 If-Match 不满足 |
+| 413 | `preview_source_limit`：图片字节、像素或受支持的解码资源上限超限 |
+| 415 | `preview_unsupported_media`：媒体类型/容器/编码不支持 |
+| 422 | `preview_decode_failed`：声明支持但损坏、无效时长或无有效画面 |
+| 429 | `preview_busy`：并发容量已满，Retry-After 为 1 秒 |
+| 503 | `preview_unavailable`、`preview_dependency_unavailable`、`preview_timeout`：运行/依赖/生成期限；取消导致断开时不补写 JSON |
+
+旧服务可能对预览资源的 OPTIONS 能力查询返回 404/405。消费者只能对该方法、且对应 DAV 根的已认证读取成功后将结果解释为不支持扩展；GET/HEAD 的源文件 404 不参与能力判断。401/403、网络失败、错误 MIME、错误 JSON 或未知协议版本均是明确失败，不能伪装为不支持或空目录。目录列举不产生缩略图任务。缩略图失败只退回文件图标或客户端原有处理，不能使文件服务整体不可用。
+
+部署镜像负责提供固定可执行的媒体依赖（`/usr/bin/python3`、系统 Pillow、ffmpeg/ffprobe）并将版本收入镜像依赖清单；worker 内嵌于 helper 并参与其内容身份，不加载用户环境或工作区 Python 模块。自定义旧镜像缺失依赖时预览明确失败，原 DAV 功能继续可用。原协议的 OPTIONS/DAV/Allow 必须准确反映当前支持方法与扩展，405 必须带 Allow；不声明未开放的部分更新扩展。有限深度、受限属性和内存锁保留本页已记录的边界，不宣称完成所有 WebDAV 扩展。
+
 ## 7. 实现位置
 
 `state.rs`、`workspace_service.rs` 和 `admin_api.rs` 负责凭证与管理合同；`session.rs` 和 engine 负责运行实例及活动租约；`agent-space-mcp/src/webdav.rs` 负责 Host 流式代理、认证、取消与 URI 限制。
@@ -275,7 +357,7 @@ python3 agent-space/docker/verify-webdav-clients.py \
 | 文件锁及在线编辑 | 支持当前 helper 内 LOCK/UNLOCK/刷新，最长 1800 秒；helper/VM 重启丢失，MCP/bash 不受约束。不承诺 Office 协作或跨入口互斥 |
 | 剩余空间显示 | PROPFIND 支持 DAV quota-used-bytes/available-bytes；根与子路径共享真实工作卷统计，包含暂存占用，排除文件系统保留块；不预留未来上传空间 |
 | 并发写入 | 同路径/父子路径修改互斥，源和目标一次预约；无关路径并行。冲突等待有界且可取消；读取与锁刷新可并行，不能约束任意 Agent/bash 写入 |
-| 网盘增值功能 | 无回收站、版本历史、分享链接、跨用户共享/细粒度 ACL、全文搜索、缩略图/转码、秒传、专有网盘 API |
+| 网盘增值功能 | 无回收站、版本历史、分享链接、跨用户共享/细粒度 ACL、全文搜索、转码播放、秒传、专有网盘 API；独立缩略图合同见「媒体预览扩展 v1」，交付状态以验证记录为准 |
 | 文件类型与在线性 | 不提供 symlink/特殊文件/工作区外路径；访问会按需唤醒 VM，首次请求有启动等待，VM 无法激活时返回错误，不能离线读取 |
 
 增量同步是独立的 [RFC 6578 扩展](https://www.rfc-editor.org/rfc/rfc6578.html)，Nextcloud 的可恢复分块上传也有[专门接口](https://docs.nextcloud.com/server/stable/developer_manual/client_apis/WebDAV/chunking.html)。支持基本 DAV 文件方法不代表实现这些扩展，也不代表 Nextcloud 等品牌客户端的专有登录和功能可直接使用。

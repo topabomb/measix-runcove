@@ -188,6 +188,65 @@ fn setup() -> (tempfile::TempDir, Service) {
     .unwrap();
     (dir, service)
 }
+
+#[tokio::test]
+async fn options_advertises_only_enabled_extensions() {
+    let (_, service) = setup();
+    let (status, headers, _) = request(&service, "OPTIONS", "", &[], "").await;
+    assert_eq!(status, StatusCode::OK);
+    let classes = headers["dav"]
+        .to_str()
+        .unwrap()
+        .split(',')
+        .map(str::trim)
+        .collect::<Vec<_>>();
+    assert!(classes.contains(&"1") && classes.contains(&"2"));
+    assert!(
+        !classes.contains(&"sabredav-partialupdate"),
+        "PATCH is disabled at this resource"
+    );
+}
+
+#[tokio::test]
+async fn options_lists_supported_property_updates() {
+    let (dir, service) = setup();
+    fs::write(dir.path().join("report.txt"), "old").unwrap();
+    for path in ["", "report.txt"] {
+        let (status, headers, _) = request(&service, "OPTIONS", path, &[], "").await;
+        assert_eq!(status, StatusCode::OK);
+        let allow = headers["allow"]
+            .to_str()
+            .unwrap()
+            .split(',')
+            .map(str::trim)
+            .collect::<Vec<_>>();
+        assert!(
+            allow.contains(&"PROPPATCH"),
+            "property updates are implemented"
+        );
+        assert!(!allow.contains(&"PATCH"));
+    }
+}
+
+#[tokio::test]
+async fn unsupported_methods_include_allow_without_modifying_file() {
+    let (dir, service) = setup();
+    fs::write(dir.path().join("report.txt"), "old").unwrap();
+    for method in ["PATCH", "TRACE"] {
+        let (status, headers, _) = request(&service, method, "report.txt", &[], "new").await;
+        assert_eq!(status, StatusCode::METHOD_NOT_ALLOWED);
+        let allow = headers
+            .get("allow")
+            .expect("405 requires Allow")
+            .to_str()
+            .unwrap();
+        let methods = allow.split(',').map(str::trim).collect::<Vec<_>>();
+        assert!(methods.contains(&"GET") && methods.contains(&"PROPPATCH"));
+        assert!(!methods.contains(&"PATCH") && !methods.contains(&"TRACE"));
+        assert_eq!(fs::read(dir.path().join("report.txt")).unwrap(), b"old");
+    }
+}
+
 async fn request(
     service: &Service,
     method: &str,
@@ -214,6 +273,376 @@ async fn request(
         parts.headers,
         body.collect().await.unwrap().to_bytes(),
     )
+}
+
+async fn preview_request(
+    service: &Service,
+    method: &str,
+    query: &str,
+    headers: &[(&str, &str)],
+) -> (StatusCode, http::HeaderMap, Bytes) {
+    let mut request = Request::builder()
+        .method(method)
+        .uri(format!("/u/alice/previews?{query}"));
+    for (name, value) in headers {
+        request = request.header(*name, *value);
+    }
+    let response = service
+        .handle(
+            request.body(Full::new(Bytes::new())).unwrap(),
+            CancellationToken::new(),
+        )
+        .await;
+    let (parts, body) = response.into_parts();
+    (
+        parts.status,
+        parts.headers,
+        body.collect().await.unwrap().to_bytes(),
+    )
+}
+
+#[tokio::test]
+async fn preview_resource_is_independent_and_requires_strong_source_version() {
+    let (dir, service) = setup();
+    fs::write(dir.path().join("previews"), "ordinary user file").unwrap();
+    assert_eq!(
+        request(&service, "GET", "previews", &[], "").await.2,
+        "ordinary user file"
+    );
+    for query in [
+        "path=previews",
+        "path=previews&expectedEtag=W%2F%22v1%22",
+        "path=previews&size=129&expectedEtag=%22v1%22",
+        "path=..%2Foutside&expectedEtag=%22v1%22",
+        "path=previews&path=other&expectedEtag=%22v1%22",
+    ] {
+        assert_eq!(
+            preview_request(&service, "GET", query, &[]).await.0,
+            StatusCode::BAD_REQUEST
+        );
+    }
+}
+
+#[tokio::test]
+async fn preview_invalid_filesystem_path_has_invalid_request_problem() {
+    let (_dir, service) = setup();
+    let (status, _, body) = preview_request(
+        &service,
+        "GET",
+        &format!("path={}&expectedEtag=%22source%22", "a".repeat(256)),
+        &[],
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        serde_json::from_slice::<serde_json::Value>(&body).unwrap()["code"],
+        "invalid_preview_request"
+    );
+}
+
+#[tokio::test]
+async fn preview_does_not_decode_unsupported_sources_or_cross_symlinks() {
+    let (dir, service) = setup();
+    fs::write(
+        dir.path().join("unsafe.svg"),
+        "<svg xmlns='http://www.w3.org/2000/svg'/>",
+    )
+    .unwrap();
+    let (_, headers, _) = request(&service, "HEAD", "unsafe.svg", &[], "").await;
+    let encoded = percent_encoding::utf8_percent_encode(
+        headers["etag"].to_str().unwrap(),
+        percent_encoding::NON_ALPHANUMERIC,
+    );
+    let query = format!("path=unsafe.svg&expectedEtag={encoded}");
+    let (status, _, body) = preview_request(&service, "GET", &query, &[]).await;
+    assert_eq!(status, StatusCode::UNSUPPORTED_MEDIA_TYPE);
+    assert_eq!(
+        serde_json::from_slice::<serde_json::Value>(&body).unwrap()["code"],
+        "preview_unsupported_media"
+    );
+    std::os::unix::fs::symlink("/etc/passwd", dir.path().join("outside.png")).unwrap();
+    assert_eq!(
+        preview_request(
+            &service,
+            "GET",
+            "path=outside.png&expectedEtag=%22v1%22",
+            &[]
+        )
+        .await
+        .0,
+        StatusCode::FORBIDDEN
+    );
+}
+
+#[tokio::test]
+async fn image_preview_preserves_alpha_bounds_and_source_conditional_identity() {
+    use sha2::{Digest, Sha256};
+    let (dir, service) = setup();
+    let source = dir.path().join("image.png");
+    assert!(std::process::Command::new("/usr/bin/python3").args([
+        "-c", "from PIL import Image; import sys; Image.new('RGBA',(320,80),(240,10,20,90)).save(sys.argv[1])",
+    ]).arg(&source).status().unwrap().success());
+    let (_, source_headers, _) = request(&service, "HEAD", "image.png", &[], "").await;
+    let source_etag = source_headers["etag"].to_str().unwrap();
+    let encoded =
+        percent_encoding::utf8_percent_encode(source_etag, percent_encoding::NON_ALPHANUMERIC);
+    let query = format!("path=image.png&size=128&expectedEtag={encoded}");
+    let (status, headers, bytes) = preview_request(&service, "GET", &query, &[]).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(headers["content-type"], "image/webp");
+    assert_eq!(headers["preview-source-etag"], source_etag);
+    assert_eq!(
+        headers["etag"].to_str().unwrap(),
+        format!("\"{:x}\"", Sha256::digest(&bytes))
+    );
+    assert_eq!(
+        headers["content-length"]
+            .to_str()
+            .unwrap()
+            .parse::<usize>()
+            .unwrap(),
+        bytes.len()
+    );
+    let output = dir.path().join("result.webp");
+    fs::write(&output, &bytes).unwrap();
+    assert!(std::process::Command::new("/usr/bin/python3").args([
+        "-c", "from PIL import Image; import sys; im=Image.open(sys.argv[1]); assert im.size==(128,32); assert im.convert('RGBA').getpixel((0,0))[3]==90",
+    ]).arg(output).status().unwrap().success());
+    let derived = headers["etag"].to_str().unwrap();
+    let (status, _, body) =
+        preview_request(&service, "GET", &query, &[("if-none-match", derived)]).await;
+    assert_eq!(status, StatusCode::NOT_MODIFIED);
+    assert!(body.is_empty());
+    let (status, head, body) = preview_request(&service, "HEAD", &query, &[]).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.is_empty());
+    assert_eq!(head["content-length"], headers["content-length"]);
+    assert_eq!(
+        preview_request(&service, "GET", &query, &[("range", "bytes=0-1")])
+            .await
+            .2,
+        bytes
+    );
+    fs::write(&source, "changed source").unwrap();
+    assert_eq!(
+        preview_request(&service, "GET", &query, &[("if-none-match", derived)])
+            .await
+            .0,
+        StatusCode::PRECONDITION_FAILED
+    );
+    fs::remove_file(&source).unwrap();
+    assert_eq!(
+        preview_request(&service, "GET", &query, &[]).await.0,
+        StatusCode::NOT_FOUND
+    );
+}
+
+#[tokio::test]
+async fn preview_formats_orientation_animation_and_pixel_limits() {
+    let (dir, service) = setup();
+    let script = r#"from PIL import Image
+import pathlib,sys,struct,zlib
+root=pathlib.Path(sys.argv[1]); red=Image.new('RGB',(32,16),'red'); blue=Image.new('RGB',(32,16),'blue')
+for extension in ['jpg','png','webp','gif','bmp']: red.save(root/('sample.'+extension))
+exif=red.getexif(); exif[274]=6; red.save(root/'oriented.jpg',exif=exif)
+for extension in ['gif','png','webp']: red.save(root/('animated.'+extension),save_all=True,append_images=[blue],duration=100,loop=0)
+raw=bytearray((root/'sample.png').read_bytes()); raw[16:24]=struct.pack('>II',8192,8192); raw[29:33]=struct.pack('>I',zlib.crc32(raw[12:29])); (root/'huge.png').write_bytes(raw)
+"#;
+    assert!(std::process::Command::new("/usr/bin/python3")
+        .args(["-c", script])
+        .arg(dir.path())
+        .status()
+        .unwrap()
+        .success());
+    for name in [
+        "sample.jpg",
+        "sample.png",
+        "sample.webp",
+        "sample.gif",
+        "sample.bmp",
+        "oriented.jpg",
+        "animated.gif",
+        "animated.png",
+        "animated.webp",
+    ] {
+        let (_, headers, _) = request(&service, "HEAD", name, &[], "").await;
+        let encoded = percent_encoding::utf8_percent_encode(
+            headers["etag"].to_str().unwrap(),
+            percent_encoding::NON_ALPHANUMERIC,
+        );
+        let (status, _, body) = preview_request(
+            &service,
+            "GET",
+            &format!("path={name}&size=128&expectedEtag={encoded}"),
+            &[],
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "{name}: {body:?}");
+        let output = dir.path().join("assert.webp");
+        fs::write(&output, body).unwrap();
+        let check = "from PIL import Image; import sys; im=Image.open(sys.argv[1]); assert im.size==((16,32) if sys.argv[2]=='oriented.jpg' else (32,16)); assert im.n_frames==1; pixel=im.convert('RGB').getpixel((0,0)); assert pixel[0]>200 and pixel[2]<40";
+        assert!(std::process::Command::new("/usr/bin/python3")
+            .args(["-c", check])
+            .arg(output)
+            .arg(name)
+            .status()
+            .unwrap()
+            .success());
+    }
+    let (_, headers, _) = request(&service, "HEAD", "huge.png", &[], "").await;
+    let encoded = percent_encoding::utf8_percent_encode(
+        headers["etag"].to_str().unwrap(),
+        percent_encoding::NON_ALPHANUMERIC,
+    );
+    assert_eq!(
+        preview_request(
+            &service,
+            "GET",
+            &format!("path=huge.png&expectedEtag={encoded}"),
+            &[]
+        )
+        .await
+        .0,
+        StatusCode::PAYLOAD_TOO_LARGE
+    );
+}
+
+#[tokio::test]
+async fn video_preview_seeks_one_frame_without_reading_full_four_gib_source() {
+    let (dir, service) = setup();
+    let movie = dir.path().join("clip.mp4");
+    let status = std::process::Command::new("/usr/bin/ffmpeg")
+        .args([
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=c=black:s=320x180:r=10:d=0.1",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=c=red:s=320x180:r=10:d=1.9",
+            "-filter_complex",
+            "[0:v][1:v]concat=n=2:v=1:a=0",
+            "-c:v",
+            "libx264",
+            "-threads",
+            "1",
+            "-pix_fmt",
+            "yuv420p",
+            "-movflags",
+            "+faststart",
+        ])
+        .arg(&movie)
+        .status()
+        .unwrap();
+    assert!(status.success());
+    fs::OpenOptions::new()
+        .write(true)
+        .open(&movie)
+        .unwrap()
+        .set_len(4 * 1024 * 1024 * 1024)
+        .unwrap();
+    let (_, headers, _) = request(&service, "HEAD", "clip.mp4", &[], "").await;
+    let encoded = percent_encoding::utf8_percent_encode(
+        headers["etag"].to_str().unwrap(),
+        percent_encoding::NON_ALPHANUMERIC,
+    );
+    let (status, _, body) = preview_request(
+        &service,
+        "GET",
+        &format!("path=clip.mp4&size=128&expectedEtag={encoded}"),
+        &[],
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{body:?}");
+    let output = dir.path().join("movie.webp");
+    fs::write(&output, body).unwrap();
+    assert!(std::process::Command::new("/usr/bin/python3").args([
+        "-c","from PIL import Image; import sys; im=Image.open(sys.argv[1]); assert im.size==(128,72); rgb=im.convert('RGB').getpixel((64,36)); assert rgb[0]>200 and rgb[1]<40",
+    ]).arg(output).status().unwrap().success());
+}
+
+#[tokio::test]
+async fn preview_coalesces_waiters_without_cancelling_the_other_reader() {
+    let (dir, service) = setup();
+    assert!(std::process::Command::new("/usr/bin/python3")
+        .args([
+            "-c",
+            "from PIL import Image; import sys; Image.new('RGB',(64,32),'red').save(sys.argv[1])"
+        ])
+        .arg(dir.path().join("image.png"))
+        .status()
+        .unwrap()
+        .success());
+    let (_, headers, _) = request(&service, "HEAD", "image.png", &[], "").await;
+    let encoded = percent_encoding::utf8_percent_encode(
+        headers["etag"].to_str().unwrap(),
+        percent_encoding::NON_ALPHANUMERIC,
+    );
+    let uri = format!("/u/alice/previews?path=image.png&size=128&expectedEtag={encoded}");
+    let cancelled = CancellationToken::new();
+    let first = service.handle(
+        Request::builder()
+            .uri(&uri)
+            .body(Full::new(Bytes::new()))
+            .unwrap(),
+        cancelled.clone(),
+    );
+    tokio::pin!(first);
+    assert!(futures::poll!(&mut first).is_pending());
+    let second = service.handle(
+        Request::builder()
+            .uri(&uri)
+            .body(Full::new(Bytes::new()))
+            .unwrap(),
+        CancellationToken::new(),
+    );
+    tokio::pin!(second);
+    assert!(futures::poll!(&mut second).is_pending());
+    let busy = preview_request(
+        &service,
+        "GET",
+        &format!("path=image.png&size=256&expectedEtag={encoded}"),
+        &[],
+    )
+    .await;
+    assert_eq!(busy.0, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(busy.1["retry-after"], "1");
+    cancelled.cancel();
+    assert_eq!(first.await.status(), StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(second.await.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn preview_discards_source_removed_during_generation() {
+    let (dir, service) = setup();
+    assert!(std::process::Command::new("/usr/bin/python3")
+        .args([
+            "-c",
+            "from PIL import Image; import sys; Image.new('RGB',(64,32),'red').save(sys.argv[1])"
+        ])
+        .arg(dir.path().join("image.png"))
+        .status()
+        .unwrap()
+        .success());
+    let (_, headers, _) = request(&service, "HEAD", "image.png", &[], "").await;
+    let encoded = percent_encoding::utf8_percent_encode(
+        headers["etag"].to_str().unwrap(),
+        percent_encoding::NON_ALPHANUMERIC,
+    );
+    let request = Request::builder()
+        .uri(format!(
+            "/u/alice/previews?path=image.png&expectedEtag={encoded}"
+        ))
+        .body(Full::new(Bytes::new()))
+        .unwrap();
+    let preview = service.handle(request, CancellationToken::new());
+    tokio::pin!(preview);
+    assert!(futures::poll!(&mut preview).is_pending());
+    fs::remove_file(dir.path().join("image.png")).unwrap();
+    assert_eq!(preview.await.status(), StatusCode::PRECONDITION_FAILED);
 }
 fn staged(dir: &std::path::Path) -> usize {
     fs::read_dir(dir.join(".agent-space/uploads/instance_test"))
