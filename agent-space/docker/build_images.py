@@ -19,7 +19,6 @@ import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / 'docker/.build'
-SEED = 'nikolaik/python-nodejs@sha256:648f6a6036dca5fc9de144ca54ce7c0af51ac49af790ed67c2ec6a81cbfac3b3'
 
 
 def run(arguments, capture=False):
@@ -182,16 +181,31 @@ def require_image(name):
     return info
 
 
-def input_digest(project=ROOT, *, epoch):
+def read_base_images(project):
+    images = json.loads((project / 'docker/base-images.lock.json').read_text())
+    keys = {'pythonNode', 'rustBuilder', 'serverUbuntu'}
+    if not isinstance(images, dict) or images.keys() != keys | {'workspaceSourceDateEpoch'}:
+        raise ValueError('base-images.lock.json must define the three build images and the Workspace epoch')
+    for key in sorted(keys):
+        reference = images[key]
+        if not isinstance(reference, str) or not re.fullmatch(r'[a-z0-9][a-z0-9./:_-]*@sha256:[0-9a-f]{64}', reference):
+            raise ValueError('expected an immutable image reference in base-images.lock.json: ' + key)
+    epoch = images['workspaceSourceDateEpoch']
+    if type(epoch) is not int or not 0 <= epoch <= min(int(time.time()), 253402300799):
+        raise ValueError('invalid Workspace epoch in base-images.lock.json')
+    return images
+
+
+def input_digest(project, *, base_image, epoch):
     # COPY trees are recursive; repository-relative paths make equal checkouts
     # share an identity. Ignore policy and exporter are themselves inputs.
     paths = [project / '.dockerignore', project / 'docker/build_images.py']
     for directory in ('images/desktop', 'guest/desktop'):
         paths.extend(path for path in (project / directory).rglob('*') if path.is_file())
     digest = hashlib.sha256()
-    # BuildKit clamps output metadata to this epoch. It is an actual Workspace
-    # input even when all copied source bytes are unchanged across commits.
-    digest.update(b'runcove-workspace-epoch-v1\0'+str(epoch).encode('ascii')+b'\0')
+    # Only the selected base image and Workspace epoch affect this target.
+    # Changing application revisions or other base images can reuse its cache.
+    digest.update(b'runcove-workspace-base-v2\0' + base_image.encode('ascii') + b'\0' + str(epoch).encode('ascii') + b'\0')
     for path in sorted(set(paths)):
         relative = path.relative_to(project)
         if (any(part in ('node_modules', '__pycache__', '.git', '.secrets') for part in relative.parts)
@@ -233,13 +247,14 @@ def build_id(dockerfile, directory, arguments=(), project=ROOT, *, epoch):
     raise ValueError('built image is not available in the local Docker store')
 
 
-def workspace(output, project=ROOT, *, epoch):
+def workspace(output, project, *, base_image, epoch):
     output.mkdir(parents=True, exist_ok=True)
     browser = json.loads(run([sys.executable, project/'images/desktop/install_browser.py', 'build-args',
                               '--lock', project/'images/desktop/chromium-download.lock.json'], capture=True))
-    arguments = ['--build-arg', 'CHROMIUM_URL='+browser['CHROMIUM_URL'],
+    arguments = ['--build-arg', 'PYTHON_NODE_IMAGE='+base_image,
+                 '--build-arg', 'CHROMIUM_URL='+browser['CHROMIUM_URL'],
                  '--build-arg', 'CHROMIUM_SHA256='+browser['CHROMIUM_SHA256']]
-    source = input_digest(project, epoch=epoch)
+    source = input_digest(project, base_image=base_image, epoch=epoch)
     try:
         iid = (output / 'workspace.image-id').read_text().strip()
         info = image_info(iid)
@@ -331,7 +346,7 @@ def runtime_inputs():
     return version, binary, libraries[0]
 
 
-def prepare_runtime(version, binary, library):
+def prepare_runtime(version, binary, library, *, seed):
     images, libs = CACHE / 'images', CACHE / 'libs'
     images.mkdir(parents=True, exist_ok=True)
     libs.mkdir(parents=True, exist_ok=True)
@@ -347,16 +362,16 @@ def prepare_runtime(version, binary, library):
                 stale.unlink()
         try:
             recorded = json.loads((images / 'default.identity.json').read_text())
-            if recorded == {'source': SEED, 'runtimeVersion': version, 'archive': sha256(images / 'default.tar.gz')}:
+            if recorded == {'source': seed, 'runtimeVersion': version, 'archive': sha256(images / 'default.tar.gz')}:
                 return
         except (OSError, ValueError, KeyError):
             pass
         # A clean MSB_HOME need not have this seed materialized. The CLI's
         # default pull policy reuses an existing immutable digest without -f.
-        run([binary, 'image', 'pull', SEED, '-q'])
-        run([binary, 'image', 'save', SEED, '-o', stage / 'default.tar', '-q'])
+        run([binary, 'image', 'pull', seed, '-q'])
+        run([binary, 'image', 'save', seed, '-o', stage / 'default.tar', '-q'])
         gzip_file(stage / 'default.tar', stage / 'default.tar.gz')
-        (stage / 'default.identity.json').write_text(json.dumps({'source': SEED, 'runtimeVersion': version, 'archive': sha256(stage / 'default.tar.gz')}) + '\n')
+        (stage / 'default.identity.json').write_text(json.dumps({'source': seed, 'runtimeVersion': version, 'archive': sha256(stage / 'default.tar.gz')}) + '\n')
         publish_group({images / name: stage / name for name in ('default.tar.gz', 'default.identity.json')})
 
 
@@ -411,12 +426,13 @@ def main():
         recover_publications(output / '.publications', output)
         project = Path(temporary_context) / 'source'
         snapshot_source(project)
-        iid = workspace(output, project, epoch=epoch)
+        images = read_base_images(project)
+        iid = workspace(output, project, base_image=images['pythonNode'], epoch=images['workspaceSourceDateEpoch'])
         if target == 'workspace':
             print('[desktop] built ' + iid)
             return
         if runtime:
-            prepare_runtime(*runtime)
+            prepare_runtime(*runtime, seed=images['pythonNode'])
             config = ROOT / 'docker/configs/config.toml'
             if not config.exists():
                 config.parent.mkdir(parents=True, exist_ok=True)
@@ -435,13 +451,16 @@ def main():
         build_identity = hashlib.sha256(json.dumps(build_inputs, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
         version = 'runcove-' + build_identity[:16]
         tag = 'runcove-' + target + ':' + version
-        arguments = ['--build-arg', 'APP_VERSION=' + version, '--build-arg', 'SOURCE_REVISION=' + revision, '--build-arg', 'SOURCE_DIGEST=' + source]
+        arguments = ['--build-arg', 'APP_VERSION=' + version, '--build-arg', 'SOURCE_REVISION=' + revision,
+                     '--build-arg', 'SOURCE_DIGEST=' + source, '--build-arg', 'PYTHON_NODE_IMAGE=' + images['pythonNode'],
+                     '--build-arg', 'RUST_BUILDER_IMAGE=' + images['rustBuilder']]
         if target == 'standalone':
             base = 'runcove-workspace:sha256-' + iid.removeprefix('sha256:')
             publish_tags(iid, [base], [base])
             arguments += ['--build-arg', 'WORKSPACE_IMAGE=' + base]
         else:
-            arguments += ['--build-arg', 'MSB_LIB_VERSION=' + runtime[0]]
+            arguments += ['--build-arg', 'SERVER_UBUNTU_IMAGE=' + images['serverUbuntu'],
+                          '--build-arg', 'MSB_LIB_VERSION=' + runtime[0]]
         dockerfile = project / 'docker' / ('Dockerfile.standalone' if target == 'standalone' else 'Dockerfile')
         with tempfile.TemporaryDirectory(prefix=target + '-', dir=CACHE) as temporary:
             candidate = build_id(dockerfile, Path(temporary), arguments, project, epoch=epoch)

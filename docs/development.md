@@ -72,7 +72,7 @@ python3 docker/test_verify_previews.py
 
 ## 镜像资格与离线包
 
-Server 使用 `bash docker/build.sh`，Standalone 使用 `bash docker/build-standalone.sh`。两者复用 Workspace 依赖来源，MSB 只进入 Server。不要手工改生成的 Workspace lock；构建产物记录 Git 基线及实际输入摘要，未提交构建不能只凭 revision 识别源码。
+Server 使用 `bash docker/build.sh`，Standalone 使用 `bash docker/build-standalone.sh`。两个入口自动准备 Workspace，单独构建 Workspace 时用 `bash images/desktop/build.sh`。基础镜像摘要集中在 [`docker/base-images.lock.json`](../agent-space/docker/base-images.lock.json)，Workspace 的输入和时间基准见[部署指南](deployment.md#1-构建)。仅变更 Server Ubuntu、Rust 编译器或应用提交时可复用同一 Workspace。`images/desktop-image.lock.json` 由入口按实际构建产物生成。应用构建产物同时记录 Git 基线及实际输入摘要。
 
 发布前在独立资源上执行最终镜像资格：
 

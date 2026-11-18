@@ -40,7 +40,15 @@ bash docker/build.sh
 
 三处入口由 `docker/build_images.py` 统一管理：`images/desktop/build.sh [OUTPUT]` 生成 Workspace 及离线缓存，`docker/build.sh` 构建 Server，`docker/build-standalone.sh` 构建 Standalone。构建宿主需要 Bash、Python 3.11+、支持 `--metadata-file` / `ADD --checksum` / `RUN --mount` 的 Docker BuildKit，以及能让 `docker save` 导出 OCI layout 的 containerd image store；经典 store 的 legacy tar 不在当前 exporter 支持范围，前置检查会拒绝这种构建环境。这是构建导出要求，运行成品镜像仍按部署资格核对。
 
-脚本在私有源码副本构建，通过 `--iidfile` 和 BuildKit 元数据分别核对 config digest、平台 digest 与当前 store 的实际对象 ID。统一传入固定 `SOURCE_DATE_EPOCH`，使用 `type=image,unpack=false,rewrite-timestamp=true` 归一化镜像和产物时间；该 exporter 配置已验证可被本地 store 检查、导出和实际启动。关闭默认 provenance 的可变 attestation 包装，避免仅因构建时刻变化而误触发内容标签冲突；源码和可执行文件身份仍由 release inventory 记录。不同 iidfile 形式的兼容不代表支持 legacy 归档：最终 OCI 的 index/manifest/config/layer 仍逐项校验，离线引用为 linux/amd64 平台 manifest 摘要。不要将这几个摘要互换。
+三个入口从同一份 [基础镜像锁](../agent-space/docker/base-images.lock.json) 读取 Linux/amd64 manifest 摘要。更新某一层时，先核对上游同一版本线的 amd64 manifest，再只修改对应锁项，由入口脚本传给 Dockerfile。
+
+| 锁项 | 用途 |
+| --- | --- |
+| `pythonNode` | Workspace 的 Python 3.12 / Node.js 22 Debian 基底、Server 的普通沙盒离线种子，以及两种应用的桌面 UI 构建。Standalone 运行时直接使用生成后的 Workspace。 |
+| `rustBuilder` | 两种应用的 Rust 1.96 编译环境，Server 同时用它重编译配套 MSB CLI。 |
+| `serverUbuntu` | Server 容器的 Ubuntu 24.04 LTS 运行环境。当前锁定 `noble-20261110`。 |
+
+应用构建入口会自动准备 Workspace。Workspace 使用锁内独立的 `workspaceSourceDateEpoch`，自身输入和 Python/Node 摘要一致时复用已校验的离线缓存。应用继续使用固定 Git 修订的提交时间。脚本在私有源码副本构建，通过 `--iidfile` 和 BuildKit 元数据分别核对 config digest、平台 digest 与当前 store 的实际对象 ID。使用 `type=image,unpack=false,rewrite-timestamp=true` 归一化时间并关闭默认 provenance 的可变包装。最终 OCI 的 index、manifest、config 和 layer 逐项校验，离线引用为 Linux/amd64 平台 manifest 摘要。
 
 构建缓存同时核对源码、镜像、归档校验和与提交记录。相同输出目录（包括不同 checkout 传入的相同 OUTPUT）串行发布，源仓库的锁文件单独同步；发布被中断时下一次构建先恢复日志，再读取缓存。失败构建保留原有完整缓存，不依靠共享可变构建标签。内容标签若已指向不同镜像会报错，需保留旧标签并调查输入；`IMAGE_NAME` 仅用于显式额外别名。构建完成不代表最终镜像已获得发布资格。
 

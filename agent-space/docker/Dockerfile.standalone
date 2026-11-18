@@ -1,12 +1,14 @@
 ARG WORKSPACE_IMAGE
-FROM nikolaik/python-nodejs@sha256:648f6a6036dca5fc9de144ca54ce7c0af51ac49af790ed67c2ec6a81cbfac3b3 AS ui
+ARG PYTHON_NODE_IMAGE
+ARG RUST_BUILDER_IMAGE
+FROM ${PYTHON_NODE_IMAGE} AS ui
 WORKDIR /ui
 COPY desktop-ui/package.json desktop-ui/package-lock.json ./
 RUN npm ci --ignore-scripts --no-audit --no-fund
 COPY desktop-ui/ ./
 RUN npm run build
 
-FROM rust:1.96-slim AS builder
+FROM ${RUST_BUILDER_IMAGE} AS builder
 WORKDIR /build
 COPY Cargo.toml Cargo.lock ./
 COPY src/ ./src/

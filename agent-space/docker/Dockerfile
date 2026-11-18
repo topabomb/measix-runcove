@@ -1,12 +1,16 @@
+ARG PYTHON_NODE_IMAGE
+ARG RUST_BUILDER_IMAGE
+ARG SERVER_UBUNTU_IMAGE
+
 # ---- Stage 1: Compile Rust binaries ----
-FROM nikolaik/python-nodejs@sha256:648f6a6036dca5fc9de144ca54ce7c0af51ac49af790ed67c2ec6a81cbfac3b3 AS desktop-ui-builder
+FROM ${PYTHON_NODE_IMAGE} AS desktop-ui-builder
 WORKDIR /ui
 COPY desktop-ui/package.json desktop-ui/package-lock.json ./
 RUN npm ci --ignore-scripts --no-audit --no-fund
 COPY desktop-ui/ ./
 RUN npm run build
 
-FROM rust:1.96-slim AS builder
+FROM ${RUST_BUILDER_IMAGE} AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl patch python3 pkg-config libcap-ng-dev libdbus-1-dev libgcc-s1 && \
@@ -153,8 +157,7 @@ RUN python3 /build/docker/release-metadata.py --target server --bins /out --ui /
     --output /build/release.json
 
 # ---- Stage 3: Runtime ----
-# Keep the deployment base stable; the bundled msb 0.7.14 runtime supports it.
-FROM ubuntu:24.04
+FROM ${SERVER_UBUNTU_IMAGE}
 
 # Version stamp for the bundled microsandbox libkrunfw. The entrypoint uses
 # this to detect whether the data volume's cached libraries are stale and must

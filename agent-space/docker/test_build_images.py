@@ -21,6 +21,12 @@ OTHER = 'sha256:' + hashlib.sha256(config('workspace-other').encode()).hexdigest
 OLD_APP = 'sha256:' + hashlib.sha256(config('application-old').encode()).hexdigest()
 SOURCE = 'f' * 64
 REVISION, EPOCH = '0' * 40, 1700000000
+BASE_IMAGES = {
+    'pythonNode': 'nikolaik/python-nodejs@sha256:' + 'a' * 64,
+    'rustBuilder': 'rust:1.96-slim@sha256:' + 'b' * 64,
+    'serverUbuntu': 'ubuntu:24.04@sha256:' + 'c' * 64,
+    'workspaceSourceDateEpoch': EPOCH - 1,
+}
 VERSION = 'runcove-' + hashlib.sha256(json.dumps({'sourceSha256': SOURCE, 'sourceRevision': REVISION,
     'sourceDateEpoch': EPOCH}, sort_keys=True, separators=(',', ':')).encode()).hexdigest()[:16]
 
@@ -100,7 +106,7 @@ MSB = r'''#!/usr/bin/env python3
 import json,os,pathlib,sys
 if sys.argv[1:]==['--version']: print('msb 0.7.14'); raise SystemExit(0)
 if sys.argv[1:3]==['image','pull']:
- p=pathlib.Path(os.environ['BUILD_TEST_STATE']); value=json.loads(p.read_text()); value['seed_present']=True; value['seed_pulls']=value.get('seed_pulls',0)+1; p.write_text(json.dumps(value)); raise SystemExit(0)
+ p=pathlib.Path(os.environ['BUILD_TEST_STATE']); value=json.loads(p.read_text()); value['seed_present']=True; value['seed_pulls']=value.get('seed_pulls',0)+1; value['seed_reference']=sys.argv[3]; p.write_text(json.dumps(value)); raise SystemExit(0)
 if sys.argv[1:3]==['image','save']:
  p=pathlib.Path(os.environ['BUILD_TEST_STATE']); value=json.loads(p.read_text()); value['seed_exports']+=1; p.write_text(json.dumps(value))
  if not value.get('seed_present',True): print('image not found',file=sys.stderr); raise SystemExit(1)
@@ -140,6 +146,7 @@ class BuildScripts(unittest.TestCase):
         self.write('.dockerignore', '*.md\n**/node_modules/\n')
         self.write('docker/Dockerfile', 'FROM fixture\n')
         self.write('docker/Dockerfile.standalone', 'FROM fixture\n')
+        self.write('docker/base-images.lock.json', json.dumps(BASE_IMAGES))
         self.write('docker/release_identity.py', 'def source_digest(): return "' + SOURCE + '"\nif __name__ == "__main__": print(source_digest())\n')
         self.write('Cargo.lock', '[[package]]\nname="microsandbox"\nversion="0.7.14"\n')
         self.write('docker/patches/manifest.json', '{"version":"0.7.14"}')
@@ -188,6 +195,7 @@ class BuildScripts(unittest.TestCase):
     def test_workspace_passes_locked_browser_inputs_and_rejects_invalid_lock_before_build(self):
         self.build_workspace()
         arguments = self.daemon()['workspace_build_arguments']
+        self.assertIn('PYTHON_NODE_IMAGE='+BASE_IMAGES['pythonNode'], arguments)
         self.assertIn('CHROMIUM_URL=https://cdn.playwright.dev/builds/cft/153.0.8010.12/linux64/chrome-linux64.zip', arguments)
         self.assertIn('CHROMIUM_SHA256='+'a'*64, arguments)
         lock = self.root/'images/desktop/chromium-download.lock.json'
@@ -230,15 +238,16 @@ class BuildScripts(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
         state = self.daemon()
         self.assertEqual(state['builds'], ['workspace', 'application', 'application'])
-        for arguments in state['build_arguments']:
-            self.assertIn('SOURCE_DATE_EPOCH='+str(EPOCH), arguments)
+        for kind, arguments in zip(state['builds'], state['build_arguments']):
+            epoch = BASE_IMAGES['workspaceSourceDateEpoch'] if kind == 'workspace' else EPOCH
+            self.assertIn('SOURCE_DATE_EPOCH='+str(epoch), arguments)
             self.assertIn('type=image,unpack=false,rewrite-timestamp=true', arguments)
         primary = 'runcove-standalone:'+VERSION
         image = json.loads(state['images'][state['tags'][primary]])
         self.assertEqual(image['created'], str(EPOCH))
         self.assertEqual(image['fixtureFileMtime'], str(EPOCH))
 
-    def test_same_source_new_head_and_epoch_publish_new_tag_and_preserve_old(self):
+    def test_new_application_head_publishes_new_tag_and_reuses_workspace(self):
         self.daemon(vary_output_mtime=True)
         result = self.run_script('docker/build-standalone.sh')
         self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
@@ -248,7 +257,8 @@ class BuildScripts(unittest.TestCase):
         result = self.run_script('docker/build-standalone.sh')
         self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
         state = self.daemon()
-        self.assertNotEqual((self.root/'docker/.build/images/desktop.source').read_text(), first_source)
+        self.assertEqual((self.root/'docker/.build/images/desktop.source').read_text(), first_source)
+        self.assertEqual(state['builds'], ['workspace', 'application', 'application'])
         for name, identity in first.items():
             self.assertEqual(state['tags'][name], identity)
         primary = {name: iid for name, iid in state['tags'].items() if name.startswith('runcove-standalone:runcove-')}
@@ -256,6 +266,45 @@ class BuildScripts(unittest.TestCase):
         labels = [json.loads(state['images'][iid])['config']['Labels'] for iid in primary.values()]
         self.assertEqual({value['org.opencontainers.image.revision'] for value in labels}, {REVISION, '1'*40})
         self.assertEqual({value['io.runcove.source-sha256'] for value in labels}, {SOURCE})
+
+    def test_server_and_standalone_share_locked_images_and_host_upgrade_reuses_workspace(self):
+        self.build_workspace()
+        ubuntu = 'ubuntu:24.04@sha256:' + 'd' * 64
+        self.write('docker/base-images.lock.json', json.dumps(BASE_IMAGES | {'serverUbuntu': ubuntu}))
+        for script in ('docker/build.sh', 'docker/build-standalone.sh'):
+            result = self.run_script(script)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        state = self.daemon()
+        self.assertEqual(state['builds'], ['workspace', 'application', 'application'])
+        _, server, standalone = state['build_arguments']
+        for arguments in (server, standalone):
+            self.assertIn('PYTHON_NODE_IMAGE='+BASE_IMAGES['pythonNode'], arguments)
+            self.assertIn('RUST_BUILDER_IMAGE='+BASE_IMAGES['rustBuilder'], arguments)
+        self.assertIn('SERVER_UBUNTU_IMAGE='+ubuntu, server)
+        self.assertNotIn('SERVER_UBUNTU_IMAGE='+ubuntu, standalone)
+        self.assertEqual(state['seed_reference'], BASE_IMAGES['pythonNode'])
+
+    def test_workspace_rebuilds_when_its_base_or_timestamp_changes(self):
+        self.build_workspace()
+        changed = BASE_IMAGES | {'pythonNode': 'nikolaik/python-nodejs@sha256:' + 'e' * 64}
+        self.write('docker/base-images.lock.json', json.dumps(changed))
+        self.build_workspace()
+        self.assertIn('PYTHON_NODE_IMAGE='+changed['pythonNode'], self.daemon()['workspace_build_arguments'])
+        changed['workspaceSourceDateEpoch'] += 1
+        self.write('docker/base-images.lock.json', json.dumps(changed))
+        self.build_workspace()
+        state = self.daemon()
+        self.assertEqual(state['builds'], ['workspace', 'workspace', 'workspace'])
+        self.assertIn('SOURCE_DATE_EPOCH='+str(changed['workspaceSourceDateEpoch']), state['workspace_build_arguments'])
+
+    def test_invalid_base_lock_stops_before_image_build(self):
+        for change in ({'pythonNode': 'nikolaik/python-nodejs:latest'}, {'workspaceSourceDateEpoch': False}):
+            with self.subTest(change=change):
+                self.write('docker/base-images.lock.json', json.dumps(BASE_IMAGES | change))
+                result = self.run_script('images/desktop/build.sh')
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('base-images.lock.json', result.stderr)
+                self.assertEqual(self.daemon()['builds'], [])
 
     def test_invalid_git_epoch_has_no_build_or_cache_side_effect(self):
         for epoch in ['-1', '+123', '123.5', 'not-an-epoch', '253402300800']:
@@ -468,7 +517,7 @@ class ReleaseSourceIdentity(unittest.TestCase):
         self.base = Path(self.temporary.name)
         self.normal = self.base/'ordinary/repository/agent-space'
         required = ('Cargo.toml', 'Cargo.lock', 'msb-runtime.sha256', '.dockerignore',
-            'docker/Dockerfile', 'docker/docker-entrypoint.sh', 'docker/build.sh', 'docker/build_images.py',
+            'docker/Dockerfile', 'docker/docker-entrypoint.sh', 'docker/build.sh', 'docker/build_images.py', 'docker/base-images.lock.json',
             'docker/release_identity.py', 'docker/release-metadata.py', 'docker/build-standalone.sh',
             'docker/Dockerfile.standalone', 'docker/standalone-entrypoint.sh', 'docker/playwright-seccomp.json',
             'docker/compose.server.yaml', 'docker/compose.standalone.yaml', 'docker/verify-sqlite-link.py',
@@ -512,6 +561,11 @@ class ReleaseSourceIdentity(unittest.TestCase):
             before = self.digest(root)
             (root/'src/target/generated.rs').write_text('different generated output\n')
             self.assertEqual(self.digest(root), before)
+
+    def test_base_lock_change_affects_application_source_digest(self):
+        before = self.digest(self.normal)
+        (self.normal/'docker/base-images.lock.json').write_text('new base image digest\n')
+        self.assertNotEqual(self.digest(self.normal), before)
 
 
 if __name__ == '__main__':

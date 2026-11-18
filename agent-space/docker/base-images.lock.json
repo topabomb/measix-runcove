@@ -1,0 +1,6 @@
+{
+  "pythonNode": "nikolaik/python-nodejs@sha256:648f6a6036dca5fc9de144ca54ce7c0af51ac49af790ed67c2ec6a81cbfac3b3",
+  "rustBuilder": "rust:1.96-slim@sha256:d8f0d5c09580253ecdd6d6894ff112b2b760683ff2a74585e5189f2578728ce4",
+  "serverUbuntu": "ubuntu:24.04@sha256:77eb101c607d6e3d4f5ad0c8a02c2136c689b98aba1f359e6502ba517e5c57ec",
+  "workspaceSourceDateEpoch": 1794936887
+}

@@ -1,10 +1,10 @@
-ARG BASE_IMAGE=nikolaik/python-nodejs@sha256:648f6a6036dca5fc9de144ca54ce7c0af51ac49af790ed67c2ec6a81cbfac3b3
+ARG PYTHON_NODE_IMAGE
 FROM scratch AS chrome-artifact
 ARG CHROMIUM_URL
 ARG CHROMIUM_SHA256
 ADD --checksum=sha256:${CHROMIUM_SHA256} ${CHROMIUM_URL} /chrome-linux64.zip
 
-FROM ${BASE_IMAGE}
+FROM ${PYTHON_NODE_IMAGE}
 ENV DEBIAN_FRONTEND=noninteractive \
     PLAYWRIGHT_BROWSERS_PATH=/opt/agent-tools/browsers \
     NODE_PATH=/opt/agent-tools/node_modules \

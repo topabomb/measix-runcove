@@ -11,7 +11,7 @@ def source_digest():
     files = [PROJECT / name for name in (
         'Cargo.toml', 'Cargo.lock', 'msb-runtime.sha256', '.dockerignore',
         'docker/Dockerfile', 'docker/docker-entrypoint.sh',
-        'docker/build.sh', 'docker/build_images.py', 'docker/release_identity.py',
+        'docker/build.sh', 'docker/build_images.py', 'docker/base-images.lock.json', 'docker/release_identity.py',
         'docker/release-metadata.py', 'docker/build-standalone.sh', 'docker/Dockerfile.standalone',
         'docker/standalone-entrypoint.sh', 'docker/playwright-seccomp.json',
         'docker/compose.server.yaml', 'docker/compose.standalone.yaml',
