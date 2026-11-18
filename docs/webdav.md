@@ -31,6 +31,7 @@ public_base_url = ""
 # public_port = 18933 # Docker宿主DAV端口不同时显式设置
 startup_timeout_secs = 60
 io_idle_timeout_secs = 120
+# preview_max_inflight = 4 # 可选，默认 8，允许 1–8
 ```
 
 `public_base_url` 默认留空（也可省略），本机/局域网模式从实际请求入口生成地址，不固定网卡IP。启用DAV仍要求动态用户模式。`listen` 默认 `0.0.0.0:8933`，必须与主服务使用不同监听端口；`public_port` 缺省采用DAV监听端口，Docker映射到其他宿主端口时必须配置，例如18933。主服务返回DAV链接时沿用请求的主机和协议、替换为该DAV外部端口。
@@ -217,7 +218,8 @@ supported 表示本入口实现该协议，不表示当前空间可激活、依�
 - 输出固定为 WebP，质量 85，透明通道保留；等比例缩到最长边不超过 size，不放大原图，宽高至少 1。最多 1 MiB 输出，不允许把原文件当作缩略图返回。视频封面不改变原文件，不提供转码播放。
 - 文件先通过受限根打开为固定只读句柄，再探测/解码；编码器只能读取该句柄，不能根据用户参数访问其他文件、协议、URL、设备或执行命令。生成前后核对句柄元数据及当前路径指向的源版本，变化即丢弃产物并返回 412。源 ETag 沿原 DAV 元数据语义，不承诺任意并发 bash 原地写入的内容快照。
 - 图片源最大 64 MiB，解码宽高乘积最大 3200 万像素；视频不按完整文件字节数拒绝，但单帧同样受像素上限限制。先检查尺寸再分配像素。每次生成总期限 10 秒（不含 VM 启动）、CPU 8 秒、解码子进程地址空间 768 MiB，捕获的探测输出和 stderr 分别最多 64 KiB，图像输出最多 1 MiB。到期返回 `preview_timeout` 并终止受限子进程组；清理延迟超过 1 秒时记录不含路径/凭据/解码器原始错误的诊断，由原生成任务继续持有并回收后代，完成前仍占用唯一生成槽，新请求返回 `preview_busy`。不将清理所有权交给 HTTP 等待者；迟到结果不入缓存。
-- Host 每进程至多 4 个预览读取租约；每空间至多 1 个不同键的实际生成任务。撤销或 IO 空闲超时由连接所有者释放读取名额，即使旧响应正文仍受背压；生成槽继续由实际解码及后代清理任务持有。相同键请求合并，单个等待者取消不取消其他仍有效等待者，无有效等待者后取消任务；超出容量不建立无界队列，返回 429 和 `Retry-After: 1`。预览不持有普通文件修改预约，不占用 bash 队列；原 DAV 文件流的准入与资源预算独立。
+- Server 每进程默认 8 个预览读取租约，`[webdav].preview_max_inflight` 允许 1–8，改回 4 后重启生效。Standalone 固定 4 个。GET/HEAD 共用读取名额，每空间至多 1 个不同键的实际生成任务。撤销或 IO 空闲超时由连接所有者释放读取名额，即使旧响应正文仍受背压。生成槽由解码及后代清理任务持有。相同键请求合并，最后一个等待者取消后才取消任务。满额立即返回 429 和 `Retry-After: 1`。预览不持有普通文件修改预约，不占用 bash 队列。普通 DAV 有独立资源预算。
+- Host 的 debug 日志按 `host_limit`、`generation_busy` 和 `generation_cleanup` 区分 429。兼容旧 helper 时，上游未提供可识别原因则记为 `guest_unspecified`。对外 GET 继续返回 `preview_busy`，HEAD 继续只返回状态和头。
 
 GET 200 返回 `Content-Type: image/webp`、`Content-Disposition: inline; filename="thumbnail.webp"`、准确 Content-Length、`X-Content-Type-Options: nosniff` 和 `Cache-Control: no-store`。表示 ETag 为输出字节的 SHA-256 强 ETag，与 expectedEtag 的源版本分别使用；提供 `Preview-Source-ETag` 以确认对应源版本。HEAD 执行相同授权/版本/生成流程并返回相同表示头，但没有正文。Range 在此小资源上忽略，不提供 206。
 

@@ -335,22 +335,25 @@ pub async fn serve(config: StandaloneConfig) -> anyhow::Result<()> {
     let mut dav_task = None;
     if config.webdav.enabled {
         let dav_listener = tokio::net::TcpListener::bind(&config.webdav.listen).await?;
-        let app = webdav::router(webdav::DavState {
-            sessions: manager.clone(),
-            state: authority.clone(),
-            origin: url::Url::parse(
-                config
-                    .webdav
-                    .public_base_url
-                    .as_deref()
-                    .filter(|s| !s.trim().is_empty())
-                    .unwrap_or("http://127.0.0.1"),
-            )?,
-            helper_binary: std::env::var("AGENT_SPACE_WEBDAV")
-                .unwrap_or_else(|_| "/usr/local/bin/agent-space-webdav".into()),
-            startup_timeout: Duration::from_secs(config.webdav.startup_timeout_secs),
-            io_idle_timeout: Duration::from_secs(config.webdav.io_idle_timeout_secs),
-        });
+        let app = webdav::router(
+            webdav::DavState {
+                sessions: manager.clone(),
+                state: authority.clone(),
+                origin: url::Url::parse(
+                    config
+                        .webdav
+                        .public_base_url
+                        .as_deref()
+                        .filter(|s| !s.trim().is_empty())
+                        .unwrap_or("http://127.0.0.1"),
+                )?,
+                helper_binary: std::env::var("AGENT_SPACE_WEBDAV")
+                    .unwrap_or_else(|_| "/usr/local/bin/agent-space-webdav".into()),
+                startup_timeout: Duration::from_secs(config.webdav.startup_timeout_secs),
+                io_idle_timeout: Duration::from_secs(config.webdav.io_idle_timeout_secs),
+            },
+            4,
+        );
         let stopped = shutdown.clone();
         dav_task = Some(tokio::spawn(async move {
             axum::serve(dav_listener, app)

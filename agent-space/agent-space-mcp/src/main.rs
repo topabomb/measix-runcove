@@ -334,15 +334,22 @@ async fn main() -> anyhow::Result<()> {
     // Separate sockets own route isolation, independent of Host or public links.
     let dav_router = if let (true, Some((state, _))) = (config.webdav.enabled, &dynamic_state) {
         Some(
-            agent_space_mcp::webdav::router(agent_space_mcp::webdav::DavState {
-                sessions: session_manager.clone(),
-                state: state.clone(),
-                origin: url::Url::parse(config.dav_base_url().unwrap_or("http://127.0.0.1"))?,
-                helper_binary: std::env::var("AGENT_SPACE_WEBDAV")
-                    .unwrap_or_else(|_| "/usr/local/bin/agent-space-webdav".into()),
-                startup_timeout: std::time::Duration::from_secs(config.webdav.startup_timeout_secs),
-                io_idle_timeout: std::time::Duration::from_secs(config.webdav.io_idle_timeout_secs),
-            })
+            agent_space_mcp::webdav::router(
+                agent_space_mcp::webdav::DavState {
+                    sessions: session_manager.clone(),
+                    state: state.clone(),
+                    origin: url::Url::parse(config.dav_base_url().unwrap_or("http://127.0.0.1"))?,
+                    helper_binary: std::env::var("AGENT_SPACE_WEBDAV")
+                        .unwrap_or_else(|_| "/usr/local/bin/agent-space-webdav".into()),
+                    startup_timeout: std::time::Duration::from_secs(
+                        config.webdav.startup_timeout_secs,
+                    ),
+                    io_idle_timeout: std::time::Duration::from_secs(
+                        config.webdav.io_idle_timeout_secs,
+                    ),
+                },
+                config.webdav.preview_max_inflight,
+            )
             .merge(health_router)
             .layer(axum::middleware::from_fn_with_state(
                 agent_space_mcp::origins::OriginPolicy::new(config.dav_base_url())?,

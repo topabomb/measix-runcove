@@ -53,14 +53,17 @@ async fn real_host_dav_transfer_lock_bash_concurrency_and_restart() {
     let sessions = Arc::new(SessionManager::new(engine.clone(), 1, opts.clone()));
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let origin = format!("http://{}", listener.local_addr().unwrap());
-    let app = webdav::router(DavState {
-        sessions: sessions.clone(),
-        state: store.clone(),
-        origin: url::Url::parse(&origin).unwrap(),
-        helper_binary: binary.to_string_lossy().into_owned(),
-        startup_timeout: Duration::from_secs(60),
-        io_idle_timeout: Duration::from_secs(10),
-    });
+    let app = webdav::router(
+        DavState {
+            sessions: sessions.clone(),
+            state: store.clone(),
+            origin: url::Url::parse(&origin).unwrap(),
+            helper_binary: binary.to_string_lossy().into_owned(),
+            startup_timeout: Duration::from_secs(60),
+            io_idle_timeout: Duration::from_secs(10),
+        },
+        8,
+    );
     let server = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
     let client = Client::builder()
         .timeout(Duration::from_secs(70))

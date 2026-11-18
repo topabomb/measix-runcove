@@ -95,6 +95,8 @@ python3 docker/verify-previews.py --target standalone --image "$STANDALONE_IMAGE
 
 此验证器的 `--development-assets` 冻结当前 `target/debug` 服务、三个 helper 和入口脚本，记录源摘要及可执行文件 SHA，只用于开发验证。Standalone 以 Workspace 依赖镜像运行；Server 使用匹配 MSB 的 Server runtime 基底，额外传 `--workspace-assets <已验证缓存目录>`，该目录须含 `desktop.tar.gz`、`desktop.reference` 和 `workspace.lock.json`。验证器冻结归档、核对引用，并以明确的 custom distribution 摘要替代 debug Host 的旧 preset；初始化和运行使用同份冻结 Host。开发模式同样可传 `--expected-helper-build-id` 核对 Host/guest。最终镜像模式禁止 `--workspace-assets`，必须提供独立的 expected source/helper，不能把绑定开发资产的成功结果作为最终镜像证据。
 
+Server 预览并发对照在同一镜像和二进制上分别增加 `--compare-preview-load 4` 和 `--compare-preview-load 8`，各用新的证据路径。前者显式设置 4，后者验证缺省配置。每轮覆盖两空间的八路暖读、两空间冷生成、同期普通 DAV 1 MiB Range 字节校验、429 来源及既有断连和撤销回收。报告记录成功吞吐、Range P95、容器 CPU 和截至各阶段的容器内存峰值。
+
 打包按目标核对共同完整套件、4 GiB 文件、20 次真实写满与固定拒绝上传截止、成功清理、精确镜像和当前源码摘要；Server 另需旧生产版本升级/完整冷备回滚报告。命令和加载步骤见[部署指南](deployment.md#3-验证与离线包)。导出归档、内嵌 release 元数据、manifest 和报告必须一致；使用包内 Compose 实际初始化和启动，并检查未遗留本次资格资源。
 
 固定结果登记到[验证记录](validation-records.md)，证据保留确切源码、镜像和执行范围。新源码检查不能改写旧镜像的通过记录；重建后按影响重跑。生产替换、registry 推送、外部平台现场联调和目标 NAS/ARM 验收分别记录，不由资格脚本自动执行。

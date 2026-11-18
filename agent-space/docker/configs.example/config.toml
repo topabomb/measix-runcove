@@ -60,6 +60,7 @@ listen = "0.0.0.0:8933"
 public_base_url = ""
 startup_timeout_secs = 60
 io_idle_timeout_secs = 120
+# preview_max_inflight = 4 # Optional, default 8 (allowed: 1..8).
 
 [web_publish]
 # Same-origin path publications; disable if not needed. Trusted content only.

@@ -58,16 +58,21 @@ impl Error {
         )
     }
     fn response(&self, head: bool) -> Response<ResponseBody> {
-        let body = serde_json::json!({"type":"about:blank","title":self.1,"status":self.0.as_u16(),"code":self.1}).to_string();
+        let busy = self.0 == StatusCode::TOO_MANY_REQUESTS;
+        let code = if busy { "preview_busy" } else { self.1 };
+        let body = serde_json::json!({"type":"about:blank","title":code,"status":self.0.as_u16(),"code":code}).to_string();
         let mut result = response(self.0, if head { "" } else { &body });
         result.headers_mut().insert(
             "content-type",
             HeaderValue::from_static("application/problem+json"),
         );
-        if self.0 == StatusCode::TOO_MANY_REQUESTS {
-            result
-                .headers_mut()
-                .insert("retry-after", HeaderValue::from_static("1"));
+        if busy {
+            let headers = result.headers_mut();
+            headers.insert("retry-after", HeaderValue::from_static("1"));
+            headers.insert(
+                protocol::BUSY_REASON_HEADER,
+                HeaderValue::from_static(self.1),
+            );
         }
         if self.0 == StatusCode::METHOD_NOT_ALLOWED {
             result
@@ -378,8 +383,17 @@ impl Store {
                 return Ok(cached.image.clone());
             }
             if let Some(job) = &state.job {
-                if job.key != key || job.cancel.is_cancelled() {
-                    return Err(Error(StatusCode::TOO_MANY_REQUESTS, "preview_busy"));
+                if job.cancel.is_cancelled() {
+                    return Err(Error(
+                        StatusCode::TOO_MANY_REQUESTS,
+                        protocol::GENERATION_CLEANUP,
+                    ));
+                }
+                if job.key != key {
+                    return Err(Error(
+                        StatusCode::TOO_MANY_REQUESTS,
+                        protocol::GENERATION_BUSY,
+                    ));
                 }
                 job.waiters.fetch_add(1, Ordering::Relaxed);
                 (job.clone(), false)
@@ -758,6 +772,24 @@ mod tests {
                 )
                 .await;
         });
+        let mut different_key = key.clone();
+        different_key.size = 256;
+        let busy = store
+            .image(
+                fs.clone(),
+                different_key,
+                File::open("/dev/null").unwrap(),
+                CancellationToken::new(),
+            )
+            .await
+            .err()
+            .expect("a second key cannot start while a generator holds the slot")
+            .response(false);
+        assert_eq!(busy.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert_eq!(
+            busy.headers()[protocol::BUSY_REASON_HEADER],
+            protocol::GENERATION_BUSY
+        );
         drop(last_waiter);
         cleanup_observed.await.unwrap();
         assert_eq!(job.waiters.load(Ordering::SeqCst), 0);
@@ -776,8 +808,13 @@ mod tests {
         .err()
         .expect("a cancelled producer must reject a new same-key waiter");
         assert_eq!(rejected.0, StatusCode::TOO_MANY_REQUESTS);
-        assert_eq!(rejected.1, "preview_busy");
-        assert_eq!(rejected.response(false).headers()["retry-after"], "1");
+        assert_eq!(rejected.1, protocol::GENERATION_CLEANUP);
+        let response = rejected.response(false);
+        assert_eq!(response.headers()["retry-after"], "1");
+        assert_eq!(
+            response.headers()[protocol::BUSY_REASON_HEADER],
+            protocol::GENERATION_CLEANUP
+        );
         assert_eq!(job.waiters.load(Ordering::SeqCst), 0);
         assert_eq!(generations.load(Ordering::SeqCst), 1);
         assert!(Arc::ptr_eq(

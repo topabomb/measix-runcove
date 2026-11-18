@@ -530,8 +530,15 @@ async fn files(
         startup_timeout: Duration::from_secs(30),
         io_idle_timeout: Duration::from_secs(60),
     };
-    crate::webdav::forward_authenticated(dav, user, request, true, state.state.subscribe_changes())
-        .await
+    crate::webdav::forward_authenticated(
+        dav,
+        user,
+        request,
+        true,
+        state.state.subscribe_changes(),
+        None,
+    )
+    .await
 }
 async fn websocket(
     State(state): State<DesktopState>,

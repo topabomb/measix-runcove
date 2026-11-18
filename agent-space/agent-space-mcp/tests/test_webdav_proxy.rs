@@ -293,12 +293,12 @@ async fn preview_rejects_request_bodies_before_activation_and_accepts_zero_lengt
 #[tokio::test]
 #[serial_test::serial(preview_capacity)]
 async fn cancelled_unpolled_previews_release_capacity_before_their_bodies_drop() {
-    for revoke in [false, true] {
-        let f = fixture_with_idle(Duration::from_millis(100));
+    for (preview_limit, revoke) in [(4, false), (4, true), (8, false), (8, true)] {
+        let f = fixture_with_limits(Duration::from_millis(250), 1, preview_limit);
         let path = "/u/alice/previews?path=image.png&expectedEtag=%22source%22";
         let auth = format!("Bearer {}", f.dav.token);
         let mut held = Vec::new();
-        for _ in 0..4 {
+        for _ in 0..preview_limit {
             let response = f
                 .app
                 .clone()
@@ -317,6 +317,14 @@ async fn cancelled_unpolled_previews_release_capacity_before_their_bodies_drop()
         assert_eq!(full.status(), StatusCode::TOO_MANY_REQUESTS);
         assert_eq!(full.headers()["retry-after"], "1");
         drop(full);
+        let ordinary = f
+            .app
+            .clone()
+            .oneshot(request("GET", "/u/alice/dav/file", &auth, Body::empty()))
+            .await
+            .unwrap();
+        assert_eq!(ordinary.status(), StatusCode::OK);
+        drop(ordinary);
         let auth = if revoke {
             format!(
                 "Bearer {}",
@@ -347,14 +355,6 @@ async fn cancelled_unpolled_previews_release_capacity_before_their_bodies_drop()
         })
         .await
         .expect("cancelled response retained activity");
-        let ordinary = f
-            .app
-            .clone()
-            .oneshot(request("GET", "/u/alice/dav/file", &auth, Body::empty()))
-            .await
-            .unwrap();
-        assert_eq!(ordinary.status(), StatusCode::OK);
-        drop(ordinary);
         let restored = f
             .app
             .clone()
@@ -364,7 +364,7 @@ async fn cancelled_unpolled_previews_release_capacity_before_their_bodies_drop()
         assert_eq!(
             restored.status(),
             StatusCode::OK,
-            "cancelled preview bodies retained all four permits (revoked={revoke})"
+            "cancelled preview bodies retained all {preview_limit} permits (revoked={revoke})"
         );
         drop(restored);
         drop(held);
@@ -375,6 +375,9 @@ fn fixture_with_idle(idle: Duration) -> Fixture {
     fixture_with_capacity(idle, 1)
 }
 fn fixture_with_capacity(idle: Duration, capacity: u32) -> Fixture {
+    fixture_with_limits(idle, capacity, 8)
+}
+fn fixture_with_limits(idle: Duration, capacity: u32, preview_limit: usize) -> Fixture {
     let dir = tempfile::tempdir().unwrap();
     StateStore::init(dir.path()).unwrap();
     let store = Arc::new(StateStore::open(dir.path()).unwrap());
@@ -398,14 +401,17 @@ fn fixture_with_capacity(idle: Duration, capacity: u32) -> Fixture {
             max_udp_connections: None,
         },
     ));
-    let app = webdav::router(DavState {
-        sessions: sessions.clone(),
-        state: store.clone(),
-        origin: url::Url::parse("https://files.example").unwrap(),
-        helper_binary: "mock".into(),
-        startup_timeout: Duration::from_secs(2),
-        io_idle_timeout: idle,
-    });
+    let app = webdav::router(
+        DavState {
+            sessions: sessions.clone(),
+            state: store.clone(),
+            origin: url::Url::parse("https://files.example").unwrap(),
+            helper_binary: "mock".into(),
+            startup_timeout: Duration::from_secs(2),
+            io_idle_timeout: idle,
+        },
+        preview_limit,
+    );
     Fixture {
         _dir: dir,
         store,

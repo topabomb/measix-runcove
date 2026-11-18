@@ -21,6 +21,7 @@ import socket
 import subprocess
 import struct
 import sys
+import threading
 import time
 import uuid
 from urllib.parse import urlencode
@@ -259,6 +260,94 @@ def verify_worker(image_id, output, command, owner=None):
             raise RuntimeError('worker fixture cleanup failed')
 
 
+def preview_load(request, clients, stats, payloads):
+    """Compare two-space cold and warm loads alongside an exact 1 MiB Range."""
+    data = hashlib.shake_256(b'runcove ordinary range').digest(2 * 1024 * 1024)
+    offset, length = 333, 1024 * 1024
+    last = offset + length - 1
+    root, _, first_key, _ = clients[0]
+    assert request('PUT', root + 'preview-load-range.bin', data, secret=first_key)[0] == 201
+
+    def ranged():
+        status, headers, body = request(
+            'GET', root + 'preview-load-range.bin', headers={'Range': f'bytes={offset}-{last}'},
+            secret=first_key)
+        assert status == 206 and headers['content-range'] == f'bytes {offset}-{last}/{len(data)}'
+        assert body == data[offset:last+1], 'concurrent Range bytes differ'
+        return status
+
+    def asset(client, path, payload):
+        dav, previews, secret, space = client
+        assert request('PUT', dav + path, payload, secret=secret)[0] == 201
+        status, headers, _ = request('HEAD', dav + path, secret=secret)
+        assert status == 200
+        source = headers['etag']
+        url = previews + '?' + urlencode({'path': path, 'expectedEtag': source, 'size': 128})
+        return url, secret, space, source
+
+    def read(item, expected=None):
+        url, secret, space, source = item
+        status, headers, body = request('GET', url, secret=secret)
+        assert 'x-agent-space-preview-busy-reason' not in headers
+        if status == 429:
+            assert inspect_problem((status, headers, body), 429, 'preview_busy')['retry-after'] == '1'
+            return status, None
+        assert status == 200 and headers['agent-space-id'] == space
+        assert headers['preview-source-etag'] == source and headers['content-type'] == 'image/webp'
+        assert body[:4] == b'RIFF' and body[8:12] == b'WEBP'
+        digest = hashlib.sha256(body).hexdigest()
+        assert headers['etag'] == f'"{digest}"'
+        assert expected is None or digest == expected
+        return status, digest
+
+    def phase(waves, allow_busy):
+        durations, ranges, statuses = [], [], []
+        before = stats()
+        start = time.perf_counter()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=9) as pool:
+            for calls in waves:
+                barrier = threading.Barrier(len(calls) + 1, timeout=15)
+
+                def timed(call):
+                    barrier.wait()
+                    at = time.perf_counter()
+                    return call(), (time.perf_counter() - at) * 1000
+
+                previews = [pool.submit(timed, call) for call in calls]
+                normal_range = pool.submit(timed, ranged)
+                for result in previews:
+                    (status, _), elapsed = result.result()
+                    statuses.append(status)
+                    if status == 200:
+                        durations.append(elapsed)
+                ranges.append(normal_range.result()[1])
+        elapsed = time.perf_counter() - start
+        after = stats()
+        success, busy = statuses.count(200), statuses.count(429)
+        assert success and (allow_busy or busy == 0)
+
+        def p95(values):
+            return round(sorted(values)[(95 * len(values) + 99) // 100 - 1], 2)
+
+        return {'requests': len(statuses), 'success': success, 'busy': busy,
+                'seconds': round(elapsed, 3), 'successful_per_second': round(success/elapsed, 2),
+                'successful_preview_p95_ms': p95(durations), 'range_p95_ms': p95(ranges),
+                'ranges_verified': len(ranges), 'cpu_us': after[0]-before[0],
+                'container_peak_memory_bytes_after_phase': after[1]}
+
+    warm = [asset(client, f'preview-load-warm-{path}', payload) for client in clients
+            for path, payload in payloads]
+    warmed = [read(item) for item in warm]
+    assert all(status == 200 for status, _ in warmed)
+    warm_calls = [lambda item=item, digest=digest: read(item, digest) for item, (_, digest) in zip(warm, warmed)]
+    cold_waves = []
+    for wave in range(12):
+        path, payload = payloads[wave % len(payloads)]
+        assets = [asset(client, f'preview-load-cold-{wave}-{path}', payload) for client in clients]
+        cold_waves.append([lambda item=item: read(item) for item in assets])
+    return {'warm': phase([warm_calls * 2] * 12, True), 'cold': phase(cold_waves, False)}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--image', required=True)
@@ -270,7 +359,11 @@ def main():
                         help='Server development assets only: verified offline Workspace cache with desktop.tar.gz and desktop.reference')
     parser.add_argument('--expected-source', help='Independently computed source digest of the fixed final build checkout')
     parser.add_argument('--expected-helper-build-id', help='Current helper source fingerprint, computed before final-image qualification')
+    parser.add_argument('--compare-preview-load', type=int, choices=[4, 8],
+                        help='Server-only load lane. 4 writes an override and 8 exercises the default')
     args = parser.parse_args()
+    if args.compare_preview_load and args.target != 'server':
+        parser.error('--compare-preview-load requires Server')
     if args.development_assets and args.target == 'server' and not args.workspace_assets:
         parser.error('Server development assets require --workspace-assets')
     if args.workspace_assets and not (args.development_assets and args.target == 'server'):
@@ -333,6 +426,13 @@ def main():
                                   {'Content-Type': 'application/json'}, main=True,
                                   secret=admin_token, maximum=64 * 1024)
         return status, json.loads(data) if data else None
+
+    def remove_user(username, space):
+        assert admin('DELETE', '/admin/v1/users/'+username+'?agentSpaceId='+space)[0] in (200, 202, 204)
+        deadline = time.monotonic() + 90
+        while admin('GET', '/admin/v1/users/'+username)[0] != 404:
+            assert time.monotonic() < deadline, 'temporary user cleanup timeout'
+            time.sleep(.3)
 
     def dav(method, path='', body=None, headers=None, *, secret=None):
         return request(method, dav_root + path, body, headers, secret=dav_token if secret is None else secret)
@@ -464,6 +564,11 @@ startup_timeout_secs=90
             if args.development_assets:
                 config.write_text(config.read_text().replace('image={preset="runcove-desktop"}',
                     'image='+json.dumps(report['development_workspace']['reference'])))
+            if args.compare_preview_load:
+                with config.open('a', encoding='utf-8') as settings:
+                    if args.compare_preview_load == 4:
+                        settings.write('preview_max_inflight=4\n')
+                    settings.write('[logging]\nlevel="debug"\n')
             common = ['-e', 'AGENT_SPACE_ADMIN_TOKEN', '--mount', 'type=volume,src='+volume+',dst=/var/lib/microsandbox',
                       '--mount', 'type=bind,src='+str(config)+',dst=/etc/agent-space/config.toml,readonly', *development_bindings]
             init = name+'-init'
@@ -643,10 +748,38 @@ print('GUEST_HELPER_IDS='+','.join(ids))
             finally:
                 command('exec', name, 'mv', '/usr/bin/ffprobe.preview-qualification', '/usr/bin/ffprobe')
             passed('missing runtime decoder dependency returns explicit 503 while original DAV remains usable')
+        if args.compare_preview_load:
+            peer = 'preview' + uuid.uuid4().hex[:8]
+            status, peer_user = admin('POST', '/admin/v1/users', {'username': peer})
+            assert status == 201
+            peer_space = peer_user['agentSpaceId']
+            created.append((peer, peer_space))
+            tokens.append(peer_user['token'])
+            status, peer_dav = admin('POST', '/admin/v1/users/'+peer+'/dav-token', {'agentSpaceId': peer_space})
+            assert status == 200
+            peer_key = peer_dav['token']
+            tokens.append(peer_key)
+            endpoints = [(dav_root, preview_root, dav_token, space),
+                         (f'/u/{peer}/dav/', f'/u/{peer}/previews', peer_key, peer_space)]
+
+            def container_resources():
+                usage = command('exec', name, 'cat', '/sys/fs/cgroup/cpu.stat')
+                cpu = next(int(line.split()[1]) for line in usage.splitlines() if line.startswith('usage_usec '))
+                peak = int(command('exec', name, 'cat', '/sys/fs/cgroup/memory.peak'))
+                return cpu, peak
+
+            report['preview_load'] = {'server_preview_limit': args.compare_preview_load}
+            report['preview_load'].update(preview_load(
+                request, endpoints, container_resources,
+                [(path, (output/path).read_bytes()) for path in ('alpha.png', 'clip.mp4')]))
+            remove_user(peer, peer_space)
+            created.remove((peer, peer_space))
+            passed('two-space warm and cold load with verified ordinary DAV Range')
         source = dav('HEAD', 'cancel.png')[1]['etag']
         connection, pid = stopped_request('cancel.png', source)
         assert dav('GET', 'ordinary.txt')[2] == b'original-bytes'
-        assert inspect_problem(preview(path='cancel.png', etag=source, size=128), 429, 'preview_busy')['retry-after'] == '1'
+        busy = inspect_problem(preview(path='cancel.png', etag=source, size=128), 429, 'preview_busy')
+        assert busy['retry-after'] == '1' and 'x-agent-space-preview-busy-reason' not in busy
         connection.close()
         assert_reaped(pid)
         passed('client disconnect reaps a stopped real decoder and concurrent DAV reads remain available')
@@ -684,6 +817,14 @@ print('GUEST_HELPER_IDS='+','.join(ids))
                 'cache_inspect_sha256': hashlib.sha256(cached.encode()).hexdigest(), 'activation_succeeded': True,
                 'network_isolation_tested': False}
             passed('bundled default seed tag resolves and its ordinary distribution activates from cache')
+        if args.compare_preview_load:
+            log = re.sub(r'\x1b\[[0-9;]*m', '', command('logs', name))
+            reasons = re.findall(r'DAV preview busy reason="(host_limit|generation_busy|generation_cleanup)"', log)
+            report['preview_load']['busy_reasons'] = {reason: reasons.count(reason)
+                for reason in ('host_limit', 'generation_busy', 'generation_cleanup')}
+            assert 'generation_busy' in reasons, 'missing internal helper 429 diagnostic'
+            if report['preview_load']['warm']['busy']:
+                assert 'host_limit' in reasons, 'missing internal Host 429 diagnostic'
         if args.development_assets:
             assert source_digest() == report['source_sha256'], 'runtime source changed during qualification'
         report['passed'] = True
@@ -705,11 +846,7 @@ print('GUEST_HELPER_IDS='+','.join(ids))
         if args.target == 'server' and containers:
             for username, space in created:
                 try:
-                    assert admin('DELETE', '/admin/v1/users/'+username+'?agentSpaceId='+space)[0] in (200, 202, 204)
-                    deadline = time.monotonic() + 90
-                    while admin('GET', '/admin/v1/users/'+username)[0] != 404:
-                        assert time.monotonic() < deadline, 'temporary user cleanup timeout'
-                        time.sleep(.3)
+                    remove_user(username, space)
                 except Exception as error:
                     errors.append('temporary user: ' + type(error).__name__)
         errors.extend(owner.cleanup())

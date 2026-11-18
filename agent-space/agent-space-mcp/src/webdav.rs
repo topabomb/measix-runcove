@@ -26,9 +26,10 @@ use hyper::client::conn::http1;
 use hyper_util::rt::TokioIo;
 use std::{
     io,
-    sync::{Arc, Mutex, OnceLock},
+    sync::{Arc, Mutex},
     time::Duration,
 };
+use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 use tokio_util::sync::CancellationToken;
 
 #[derive(Clone)]
@@ -40,7 +41,7 @@ pub struct DavState {
     pub startup_timeout: Duration,
     pub io_idle_timeout: Duration,
 }
-pub fn router(state: DavState) -> Router {
+pub fn router(state: DavState, preview_max_inflight: usize) -> Router {
     let prefix = format!("{}/dav", crate::space_prefix(&state.state, "{username}"));
     let previews = format!(
         "{}/previews",
@@ -51,7 +52,7 @@ pub fn router(state: DavState) -> Router {
         .route(&format!("{prefix}/"), any(handle))
         .route(&format!("{prefix}/{{*path}}"), any(handle))
         .route(&previews, any(handle))
-        .with_state(state)
+        .with_state((state, Arc::new(Semaphore::new(preview_max_inflight))))
 }
 
 fn preview_problem(status: StatusCode, code: &'static str) -> Response {
@@ -264,12 +265,15 @@ fn normalize_if(value: &str, origin: &url::Url, prefix: &str) -> Result<String, 
     Ok(output.trim_end().to_string())
 }
 
-pub async fn handle(State(state): State<DavState>, request: Request) -> Response {
+async fn handle(
+    State((state, preview_slots)): State<(DavState, Arc<Semaphore>)>,
+    request: Request,
+) -> Response {
     let username = dav_username(request.uri().path()).unwrap_or("workspace");
     let is_preview =
         request.uri().path() == format!("{}/previews", crate::space_prefix(&state.state, username));
     let head = request.method() == http::Method::HEAD;
-    let mut response = handle_inner(State(state), request).await;
+    let mut response = handle_inner(state, preview_slots, request).await;
     if is_preview
         && response.status().is_server_error()
         && (response.status() != StatusCode::SERVICE_UNAVAILABLE
@@ -292,7 +296,11 @@ pub async fn handle(State(state): State<DavState>, request: Request) -> Response
     response
 }
 
-async fn handle_inner(State(mut state): State<DavState>, request: Request) -> Response {
+async fn handle_inner(
+    mut state: DavState,
+    preview_slots: Arc<Semaphore>,
+    request: Request,
+) -> Response {
     state.origin = match OriginPolicy::new(Some(state.origin.as_str()))
         .unwrap()
         .resolve(&request)
@@ -318,8 +326,9 @@ async fn handle_inner(State(mut state): State<DavState>, request: Request) -> Re
         Err(StatusCode::UNAUTHORIZED) => return unauthorized(),
         Err(code) => return code.into_response(),
     };
-    if request.uri().path() == format!("{}/previews", crate::space_prefix(&state.state, &username))
-    {
+    let is_preview = request.uri().path()
+        == format!("{}/previews", crate::space_prefix(&state.state, &username));
+    let preview_permit = if is_preview {
         // This resource has no request-body representation. Reject explicit
         // framing or known nonempty bodies before activating a VM/helper.
         if matches!(request.method().as_str(), "OPTIONS" | "GET" | "HEAD")
@@ -387,8 +396,17 @@ async fn handle_inner(State(mut state): State<DavState>, request: Request) -> Re
                 )
             }
         }
-    }
-    forward_authenticated(state, user, request, false, changes).await
+        match preview_slots.try_acquire_owned() {
+            Ok(permit) => Some(permit),
+            Err(_) => {
+                tracing::debug!(reason = "host_limit", "DAV preview busy");
+                return preview_problem(StatusCode::TOO_MANY_REQUESTS, "preview_busy");
+            }
+        }
+    } else {
+        None
+    };
+    forward_authenticated(state, user, request, false, changes, preview_permit).await
 }
 
 /// Desktop cookies use the space's MCP identity; file bytes still use the
@@ -400,13 +418,12 @@ pub(crate) async fn forward_authenticated(
     mut request: Request,
     mcp: bool,
     mut changes: tokio::sync::watch::Receiver<()>,
+    preview_permit: Option<OwnedSemaphorePermit>,
 ) -> Response {
     let startup_started = std::time::Instant::now();
     let username = user.username.clone();
     let prefix = format!("{}/dav/", crate::space_prefix(&state.state, &username));
-    let is_preview = !mcp
-        && request.uri().path()
-            == format!("{}/previews", crate::space_prefix(&state.state, &username));
+    let is_preview = preview_permit.is_some();
     let path = if is_preview {
         request.uri().path_and_query().unwrap().to_string()
     } else {
@@ -416,19 +433,6 @@ pub(crate) async fn forward_authenticated(
         }
     };
     *request.uri_mut() = path.parse().unwrap();
-    let preview_permit = if is_preview {
-        static PREVIEWS: OnceLock<Arc<tokio::sync::Semaphore>> = OnceLock::new();
-        match PREVIEWS
-            .get_or_init(|| Arc::new(tokio::sync::Semaphore::new(4)))
-            .clone()
-            .try_acquire_owned()
-        {
-            Ok(permit) => Some(permit),
-            Err(_) => return preview_problem(StatusCode::TOO_MANY_REQUESTS, "preview_busy"),
-        }
-    } else {
-        None
-    };
     for name in ["destination", "if"].into_iter().filter(|_| !is_preview) {
         if request.headers().get_all(name).iter().count() > 1 {
             return StatusCode::BAD_REQUEST.into_response();
@@ -608,6 +612,15 @@ pub(crate) async fn forward_authenticated(
     drop(sender);
     progress.tick(1); // Arrival of response headers is actual upstream progress.
     let (mut parts, body) = upstream.into_parts();
+    let busy_reason = parts.headers.remove(preview_protocol::BUSY_REASON_HEADER);
+    if is_preview && parts.status == StatusCode::TOO_MANY_REQUESTS {
+        let reason = match busy_reason.as_ref().and_then(|value| value.to_str().ok()) {
+            Some(preview_protocol::GENERATION_BUSY) => preview_protocol::GENERATION_BUSY,
+            Some(preview_protocol::GENERATION_CLEANUP) => preview_protocol::GENERATION_CLEANUP,
+            _ => "guest_unspecified",
+        };
+        tracing::debug!(reason, "DAV preview busy");
+    }
     parts.headers = forwarded_headers(&parts.headers, false);
     // This header proves Host admission failed before forwarding; a guest
     // response cannot supply that guarantee.

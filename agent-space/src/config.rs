@@ -110,6 +110,7 @@ pub struct WebdavConfig {
     pub public_base_url: Option<String>,
     pub startup_timeout_secs: u64,
     pub io_idle_timeout_secs: u64,
+    pub preview_max_inflight: usize,
 }
 impl Default for WebdavConfig {
     fn default() -> Self {
@@ -120,6 +121,7 @@ impl Default for WebdavConfig {
             public_base_url: None,
             startup_timeout_secs: 60,
             io_idle_timeout_secs: 120,
+            preview_max_inflight: 8,
         }
     }
 }
@@ -632,6 +634,10 @@ impl Config {
                 self.webdav.startup_timeout_secs > 0 && self.webdav.io_idle_timeout_secs > 0,
                 "webdav timeouts must be greater than zero"
             );
+            anyhow::ensure!(
+                (1..=8).contains(&self.webdav.preview_max_inflight),
+                "webdav.preview_max_inflight must be between 1 and 8"
+            );
             let primary: std::net::SocketAddr = self.server.listen.parse()?;
             let dav: std::net::SocketAddr = self.webdav.listen.parse()?;
             anyhow::ensure!(
@@ -962,6 +968,14 @@ workspace_name = "smcp-alice"
         config.webdav.startup_timeout_secs = 0;
         assert!(config.validate_with_mode(true).is_err());
         config.webdav.startup_timeout_secs = 60;
+        assert_eq!(config.webdav.preview_max_inflight, 8);
+        config.webdav.preview_max_inflight = 4;
+        config.validate_with_mode(true).unwrap();
+        for invalid in [0, 9] {
+            config.webdav.preview_max_inflight = invalid;
+            assert!(config.validate_with_mode(true).is_err());
+        }
+        config.webdav.preview_max_inflight = 8;
         config.state.dir = None;
         assert!(config.validate_with_mode(true).is_err());
     }
